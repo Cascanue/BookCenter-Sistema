@@ -16,8 +16,9 @@ formCliente.addEventListener('submit', async (evento) => {
     mensaje.style.color = "orange";
 
     try {
-        // Viajamos al servidor enviando los datos
-        const respuesta = await fetch('https://bookcenter-backend.onrender.com', {
+
+        // Viajamos al servidor enviando los datos a la ruta exacta
+const respuesta = await fetch('https://bookcenter-backend.onrender.com/api/registrar-cliente', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
