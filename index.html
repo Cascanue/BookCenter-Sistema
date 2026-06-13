@@ -2,21 +2,29 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>CU-02: Registrar Cliente casca</title>
+    <title>Prueba de Fuego: Cloudinary + Aiven</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="contenedor">
-        <h1>👤 Registrar Nuevo Cliente</h1>
-        <form id="formCliente">
-            <input type="text" id="documento" placeholder="DNI o RUC" required>
-            <input type="text" id="nombre" placeholder="Nombre completo" required>
-            <input type="text" id="telefono" placeholder="Teléfono" required>
-            <input type="email" id="correo" placeholder="Correo electrónico" required>
-            <button type="submit">Guardar Cliente</button>
+    <div style="max-width: 600px; margin: 20px auto; font-family: sans-serif;">
+        <h1>📦 Registrar Nuevo Producto</h1>
+        
+        <form id="formProducto" enctype="multipart/form-data" style="display: flex; flex-direction: column; gap: 10px;">
+            <input type="text" id="nombre" placeholder="Nombre del Producto" required>
+            <input type="number" id="precio" step="0.01" placeholder="Precio (S/.)" required>
+            <input type="number" id="stock" placeholder="Stock Actual" required>
+            <label>Seleccionar Imagen del Producto:</label>
+            <input type="file" id="imagenProducto" accept="image/*" required>
+            <button type="submit" style="padding: 10px; cursor: pointer;">Guardar Producto</button>
         </form>
-        <p id="mensaje"></p>
+        
+        <p id="mensaje" style="font-weight: bold;"></p>
+        <hr>
+        
+        <h2>📚 Catálogo Actual (Desde la Nube)</h2>
+        <div id="listaProductos" style="display: flex; flex-direction: column; gap: 15px;"></div>
     </div>
+
     <script src="app.js"></script>
 </body>
 </html>

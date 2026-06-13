@@ -1,29 +1,54 @@
-const formCliente = document.getElementById('formCliente');
+
+//https://bookcenter-backend.onrender.com/api/registrar-cliente
+
+
+const formProducto = document.getElementById('formProducto');
 const mensaje = document.getElementById('mensaje');
+const listaProductos = document.getElementById('listaProductos');
 
-formCliente.addEventListener('submit', async (evento) => {
-    evento.preventDefault(); // Evita que la página recargue al darle al botón
+// IP DE CONEXIÓN: Cambiar por tu link de Render cuando lo subas a internet
+const URL_BACKEND = 'http://localhost:3000'; 
 
-    // Recolectamos lo que escribió el vendedor
-    const datosCliente = {
-        documento: document.getElementById('documento').value,
-        nombre: document.getElementById('nombre').value,
-        telefono: document.getElementById('telefono').value,
-        correo: document.getElementById('correo').value
-    };
+// Función para cargar y pintar los productos que están guardados en Aiven
+async function cargarCatalogo() {
+    try {
+        const res = await fetch(`${URL_BACKEND}/api/productos`);
+        const productos = res.ok ? await res.json() : [];
+        listaProductos.innerHTML = '';
+        
+        productos.forEach(prod => {
+            listaProductos.innerHTML += `
+                <div style="border: 1px solid #ccc; padding: 10px; display: flex; gap: 15px; align-items: center;">
+                    <img src="${prod.url_imagen}" alt="${prod.nombre}" style="width: 80px; height: 80px; object-fit: cover;">
+                    <div>
+                        <h3>${prod.nombre}</h3>
+                        <p>Precio: S/. ${prod.precio} | Stock: ${prod.stock} unidades</p>
+                    </div>
+                </div>
+            `;
+        });
+    } catch (e) {
+        console.error("Error cargando catálogo", e);
+    }
+}
 
-    mensaje.textContent = "Procesando registro...";
+// Escuchar el botón de Guardar
+formProducto.addEventListener('submit', async (evento) => {
+    evento.preventDefault();
+    mensaje.textContent = "Subiendo imagen a Cloudinary y registrando...";
     mensaje.style.color = "orange";
 
-    try {
+    // Creamos el paquete especial para transportar archivos físicos
+    const paqueteDatos = new FormData();
+    paqueteDatos.append('nombre', document.getElementById('nombre').value);
+    paqueteDatos.append('precio', document.getElementById('precio').value);
+    paqueteDatos.append('stock', document.getElementById('stock').value);
+    paqueteDatos.append('imagenProducto', document.getElementById('imagenProducto').files[0]);
 
-        // Viajamos al servidor enviando los datos a la ruta exacta
-const respuesta = await fetch('https://bookcenter-backend.onrender.com/api/registrar-cliente', {
+    try {
+        const respuesta = await fetch(`${URL_BACKEND}/api/registrar-producto`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(datosCliente) // Convertimos los datos a texto para el viaje
+            body: paqueteDatos // Enviamos el archivo físico suelto sin JSON.stringify
         });
 
         const resultado = await respuesta.json();
@@ -31,7 +56,8 @@ const respuesta = await fetch('https://bookcenter-backend.onrender.com/api/regis
         if (respuesta.ok) {
             mensaje.textContent = "✅ " + resultado.mensaje;
             mensaje.style.color = "green";
-            formCliente.reset(); // Limpiamos las casillas
+            formProducto.reset();
+            cargarCatalogo(); // Refrescar la lista automáticamente
         } else {
             mensaje.textContent = "❌ " + resultado.mensaje;
             mensaje.style.color = "red";
@@ -41,3 +67,6 @@ const respuesta = await fetch('https://bookcenter-backend.onrender.com/api/regis
         mensaje.style.color = "red";
     }
 });
+
+// Cargar los productos apenas se abra la página
+cargarCatalogo();
