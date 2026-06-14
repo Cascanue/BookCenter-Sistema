@@ -106,4 +106,6 @@ app.get('/api/productos', (req, res) => { ... });
 // ==========================================
 // E. ENCENDIDO DEL SERVIDOR
 // ==========================================
-app.listen(3000, () => console.log('🚀 Servidor de Book Center corriendo en el puerto 3000'));
+// Le decimos a Node que use el puerto que Render le dé, o el 3000 si estás en tu PC
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`🚀 Servidor de Book Center corriendo en el puerto ${PORT}`));
