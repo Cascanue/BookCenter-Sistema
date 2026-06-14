@@ -80,27 +80,68 @@ body {
 .oculto { display: none !important; }
 
 /* Nuevos estilos para el Header y Botón Rojo */
+/* Nuevo encabezado usando CSS Grid */
 .encabezado {
-    background-color: var(--blanco);
+    background-color: var(--azul-primario); /* Fondo azul obligatorio */
     padding: 1rem 2rem;
-    display: flex;
-    justify-content: center; /* Esto ancla el logo al centro siempre */
+    display: grid;
+    grid-template-columns: 1fr auto 1fr; /* 3 columnas: Costado, Centro, Costado */
     align-items: center;
     box-shadow: var(--sombra);
-    position: relative;
+    width: 100%;
 }
-.zona-izquierda { position: absolute; left: 2rem; }
-.zona-derecha { position: absolute; right: 2rem; }
 
-.logo-header { max-height: 40px; width: auto; object-fit: contain; }
+.zona-izquierda {
+    display: flex;
+    justify-content: flex-start; /* Empuja el botón pegado a la izquierda */
+}
 
-.btn-rojo {
-    background-color: #ef4444;
-    color: white;
+.zona-derecha {
+    display: flex;
+    justify-content: flex-end; /* Empuja el contenido pegado a la derecha */
+}
+
+/* Pastilla blanca para proteger el logo sobre el fondo azul */
+.logo-header {
+    max-height: 45px;
+    width: auto;
+    object-fit: contain;
+    background-color: var(--blanco);
+    padding: 5px 20px;
+    border-radius: 20px;
+    box-shadow: var(--sombra);
+}
+
+/* El botón transparente (Ghost Button) */
+.btn-salir {
+    background-color: transparent;
+    color: var(--blanco);
+    border: 2px solid var(--blanco);
     padding: 0.5rem 1rem;
     border-radius: 8px;
     text-decoration: none;
     font-weight: bold;
     transition: all 0.3s ease;
 }
-.btn-rojo:hover { background-color: #dc2626; }
+
+.btn-salir:hover {
+    background-color: var(--blanco);
+    color: var(--azul-primario); /* Al pasar el mouse, se vuelve blanco con letras azules */
+}
+
+/* Ajuste al botón de Administración para que combine con el fondo azul */
+.btn-negro {
+    background-color: var(--azul-oscuro);
+    color: var(--blanco);
+    border: 2px solid var(--azul-oscuro); /* Mantiene el tamaño igual al de salir */
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.btn-negro:hover {
+    background-color: #000;
+    border-color: #000;
+}

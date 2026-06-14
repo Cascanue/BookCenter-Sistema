@@ -24,18 +24,24 @@ const upload = multer({ storage: storage });
 // ==========================================
 // B. CONEXIÓN A LA BASE DE DATOS (Aiven MySQL)
 // ==========================================
-const db = mysql.createConnection({
+const db = mysql.createPool({
     host: 'mysql-955eb71-bookcenter27.b.aivencloud.com',
     user: 'avnadmin',
     password: process.env.AIVEN_PASSWORD,
     port: 22639,
     database: 'defaultdb',
-    ssl: { rejectUnauthorized: false }
+    ssl: { rejectUnauthorized: false },
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
 });
 
-db.connect(err => {
+db.getConnection((err, connection) => {
     if (err) console.error('❌ Error en MySQL:', err);
-    else console.log('✅ Conectado a Aiven MySQL con éxito.');
+    else {
+        console.log('✅ Conectado a Aiven MySQL con Pool de conexiones.');
+        connection.release();
+    }
 });
 
 // ==========================================

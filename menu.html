@@ -6,22 +6,6 @@
     <link rel="stylesheet" href="css/style.css">
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
     <style>
-        .encabezado {
-            background-color: var(--blanco);
-            padding: 1rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: var(--sombra);
-        }
-        .btn-negro {
-            background-color: #000;
-            color: #fff;
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: bold;
-        }
         .contenedor-menu {
             max-width: 800px;
             margin: 3rem auto;
@@ -56,18 +40,18 @@
 <body>
     <header class="encabezado">
     <div class="zona-izquierda">
-        <a href="index.html" class="btn-rojo">Cerrar Sesión</a>
+        <a href="#" id="btnCerrarSesion" class="btn-salir">Cerrar Sesión</a>
     </div>
     
-    <img src="https://res.cloudinary.com/dwk77ddoq/image/upload/v1781397979/imagen_2026-06-13_194618193_hkz2d2.png" alt="Logo" class="logo-header">
+    <img src="https://res.cloudinary.com/dwk77ddoq/image/upload/v1781397979/imagen_2026-06-13_194618193_hkz2d2.png" alt="Logo Book Center" class="logo-header">
     
     <div class="zona-derecha">
-        <a href="#" class="btn-negro oculto" id="btnAdmin">Administración</a>
+        <a href="#" class="btn-salir oculto" id="btnAdmin">Administración</a>
     </div>
 </header>
 
     <div class="contenedor-menu">
-        <h1 style="font-size: 2.5rem; margin-bottom: 1rem;">¡Bienvenido, Diego Alonso!</h1>
+        <h1 id="saludoUsuario" style="font-size: 2.5rem; margin-bottom: 1rem;">¡Bienvenido!</h1>
         <p style="color: var(--gris); font-size: 1.2rem;">Seleccione el módulo con el que desea trabajar hoy.</p>
 
         <div class="grid-modulos">
@@ -109,6 +93,18 @@
             document.getElementById('modPago').classList.remove('oculto');
             document.getElementById('btnAdmin').classList.remove('oculto');
         }
+        // Inyectar el nombre dinámicamente
+        const nombreActual = localStorage.getItem('nombreUsuario');
+            if (nombreActual) {
+                document.getElementById('saludoUsuario').innerText = `¡Bienvenido, ${nombreActual}!`;
+            }
+
+        // Lógica para cerrar sesión correctamente
+            document.getElementById('btnCerrarSesion').addEventListener('click', (e) => {
+            e.preventDefault(); // Evitamos que el <a> nos lleve a "#"
+            localStorage.clear(); // ¡Destruimos la sesión!
+            window.location.href = 'index.html'; // Redirigimos
+        });
     </script>
 </body>
 </html>

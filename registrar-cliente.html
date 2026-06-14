@@ -25,10 +25,16 @@
 </head>
 <body>
     <header class="encabezado">
-        <div class="zona-izquierda"><a href="menu.html" class="btn-rojo" style="background-color: var(--gris);">Volver al Menú</a></div>
-        <img src="TU_LOGO_AQUI" alt="Logo" class="logo-header">
-        <div class="zona-derecha"><span style="font-weight: bold; color: var(--azul-primario);">Módulo Ventas</span></div>
-    </header>
+    <div class="zona-izquierda">
+        <a href="menu.html" class="btn-salir">Volver al Menú</a>
+    </div>
+    
+    <img src="https://res.cloudinary.com/dwk77ddoq/image/upload/v1781397979/imagen_2026-06-13_194618193_hkz2d2.png" alt="Logo" class="logo-header">
+    
+    <div class="zona-derecha">
+        <span style="font-weight: bold; color: var(--blanco);">Módulo Ventas</span>
+    </div>
+</header>
 
     <div class="contenedor-modulo">
         <div class="tarjeta">
@@ -88,6 +94,14 @@
     <script src="js/config.js"></script>
 
     <script>
+        // Lógica de Protección de Ruta (Evitar intrusos)
+        const rolActual = localStorage.getItem('rolUsuario');
+        if (!rolActual) {
+            window.location.href = 'index.html';
+        } else if (rolActual === 'cajero') {
+            alert("Acceso denegado: Los cajeros no pueden registrar clientes.");
+            window.location.href = 'menu.html';
+        }
         // Lógica de Validación de Documento (8 para DNI, 11 para RUC)
         const tipoDoc = document.getElementById('tipoDoc');
         const numDoc = document.getElementById('numDoc');
@@ -120,6 +134,19 @@ document.getElementById('formRegistroCliente').addEventListener('submit', async 
         return;
     }
 
+    // Validación estricta de longitud de documento
+    const tipoDocSeleccionado = document.getElementById('tipoDoc').value;
+    const numDocValor = document.getElementById('numDoc').value;
+
+    if (tipoDocSeleccionado === 'DNI' && numDocValor.length !== 8) {
+        alert("El DNI debe tener exactamente 8 dígitos.");
+        return;
+    }
+    if (tipoDocSeleccionado === 'RUC' && numDocValor.length !== 11) {
+        alert("El RUC debe tener exactamente 11 dígitos.");
+        return;
+    }
+    
     // 2. Armar el paquete de datos
     const datosCliente = {
         tipoDoc: document.getElementById('tipoDoc').value,
