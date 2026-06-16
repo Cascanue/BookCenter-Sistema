@@ -369,6 +369,7 @@
             background: white;
             font-family: inherit;
             -moz-appearance: textfield;
+            appearance: textfield;
         }
 
         .input-cantidad::-webkit-inner-spin-button,
@@ -970,20 +971,32 @@
         });
 
         // =============================================
-        // SIGUIENTE (placeholder — pendiente de módulo)
+        // SIGUIENTE
         // =============================================
         function irASiguiente() {
             const items = PRODUCTOS
                 .filter(p => (cantidades[p.id] || 0) > 0)
-                .map(p => ({ id: p.id, nombre: p.nombre, precio: p.precio, cantidad: cantidades[p.id] }));
+                .map(p => ({ id: p.id, nombre: p.nombre, precio: p.precio, cantidad: cantidades[p.id], img: p.img }));
 
             sessionStorage.setItem('pedidoActual', JSON.stringify({
                 cliente: clienteSeleccionado,
                 items: items
             }));
 
-            // window.location.href = 'confirmar-pedido.html'; // Activar cuando exista el módulo
-            alert('✅ Pedido listo. El módulo de confirmación estará disponible próximamente.');
+            window.location.href = 'confirmar-pedido.html';
+        }
+
+        // =============================================
+        // RESTAURAR PEDIDO EN CURSO (al volver desde confirmar-pedido.html)
+        // =============================================
+        const pedidoGuardado = JSON.parse(sessionStorage.getItem('pedidoActual') || 'null');
+        if (pedidoGuardado) {
+            if (pedidoGuardado.cliente) {
+                seleccionarCliente(pedidoGuardado.cliente.id);
+            }
+            (pedidoGuardado.items || []).forEach(item => {
+                cantidades[item.id] = item.cantidad;
+            });
         }
 
         // =============================================
@@ -992,6 +1005,7 @@
         renderizarCategorias();
         renderizarProductos();
         validarBotonSiguiente();
+        actualizarBadge();
     </script>
 </body>
 </html>

@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Center - Confirmar Pedido</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <style>
+        /* ===================== RESET Y BASE ===================== */
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .pagina-confirmar {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* ===================== CUERPO PRINCIPAL ===================== */
+        .cuerpo-principal {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            min-height: 0;
+        }
+
+        /* ===================== CABECERA DE PANEL (compartida) ===================== */
+        .cabecera-panel {
+            background: #bfdbfe;
+            color: var(--azul-oscuro);
+            font-weight: 800;
+            font-size: 1.05rem;
+            letter-spacing: 0.4px;
+            text-align: center;
+            padding: 1rem;
+            flex-shrink: 0;
+            border-bottom: 1px solid #93c5fd;
+        }
+
+        /* ===================== SIDEBAR: DATOS DEL CLIENTE ===================== */
+        .sidebar-cliente {
+            width: 28%;
+            min-width: 250px;
+            max-width: 320px;
+            background: #f8fafc;
+            border-right: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .contenido-cliente {
+            padding: 1.75rem 1.4rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            overflow-y: auto;
+        }
+
+        .dato-cliente {
+            font-size: 0.95rem;
+            color: var(--azul-oscuro);
+            line-height: 1.45;
+            word-break: break-word;
+        }
+
+        .dato-label {
+            font-weight: 800;
+            margin-right: 0.3rem;
+        }
+
+        /* ===================== MAIN: DETALLE DEL PEDIDO ===================== */
+        .main-pedido {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: var(--blanco);
+            min-width: 0;
+            position: relative;
+        }
+
+        .lista-pedido-wrapper {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.5rem 1.25rem 5rem;
+            scrollbar-width: thin;
+            scrollbar-color: var(--azul-primario) #e2e8f0;
+        }
+
+        .lista-pedido-wrapper::-webkit-scrollbar { width: 8px; }
+        .lista-pedido-wrapper::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 4px; }
+        .lista-pedido-wrapper::-webkit-scrollbar-thumb { background: var(--azul-primario); border-radius: 4px; }
+
+        /* Ítem de producto */
+        .item-pedido {
+            display: flex;
+            align-items: center;
+            gap: 1.1rem;
+            padding: 1.1rem 0.5rem;
+            border-bottom: 1px solid #e2e8f0;
+            transition: background 0.2s ease;
+        }
+
+        .item-pedido:hover {
+            background: #f8fafc;
+        }
+
+        .item-numero {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--azul-oscuro);
+            min-width: 2.4rem;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .item-datos {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.55rem;
+            min-width: 0;
+        }
+
+        .item-nombre {
+            font-size: 0.92rem;
+            color: #334155;
+            font-weight: 500;
+            line-height: 1.35;
+        }
+
+        .item-info-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.75rem;
+            font-size: 0.85rem;
+            color: var(--gris);
+        }
+
+        .item-info-row strong {
+            color: var(--azul-oscuro);
+            font-weight: 800;
+        }
+
+        .item-imagen {
+            width: 84px;
+            height: 84px;
+            border-radius: 12px;
+            object-fit: cover;
+            flex-shrink: 0;
+            background: #f1f5f9;
+        }
+
+        .btn-eliminar-item {
+            width: 42px;
+            height: 42px;
+            min-width: 42px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(239, 68, 68, 0.08);
+            color: #ef4444;
+            border: 1.5px solid rgba(239, 68, 68, 0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+            font-size: 1.25rem;
+        }
+
+        .btn-eliminar-item:hover {
+            background: #ef4444;
+            color: white;
+            border-color: #ef4444;
+            transform: scale(1.06);
+            box-shadow: 0 6px 16px rgba(239, 68, 68, 0.35);
+        }
+
+        /* Estado vacío */
+        .estado-vacio-pedido {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--gris);
+        }
+
+        .estado-vacio-pedido i {
+            font-size: 3.5rem;
+            display: block;
+            margin-bottom: 0.75rem;
+            opacity: 0.5;
+        }
+
+        /* Caja de total general flotante */
+        .total-flotante {
+            position: absolute;
+            bottom: 1.25rem;
+            right: 1.5rem;
+            background: var(--azul-oscuro);
+            color: white;
+            padding: 0.95rem 1.85rem;
+            border-radius: 12px;
+            font-size: 1.3rem;
+            font-weight: 800;
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.3);
+            z-index: 10;
+            letter-spacing: 0.3px;
+        }
+
+        /* ===================== FOOTER ===================== */
+        .footer-pedido {
+            background: var(--azul-primario);
+            padding: 0 1.5rem;
+            height: 62px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+            box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.18);
+        }
+
+        .btn-footer {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1.4rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            border: 2px solid white;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            letter-spacing: 0.5px;
+            font-family: inherit;
+        }
+
+        .btn-atras {
+            background: transparent;
+            color: white;
+        }
+
+        .btn-atras:hover {
+            background: white;
+            color: var(--azul-primario);
+        }
+
+        .btn-finalizar {
+            background: white;
+            color: var(--azul-primario);
+        }
+
+        .btn-finalizar:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .btn-finalizar:not(:disabled):hover {
+            background: var(--azul-oscuro);
+            border-color: var(--azul-oscuro);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        /* ===================== MODALES ===================== */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.78);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(3px);
+        }
+
+        .modal-contenido {
+            background: white;
+            border-radius: 16px;
+            padding: 1.85rem;
+            width: 92%;
+            max-width: 420px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25);
+            animation: slideIn 0.22s ease;
+            text-align: center;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-18px); opacity: 0; }
+            to   { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-icono-alerta {
+            font-size: 3.2rem;
+            color: #f59e0b;
+            margin-bottom: 0.6rem;
+        }
+
+        .modal-confirmacion-titulo {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--azul-oscuro);
+            margin-bottom: 0.5rem;
+        }
+
+        .modal-confirmacion-texto {
+            color: var(--gris);
+            margin-bottom: 1.6rem;
+            font-size: 0.92rem;
+            line-height: 1.4;
+        }
+
+        .modal-confirmacion-botones {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .btn-modal {
+            flex: 1;
+            padding: 0.7rem 1.2rem;
+            border-radius: 8px;
+            border: none;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            font-family: inherit;
+        }
+
+        .btn-modal-cancelar {
+            background: #e2e8f0;
+            color: var(--azul-oscuro);
+        }
+
+        .btn-modal-cancelar:hover {
+            background: #cbd5e1;
+        }
+
+        .btn-modal-eliminar {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-modal-eliminar:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 18px rgba(239, 68, 68, 0.35);
+        }
+
+        .icono-check {
+            font-size: 4rem;
+            color: #22c55e;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="pagina-confirmar">
+
+        <!-- ============ ENCABEZADO ============ -->
+        <header class="encabezado">
+            <div class="zona-izquierda">
+                <a href="menu.html" class="btn-salir">
+                    <i class='bx bx-arrow-back'></i> Menú
+                </a>
+            </div>
+
+            <img src="https://res.cloudinary.com/dwk77ddoq/image/upload/v1781397979/imagen_2026-06-13_194618193_hkz2d2.png"
+                 alt="Logo Book Center" class="logo-header">
+
+            <div class="zona-derecha">
+                <span style="color: white; font-weight: 600; font-size: 0.88rem; opacity: 0.95; display: flex; align-items: center;">
+                    Confirmar Pedido
+                </span>
+            </div>
+        </header>
+
+        <!-- ============ CUERPO PRINCIPAL ============ -->
+        <div class="cuerpo-principal">
+
+            <!-- ========== SIDEBAR: DATOS DEL CLIENTE ========== -->
+            <aside class="sidebar-cliente">
+                <div class="cabecera-panel">DATOS DEL CLIENTE</div>
+                <div class="contenido-cliente">
+                    <p class="dato-cliente"><span class="dato-label" id="clienteDniLabel">DNI:</span><span id="clienteDni">-</span></p>
+                    <p class="dato-cliente"><span class="dato-label">NOMBRE:</span><span id="clienteNombre">-</span></p>
+                    <p class="dato-cliente"><span class="dato-label">CORREO:</span><span id="clienteCorreo">-</span></p>
+                    <p class="dato-cliente"><span class="dato-label">TELÉFONO:</span><span id="clienteTelefono">-</span></p>
+                </div>
+            </aside>
+
+            <!-- ========== MAIN: DETALLE DEL PEDIDO ========== -->
+            <section class="main-pedido">
+                <div class="cabecera-panel">DETALLE DEL PEDIDO</div>
+
+                <div class="lista-pedido-wrapper" id="listaPedido"></div>
+
+                <div class="total-flotante" id="totalGeneral">TOTAL: S/0.00</div>
+            </section>
+        </div>
+
+        <!-- ============ FOOTER ============ -->
+        <footer class="footer-pedido">
+            <a href="registrar-pedido.html" class="btn-footer btn-atras">
+                <i class='bx bx-arrow-back'></i> ATRÁS
+            </a>
+            <button class="btn-footer btn-finalizar" id="btnFinalizar" onclick="abrirModalExito()">
+                FINALIZAR <i class='bx bx-check-circle'></i>
+            </button>
+        </footer>
+    </div>
+
+    <!-- ============ MODAL ELIMINAR PRODUCTO ============ -->
+    <div class="modal-overlay oculto" id="modalEliminar">
+        <div class="modal-contenido">
+            <div class="modal-icono-alerta"><i class='bx bx-error-circle'></i></div>
+            <div class="modal-confirmacion-titulo">¿Está seguro?</div>
+            <div class="modal-confirmacion-texto">¿Está seguro que desea eliminar este producto del pedido?</div>
+            <div class="modal-confirmacion-botones">
+                <button class="btn-modal btn-modal-cancelar" onclick="cerrarModalEliminar()">Cancelar</button>
+                <button class="btn-modal btn-modal-eliminar" onclick="confirmarEliminar()">Eliminar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ MODAL ÉXITO ============ -->
+    <div class="modal-overlay oculto" id="modalExito">
+        <div class="modal-contenido">
+            <div class="icono-check">✓</div>
+            <h2 style="margin-bottom: 0.6rem;">¡Pedido generado con éxito!</h2>
+            <p class="modal-confirmacion-texto" id="textoExito">El pedido ha sido registrado en el sistema.</p>
+            <button type="button" class="btn-principal" onclick="volverAlMenu()">Volver al Menú</button>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script>
+        // =============================================
+        // PROTECCIÓN DE RUTA
+        // =============================================
+        const rolActual = localStorage.getItem('rolUsuario');
+        if (!rolActual) {
+            window.location.href = 'index.html';
+        } else if (rolActual === 'cajero') {
+            alert('Acceso denegado: los cajeros no pueden confirmar pedidos.');
+            window.location.href = 'menu.html';
+        }
+
+        // =============================================
+        // ESTADO: LECTURA DEL PEDIDO EN CURSO
+        // =============================================
+        let pedido = JSON.parse(sessionStorage.getItem('pedidoActual') || 'null');
+
+        if (!pedido || !Array.isArray(pedido.items) || pedido.items.length === 0) {
+            window.location.href = 'registrar-pedido.html';
+        }
+
+        let idAEliminar = null;
+
+        // =============================================
+        // RENDERIZAR DATOS DEL CLIENTE
+        // =============================================
+        function renderizarCliente() {
+            const cliente = pedido.cliente || {};
+            document.getElementById('clienteDniLabel').textContent = `${cliente.tipoDoc || 'DNI'}:`;
+            document.getElementById('clienteDni').textContent = cliente.numDoc || '-';
+            document.getElementById('clienteNombre').textContent = cliente.nombre || '-';
+            document.getElementById('clienteCorreo').textContent = cliente.correo || '-';
+            document.getElementById('clienteTelefono').textContent = cliente.telefono || '-';
+        }
+
+        // =============================================
+        // RENDERIZAR LISTA DE PRODUCTOS
+        // =============================================
+        function renderizarItems() {
+            const contenedor = document.getElementById('listaPedido');
+
+            if (pedido.items.length === 0) {
+                contenedor.innerHTML = `
+                    <div class="estado-vacio-pedido">
+                        <i class='bx bx-cart-alt'></i>
+                        <p style="font-weight: 600; margin-bottom: 0.25rem;">No hay productos en el pedido</p>
+                        <p style="font-size: 0.85rem;">Vuelve al catálogo para agregar productos.</p>
+                    </div>`;
+                document.getElementById('btnFinalizar').disabled = true;
+            } else {
+                contenedor.innerHTML = pedido.items.map((item, index) => {
+                    const totalItem = item.precio * item.cantidad;
+                    return `
+                    <div class="item-pedido">
+                        <div class="item-numero">${index + 1}</div>
+                        <div class="item-datos">
+                            <div class="item-nombre">${item.nombre}</div>
+                            <div class="item-info-row">
+                                <span>PRECIO: S/${item.precio.toFixed(2)}</span>
+                                <span>UNIDADES: ${item.cantidad}</span>
+                                <span>TOTAL: <strong>S/${totalItem.toFixed(2)}</strong></span>
+                            </div>
+                        </div>
+                        <img class="item-imagen" src="${item.img || ''}" alt="${item.nombre}"
+                             onerror="this.style.background='#e2e8f0'; this.src='';">
+                        <button class="btn-eliminar-item" onclick="abrirModalEliminar(${item.id})" title="Eliminar producto">
+                            <i class='bx bx-trash'></i>
+                        </button>
+                    </div>`;
+                }).join('');
+                document.getElementById('btnFinalizar').disabled = false;
+            }
+
+            calcularTotalGeneral();
+        }
+
+        function calcularTotalGeneral() {
+            const total = pedido.items.reduce((suma, item) => suma + item.precio * item.cantidad, 0);
+            document.getElementById('totalGeneral').textContent = `TOTAL: S/${total.toFixed(2)}`;
+        }
+
+        // =============================================
+        // MODAL ELIMINAR PRODUCTO
+        // =============================================
+        function abrirModalEliminar(id) {
+            idAEliminar = id;
+            document.getElementById('modalEliminar').classList.remove('oculto');
+        }
+
+        function cerrarModalEliminar() {
+            idAEliminar = null;
+            document.getElementById('modalEliminar').classList.add('oculto');
+        }
+
+        function confirmarEliminar() {
+            pedido.items = pedido.items.filter(item => item.id !== idAEliminar);
+            sessionStorage.setItem('pedidoActual', JSON.stringify(pedido));
+            cerrarModalEliminar();
+            renderizarItems();
+        }
+
+        document.getElementById('modalEliminar').addEventListener('click', function (e) {
+            if (e.target === this) cerrarModalEliminar();
+        });
+
+        // =============================================
+        // MODAL ÉXITO / FINALIZAR
+        // =============================================
+        function abrirModalExito() {
+            if (pedido.items.length === 0) return;
+            const nombreCliente = (pedido.cliente && pedido.cliente.nombre) || 'el cliente';
+            document.getElementById('textoExito').textContent =
+                `El pedido para el cliente ${nombreCliente} ha sido registrado en el sistema.`;
+            document.getElementById('modalExito').classList.remove('oculto');
+        }
+
+        function volverAlMenu() {
+            sessionStorage.removeItem('pedidoActual');
+            window.location.href = 'menu.html';
+        }
+
+        // =============================================
+        // INICIALIZACIÓN
+        // =============================================
+        renderizarCliente();
+        renderizarItems();
+    </script>
+</body>
+</html>
