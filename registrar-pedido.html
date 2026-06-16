@@ -976,12 +976,18 @@
         });
 
         // =============================================
-        // SIGUIENTE
+        // SIGUIENTE (Enviando al Detalle del Pedido)
         // =============================================
         function irASiguiente() {
             const items = PRODUCTOS
-                .filter(p => (cantidades[p.id] || 0) > 0)
-                .map(p => ({ id: p.id, nombre: p.nombre, precio: p.precio, cantidad: cantidades[p.id], img: p.img }));
+                .filter(p => (cantidades[p.id_producto] || 0) > 0)
+                .map(p => ({ 
+                    id: p.id_producto, 
+                    nombre: p.nombre, 
+                    precio: parseFloat(p.precio_venta), // Convertimos a número real
+                    cantidad: cantidades[p.id_producto], 
+                    img: p.url_imagen 
+                }));
 
             sessionStorage.setItem('pedidoActual', JSON.stringify({
                 cliente: clienteSeleccionado,
