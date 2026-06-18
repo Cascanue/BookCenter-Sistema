@@ -940,8 +940,9 @@
             }
 
             // Filtrado mapeado a las propiedades de tu tabla Cliente (nombre, tipo_documento, num_documento)
-            const resultados = CLIENTES.filter(c =>
-                c.nombre.toLowerCase().includes(busq) || c.num_documento.includes(busq)
+           const resultados = CLIENTES.filter(c =>
+                (c.nombre && c.nombre.toLowerCase().includes(busq)) || 
+                (c.num_documento && c.num_documento.includes(busq))
             );
 
             if (resultados.length === 0) {
