@@ -159,8 +159,8 @@ app.get('/api/productos', (req, res) => {
 });
 
 // 5. OBTENER CLIENTES (Para el buscador del modal)
+// 5. OBTENER CLIENTES (Para el buscador del modal)
 app.get('/api/clientes', (req, res) => {
-    // Usamos CONCAT para unir los 3 campos y mandarlos como un solo "nombre" al frontend
     const query = `
         SELECT id_cliente, CONCAT_WS(' ', nombres, apellido_paterno, apellido_materno) AS nombre, tipo_documento, numero_documento AS num_documento 
         FROM Cliente

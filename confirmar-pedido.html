@@ -467,11 +467,14 @@
         // =============================================
         function renderizarCliente() {
             const cliente = pedido.cliente || {};
-            document.getElementById('clienteDniLabel').textContent = `${cliente.tipoDoc || 'DNI'}:`;
-            document.getElementById('clienteDni').textContent = cliente.numDoc || '-';
+            // Usamos tipo_documento y num_documento (nombres de tu BD)
+            document.getElementById('clienteDniLabel').textContent = `${cliente.tipo_documento || 'DNI'}:`;
+            document.getElementById('clienteDni').textContent = cliente.num_documento || '-';
             document.getElementById('clienteNombre').textContent = cliente.nombre || '-';
-            document.getElementById('clienteCorreo').textContent = cliente.correo || '-';
-            document.getElementById('clienteTelefono').textContent = cliente.telefono || '-';
+            
+            // Ponemos "No registrado" por si el cliente no dio correo o teléfono
+            document.getElementById('clienteCorreo').textContent = cliente.correo || 'No registrado';
+            document.getElementById('clienteTelefono').textContent = cliente.telefono || 'No registrado';
         }
 
         // =============================================
