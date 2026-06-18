@@ -409,7 +409,7 @@
             <a href="registrar-pedido.html" class="btn-footer btn-atras">
                 <i class='bx bx-arrow-back'></i> ATRÁS
             </a>
-            <button class="btn-footer btn-finalizar" id="btnFinalizar" onclick="abrirModalExito()">
+            <button class="btn-footer btn-finalizar" id="btnFinalizar" onclick="procesarVentaEnBD()">
                 FINALIZAR <i class='bx bx-check-circle'></i>
             </button>
         </footer>
@@ -558,6 +558,70 @@
         function volverAlMenu() {
             sessionStorage.removeItem('pedidoActual');
             window.location.href = 'menu.html';
+        }
+
+        // =============================================
+        // PROCESAR VENTA EN BASE DE DATOS
+        // =============================================
+        async function procesarVentaEnBD() {
+            if (!pedido || pedido.items.length === 0) return;
+
+            // 1. Recuperar el ID del usuario logueado (Cajero/Admin)
+            // Asumiendo que guardas los datos completos del usuario en localStorage
+            const datosUsuario = JSON.parse(localStorage.getItem('usuarioInfo') || '{}');
+            const idUsuario = datosUsuario.id_usuario || 1; // Usamos 1 de respaldo temporal si no está configurado
+
+            // 2. Calcular total (Soporta compatibilidad si usaste 'precio' o 'precio_venta')
+            const totalPedido = pedido.items.reduce((suma, item) => {
+                const precio = parseFloat(item.precio_venta || item.precio);
+                return suma + (precio * item.cantidad);
+            }, 0);
+
+            // 3. Estructurar los datos exactamente como los espera el servidor MySQL
+            const payload = {
+                id_cliente: pedido.cliente.id_cliente || pedido.cliente.id,
+                id_usuario: idUsuario,
+                total: totalPedido,
+                detalles: pedido.items.map(item => ({
+                    id_producto: item.id_producto || item.id,
+                    cantidad: item.cantidad,
+                    precio_venta: parseFloat(item.precio_venta || item.precio)
+                }))
+            };
+
+            try {
+                // Cambiar estado visual del botón
+                const btn = document.getElementById('btnFinalizar');
+                btn.innerHTML = `PROCESANDO... <i class='bx bx-loader-alt bx-spin'></i>`;
+                btn.disabled = true;
+
+                // 4. Enviar a Aiven MySQL a través del servidor
+                const respuesta = await fetch(`${URL_BACKEND}/api/guardar-pedido`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await respuesta.json();
+
+                if (data.exito) {
+                    // Si la BD confirmó el guardado exitoso, recién abrimos tu modal
+                    abrirModalExito();
+                } else {
+                    alert("Error al guardar: " + data.mensaje);
+                    // Restauramos el botón si hubo error
+                    btn.innerHTML = `FINALIZAR <i class='bx bx-check-circle'></i>`;
+                    btn.disabled = false;
+                }
+
+            } catch (error) {
+                console.error("Error crítico de conexión:", error);
+                alert("No se pudo conectar con el servidor para guardar el pedido.");
+                
+                const btn = document.getElementById('btnFinalizar');
+                btn.innerHTML = `FINALIZAR <i class='bx bx-check-circle'></i>`;
+                btn.disabled = false;
+            }
         }
 
         // =============================================
