@@ -96,8 +96,7 @@
             <div class="icono-check">✓</div>
             <h2 style="margin-bottom: 1rem;">¡Usuario Guardado!</h2>
             <p style="color: var(--gris); margin-bottom: 1.5rem;">Los datos del cliente se han registrado correctamente en el sistema.</p>
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-                <button type="button" class="btn-principal" onclick="agregarNuevo()">Agregar nuevo cliente</button>
+        <div id="botonesModalExito" style="display: flex; flex-direction: column; gap: 10px;">                  <button type="button" class="btn-principal" onclick="agregarNuevo()">Agregar nuevo cliente</button>
                 <a href="menu.html" class="btn-rojo" style="background-color: var(--gris); text-align: center;">Regresar al menú</a>
             </div>
         </div>
@@ -133,6 +132,29 @@
 
         tipoDoc.addEventListener('change', actualizarValidacionDoc);
         actualizarValidacionDoc(); // Ejecutar al cargar
+
+        // ==============================================================
+        // LÓGICA INTELIGENTE: Detectar si venimos de Registrar Pedido
+        // ==============================================================
+        const urlParams = new URLSearchParams(window.location.search);
+        const origen = urlParams.get('origen');
+
+        if (origen === 'pedido') {
+            // 1. Cambiamos los botones de la ventanita de éxito
+            const contenedorBotones = document.getElementById('botonesModalExito');
+            contenedorBotones.innerHTML = `
+                <button type="button" class="btn-principal" onclick="window.location.href='registrar-pedido.html'" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <i class='bx bx-cart'></i> Volver al Pedido
+                </button>
+            `;
+
+            // 2. EXTRA (UX): Cambiamos también el botón superior izquierdo para que no diga "Volver al Menú"
+            const btnSuperior = document.querySelector('.zona-izquierda .btn-salir');
+            if (btnSuperior) {
+                btnSuperior.href = "registrar-pedido.html";
+                btnSuperior.innerHTML = "<i class='bx bx-arrow-back'></i> Volver al Pedido";
+            }
+        }
 
         // Control del envío del formulario a la Base de Datos Real
 
