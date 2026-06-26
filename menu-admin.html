@@ -195,154 +195,277 @@ select.input-moderno{cursor:pointer}
 </div>
 <script src="js/config.js"></script>
 <script>
-const rolActual=localStorage.getItem('rolUsuario');
-if(!rolActual){window.location.href='/';}
-else if(rolActual!=='administrador'){alert('Acceso denegado: Solo administradores.');window.location.href='/menu';}
+const rolActual = localStorage.getItem('rolUsuario');
+if (!rolActual) { window.location.href = '/'; }
+else if (rolActual !== 'administrador') { alert('Acceso denegado: Solo administradores.'); window.location.href = '/menu'; }
 
-const mockCategorias=[{id_categoria:1,nombre:'Literatura'},{id_categoria:2,nombre:'Ciencias'},{id_categoria:3,nombre:'Historia'},{id_categoria:4,nombre:'Infantil'}];
-const mockProductos=[
-  {id_producto:1,codigo:'LIB-001',nombre:'El Quijote',descripcion:'Clasico espanol',id_categoria:1,url_imagen:'https://placehold.co/40x40/e8f4fd/2563eb?text=L',precio_venta:35.90,stock_actual:12,stock_minimo:5},
-  {id_producto:2,codigo:'LIB-002',nombre:'Cien Anios de Soledad',descripcion:'Garcia Marquez',id_categoria:1,url_imagen:'https://placehold.co/40x40/e8f4fd/2563eb?text=L',precio_venta:42.00,stock_actual:3,stock_minimo:5},
-  {id_producto:3,codigo:'CIE-001',nombre:'Breve Historia Tiempo',descripcion:'Hawking',id_categoria:2,url_imagen:'https://placehold.co/40x40/e8f4fd/2563eb?text=C',precio_venta:55.00,stock_actual:8,stock_minimo:3},
-  {id_producto:4,codigo:'HIS-001',nombre:'Sapiens',descripcion:'Yuval Noah Harari',id_categoria:3,url_imagen:'https://placehold.co/40x40/e8f4fd/2563eb?text=H',precio_venta:48.50,stock_actual:1,stock_minimo:4},
-  {id_producto:5,codigo:'INF-001',nombre:'El Principito',descripcion:'Saint-Exupery',id_categoria:4,url_imagen:'https://placehold.co/40x40/e8f4fd/2563eb?text=I',precio_venta:22.90,stock_actual:20,stock_minimo:5}
-];
-const mockClientes=[
-  {id_cliente:1,tipo_documento:'DNI',numero_documento:'12345678',nombres:'Yair Asael',apellido_paterno:'Vasquez',apellido_materno:'Marquina',telefono:'987654321',correo:'yair@correo.com'},
-  {id_cliente:2,tipo_documento:'DNI',numero_documento:'87654321',nombres:'Ana Lucia',apellido_paterno:'Torres',apellido_materno:'Ruiz',telefono:'912345678',correo:'ana@correo.com'},
-  {id_cliente:3,tipo_documento:'RUC',numero_documento:'20501234567',nombres:'Carlos',apellido_paterno:'Mendoza',apellido_materno:'Paz',telefono:'998877665',correo:'carlos@empresa.com'}
-];
-const mockPedidos=[
-  {id_pedido:1001,id_cliente:1,cliente:'Yair Asael Vasquez Marquina',fecha:'2026-06-20',total:78.90,estado:'Completado',
-   detalles:[{id_producto:1,nombre:'El Quijote',cantidad:1,precio_unitario:35.90,subtotal:35.90},{id_producto:5,nombre:'El Principito',cantidad:1,precio_unitario:22.90,subtotal:22.90},{id_producto:3,nombre:'Breve Historia Tiempo',cantidad:1,precio_unitario:20.10,subtotal:20.10}]},
-  {id_pedido:1002,id_cliente:2,cliente:'Ana Lucia Torres Ruiz',fecha:'2026-06-22',total:42.00,estado:'Pendiente',
-   detalles:[{id_producto:2,nombre:'Cien Anios de Soledad',cantidad:1,precio_unitario:42.00,subtotal:42.00}]},
-  {id_pedido:1003,id_cliente:3,cliente:'Carlos Mendoza Paz',fecha:'2026-06-24',total:206.00,estado:'Completado',
-   detalles:[{id_producto:3,nombre:'Breve Historia Tiempo',cantidad:2,precio_unitario:55.00,subtotal:110.00},{id_producto:4,nombre:'Sapiens',cantidad:2,precio_unitario:48.50,subtotal:97.00}]}
-];
-const mockComprobantes=[
-  {id_comprobante:'B001-00001',tipo:'Boleta',id_cliente:1,cliente:'Yair Asael Vasquez Marquina',fecha:'2026-06-20',total:78.90,estado:'Vigente',id_pedido:1001},
-  {id_comprobante:'F001-00001',tipo:'Factura',id_cliente:3,cliente:'Carlos Mendoza Paz',fecha:'2026-06-24',total:206.00,estado:'Vigente',id_pedido:1003},
-  {id_comprobante:'B001-00002',tipo:'Boleta',id_cliente:2,cliente:'Ana Lucia Torres Ruiz',fecha:'2026-06-22',total:42.00,estado:'Anulado',id_pedido:1002}
-];
-let productoEditar=null,clienteEditar=null;
-function cambiarVista(n){document.querySelectorAll('.vista').forEach(v=>v.classList.remove('activa'));document.querySelectorAll('.btn-sidebar').forEach(b=>b.classList.remove('activo'));document.getElementById('vista-'+n).classList.add('activa');document.getElementById('nav-'+n).classList.add('activo');}
-function cerrarModal(id){document.getElementById(id).classList.add('oculto');}
-document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',function(e){if(e.target===this)cerrarModal(this.id);}));
-function renderResumen(){
-  const cr=mockProductos.filter(p=>p.stock_actual<=p.stock_minimo);
-  document.getElementById('kpi-productos').textContent=mockProductos.length;
-  document.getElementById('kpi-clientes').textContent=mockClientes.length;
-  document.getElementById('kpi-pedidos').textContent=mockPedidos.length;
-  document.getElementById('kpi-stock-critico').textContent=cr.length;
-  document.getElementById('badge-critico').textContent=cr.length;
-  const tb=document.getElementById('body-stock-critico');
-  if(!cr.length){tb.innerHTML='<tr><td colspan="6"><div class="estado-vacio"><i class="bx bx-check-circle"></i>Sin alertas de stock</div></td></tr>';return;}
-  tb.innerHTML=cr.map(p=>{const c=mockCategorias.find(x=>x.id_categoria===p.id_categoria);return '<tr class="fila-alerta"><td><b>'+p.codigo+'</b></td><td>'+p.nombre+'</td><td>'+(c?c.nombre:'-')+'</td><td><b style="color:var(--rojo)">'+p.stock_actual+'</b></td><td>'+p.stock_minimo+'</td><td><span class="badge badge-rojo">Stock Bajo</span></td></tr>';}).join('');
+let categorias = [], productos = [], clientes = [], pedidos = [], comprobantes = [];
+let productoEditar = null, clienteEditar = null;
+
+function cambiarVista(n) {
+  document.querySelectorAll('.vista').forEach(v => v.classList.remove('activa'));
+  document.querySelectorAll('.btn-sidebar').forEach(b => b.classList.remove('activo'));
+  document.getElementById('vista-' + n).classList.add('activa');
+  document.getElementById('nav-' + n).classList.add('activo');
 }
-function renderProductos(lista){
-  const data=lista||mockProductos,tb=document.getElementById('body-productos');
-  if(!data.length){tb.innerHTML='<tr><td colspan="8"><div class="estado-vacio"><i class="bx bx-package"></i>Sin resultados</div></td></tr>';return;}
-  tb.innerHTML=data.map(p=>{
-    const cat=mockCategorias.find(c=>c.id_categoria===p.id_categoria),bajo=p.stock_actual<=p.stock_minimo;
-    const bs=bajo?'<span class="badge badge-rojo">'+p.stock_actual+'</span>':'<span class="badge badge-verde">'+p.stock_actual+'</span>';
-    const nm=p.nombre.replace(/'/g,"\'");
-    return '<tr class="'+(bajo?'fila-alerta':'')+'"><td><img src="'+p.url_imagen+'" class="img-miniatura" onerror="this.src=\'https://placehold.co/40x40\'"></td><td><code>'+p.codigo+'</code></td><td><b>'+p.nombre+'</b></td><td>'+(cat?cat.nombre:'-')+'</td><td><b>S/ '+parseFloat(p.precio_venta).toFixed(2)+'</b></td><td>'+bs+'</td><td><span class="badge badge-verde">Activo</span></td><td><div class="acciones-fila"><button class="btn-accion editar" title="Editar" onclick="abrirModalProducto('+p.id_producto+')"><i class="bx bx-edit"></i></button><button class="btn-accion eliminar" title="Eliminar" onclick="confirmarEliminar(\'producto\','+p.id_producto+',\''+nm+'\')"><i class="bx bx-trash"></i></button></div></td></tr>';
+
+function cerrarModal(id) { document.getElementById(id).classList.add('oculto'); }
+document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('click', function(e) { if (e.target === this) cerrarModal(this.id); }));
+
+// ===============================================
+// CARGAS DESDE LA BASE DE DATOS (API REST)
+// ===============================================
+async function cargarCategorias() {
+  const res = await fetch(URL_BACKEND + '/api/categorias');
+  categorias = await res.json();
+}
+
+async function cargarResumen() {
+  const res = await fetch(URL_BACKEND + '/api/admin/resumen');
+  const data = await res.json();
+  document.getElementById('kpi-productos').textContent = data.totalProductos;
+  document.getElementById('kpi-clientes').textContent = data.totalClientes;
+  document.getElementById('kpi-pedidos').textContent = data.totalPedidos;
+  document.getElementById('kpi-stock-critico').textContent = data.stockCritico;
+  document.getElementById('badge-critico').textContent = data.stockCritico;
+  
+  const resProd = await fetch(URL_BACKEND + '/api/productos');
+  const prods = await resProd.json();
+  const cr = prods.filter(p => p.stock_actual <= p.stock_minimo);
+  const tb = document.getElementById('body-stock-critico');
+  if (!cr.length) { tb.innerHTML = '<tr><td colspan="6"><div class="estado-vacio"><i class="bx bx-check-circle"></i>Sin alertas de stock</div></td></tr>'; return; }
+  tb.innerHTML = cr.map(p => {
+    const c = categorias.find(x => x.id_categoria === p.id_categoria);
+    return '<tr class="fila-alerta"><td><b>'+p.codigo+'</b></td><td>'+p.nombre+'</td><td>'+(c ? c.nombre : '-')+'</td><td><b style="color:var(--rojo)">'+p.stock_actual+'</b></td><td>'+p.stock_minimo+'</td><td><span class="badge badge-rojo">Stock Bajo</span></td></tr>';
   }).join('');
 }
-function filtrarProductos(){const q=document.getElementById('buscador-productos').value.toLowerCase();renderProductos(mockProductos.filter(p=>p.nombre.toLowerCase().includes(q)||p.codigo.toLowerCase().includes(q)));}
-function renderClientes(lista){
-  const data=lista||mockClientes,tb=document.getElementById('body-clientes');
-  if(!data.length){tb.innerHTML='<tr><td colspan="6"><div class="estado-vacio"><i class="bx bx-group"></i>Sin resultados</div></td></tr>';return;}
-  tb.innerHTML=data.map(c=>'<tr><td><span class="badge badge-azul">'+c.tipo_documento+'</span></td><td>'+c.numero_documento+'</td><td><b>'+c.nombres+' '+c.apellido_paterno+' '+c.apellido_materno+'</b></td><td>'+(c.telefono||'-')+'</td><td>'+(c.correo||'-')+'</td><td><div class="acciones-fila"><button class="btn-accion editar" title="Editar" onclick="abrirModalCliente('+c.id_cliente+')"><i class="bx bx-edit"></i></button><button class="btn-accion eliminar" title="Eliminar" onclick="confirmarEliminar(\'cliente\','+c.id_cliente+',\''+c.nombres+' '+c.apellido_paterno+'\')"><i class="bx bx-trash"></i></button></div></td></tr>').join('');
+
+async function cargarProductos() {
+  const res = await fetch(URL_BACKEND + '/api/productos');
+  productos = await res.json();
+  renderProductos();
 }
-function filtrarClientes(){const q=document.getElementById('buscador-clientes').value.toLowerCase();renderClientes(mockClientes.filter(c=>(c.nombres+' '+c.apellido_paterno+' '+c.apellido_materno).toLowerCase().includes(q)||c.numero_documento.includes(q)));}
-function renderPedidos(lista){
-  const data=lista||mockPedidos,tb=document.getElementById('body-pedidos');
-  if(!data.length){tb.innerHTML='<tr><td colspan="6"><div class="estado-vacio"><i class="bx bx-cart"></i>Sin resultados</div></td></tr>';return;}
-  tb.innerHTML=data.map(p=>{const bs=p.estado==='Completado'?'<span class="badge badge-verde">'+p.estado+'</span>':'<span class="badge badge-amarillo">'+p.estado+'</span>';return '<tr><td><b>#'+p.id_pedido+'</b></td><td>'+p.cliente+'</td><td>'+p.fecha+'</td><td><b>S/ '+parseFloat(p.total).toFixed(2)+'</b></td><td>'+bs+'</td><td><div class="acciones-fila"><button class="btn-accion ver" title="Ver detalle" onclick="verDetallePedido('+p.id_pedido+')"><i class="bx bx-show"></i></button></div></td></tr>';}).join('');
-}
-function filtrarPedidos(){const q=document.getElementById('buscador-pedidos').value.toLowerCase();renderPedidos(mockPedidos.filter(p=>String(p.id_pedido).includes(q)||p.cliente.toLowerCase().includes(q)));}
-function renderComprobantes(lista){
-  const data=lista||mockComprobantes,tb=document.getElementById('body-comprobantes');
-  if(!data.length){tb.innerHTML='<tr><td colspan="7"><div class="estado-vacio"><i class="bx bx-receipt"></i>Sin resultados</div></td></tr>';return;}
-  tb.innerHTML=data.map(c=>{
-    const bs=c.estado==='Vigente'?'<span class="badge badge-verde">'+c.estado+'</span>':'<span class="badge badge-rojo">'+c.estado+'</span>';
-    const btnA=c.estado==='Vigente'?'<button class="btn-accion anular" title="Anular" onclick="confirmarAnular('+c.id_pedido+',\''+c.id_comprobante+'\')"><i class="bx bx-block"></i></button>':'';
-    return '<tr><td><b>'+c.id_comprobante+'</b></td><td><span class="badge badge-azul">'+c.tipo+'</span></td><td>'+c.cliente+'</td><td>'+c.fecha+'</td><td><b>S/ '+parseFloat(c.total).toFixed(2)+'</b></td><td>'+bs+'</td><td><div class="acciones-fila"><button class="btn-accion ver" title="Ver detalle" onclick="verDetallePedido('+c.id_pedido+')"><i class="bx bx-show"></i></button>'+btnA+'</div></td></tr>';
+
+function renderProductos(lista) {
+  const data = lista || productos;
+  const tb = document.getElementById('body-productos');
+  if (!data.length) { tb.innerHTML = '<tr><td colspan="8"><div class="estado-vacio"><i class="bx bx-package"></i>Sin resultados</div></td></tr>'; return; }
+  tb.innerHTML = data.map(p => {
+    const cat = categorias.find(c => c.id_categoria === p.id_categoria);
+    const bajo = p.stock_actual <= p.stock_minimo;
+    const bs = bajo ? '<span class="badge badge-rojo">'+p.stock_actual+'</span>' : '<span class="badge badge-verde">'+p.stock_actual+'</span>';
+    const nm = p.nombre.replace(/'/g, "\\'");
+    return '<tr class="'+(bajo?'fila-alerta':'')+'"><td><img src="'+(p.url_imagen||'')+'" class="img-miniatura" onerror="this.src=\'https://placehold.co/40x40\'"></td><td><code>'+p.codigo+'</code></td><td><b>'+p.nombre+'</b></td><td>'+(cat?cat.nombre:'-')+'</td><td><b>S/ '+parseFloat(p.precio_venta).toFixed(2)+'</b></td><td>'+bs+'</td><td><span class="badge badge-verde">Activo</span></td><td><div class="acciones-fila"><button class="btn-accion editar" title="Editar" onclick="abrirModalProducto('+p.id_producto+')"><i class="bx bx-edit"></i></button><button class="btn-accion eliminar" title="Eliminar" onclick="confirmarEliminar(\'producto\','+p.id_producto+',\''+nm+'\')"><i class="bx bx-trash"></i></button></div></td></tr>';
   }).join('');
 }
-function filtrarComprobantes(){const q=document.getElementById('buscador-comprobantes').value.toLowerCase();renderComprobantes(mockComprobantes.filter(c=>c.id_comprobante.toLowerCase().includes(q)||c.cliente.toLowerCase().includes(q)));}
-function abrirModalProducto(id){
-  productoEditar=id?mockProductos.find(p=>p.id_producto===id):null;
-  document.getElementById('titulo-modal-producto').textContent=productoEditar?'Editar Producto':'Nuevo Producto';
-  const sel=document.getElementById('producto-categoria');
-  sel.innerHTML='<option value="">- Seleccionar -</option>'+mockCategorias.map(c=>'<option value="'+c.id_categoria+'">'+c.nombre+'</option>').join('');
-  if(productoEditar){document.getElementById('producto-id').value=productoEditar.id_producto;document.getElementById('producto-codigo').value=productoEditar.codigo;document.getElementById('producto-nombre').value=productoEditar.nombre;document.getElementById('producto-descripcion').value=productoEditar.descripcion;document.getElementById('producto-categoria').value=productoEditar.id_categoria;document.getElementById('producto-precio').value=productoEditar.precio_venta;document.getElementById('producto-stock').value=productoEditar.stock_actual;document.getElementById('producto-stock-min').value=productoEditar.stock_minimo;document.getElementById('producto-imagen').value=productoEditar.url_imagen;}
-  else document.getElementById('form-producto').reset();
+
+function filtrarProductos() { const q = document.getElementById('buscador-productos').value.toLowerCase(); renderProductos(productos.filter(p => p.nombre.toLowerCase().includes(q) || p.codigo.toLowerCase().includes(q))); }
+
+async function cargarClientes() {
+  const res = await fetch(URL_BACKEND + '/api/clientes');
+  clientes = await res.json();
+  renderClientes();
+}
+
+function renderClientes(lista) {
+  const data = lista || clientes;
+  const tb = document.getElementById('body-clientes');
+  if (!data.length) { tb.innerHTML = '<tr><td colspan="6"><div class="estado-vacio"><i class="bx bx-group"></i>Sin resultados</div></td></tr>'; return; }
+  tb.innerHTML = data.map(c => '<tr><td><span class="badge badge-azul">'+c.tipo_documento+'</span></td><td>'+c.num_documento+'</td><td><b>'+c.nombre+'</b></td><td>'+(c.telefono||'-')+'</td><td>'+(c.correo||'-')+'</td><td><div class="acciones-fila"><button class="btn-accion editar" title="Editar" onclick="abrirModalCliente('+c.id_cliente+')"><i class="bx bx-edit"></i></button><button class="btn-accion eliminar" title="Eliminar" onclick="confirmarEliminar(\'cliente\','+c.id_cliente+',\''+c.nombre.replace(/'/g, "\\'")+'\')"><i class="bx bx-trash"></i></button></div></td></tr>').join('');
+}
+
+function filtrarClientes() { const q = document.getElementById('buscador-clientes').value.toLowerCase(); renderClientes(clientes.filter(c => c.nombre.toLowerCase().includes(q) || c.num_documento.includes(q))); }
+
+async function cargarPedidos() {
+  const res = await fetch(URL_BACKEND + '/api/admin/pedidos');
+  pedidos = await res.json();
+  renderPedidos();
+}
+
+function renderPedidos(lista) {
+  const data = lista || pedidos;
+  const tb = document.getElementById('body-pedidos');
+  if (!data.length) { tb.innerHTML = '<tr><td colspan="6"><div class="estado-vacio"><i class="bx bx-cart"></i>Sin resultados</div></td></tr>'; return; }
+  tb.innerHTML = data.map(p => {
+    const bs = p.estado === 'Completado' ? '<span class="badge badge-verde">'+p.estado+'</span>' : (p.estado === 'Anulado' ? '<span class="badge badge-rojo">'+p.estado+'</span>' : '<span class="badge badge-amarillo">'+p.estado+'</span>');
+    const d = p.fecha_pedido ? new Date(p.fecha_pedido).toLocaleDateString('es-PE') : '-';
+    const nombreCompleto = (p.nombres+' '+p.apellido_paterno).trim();
+    return '<tr><td><b>#'+p.id_pedido+'</b></td><td>'+nombreCompleto+'</td><td>'+d+'</td><td><b>S/ '+parseFloat(p.total).toFixed(2)+'</b></td><td>'+bs+'</td><td><div class="acciones-fila"><button class="btn-accion ver" title="Ver detalle" onclick="verDetallePedido('+p.id_pedido+', \''+nombreCompleto+'\', \''+d+'\', \''+p.estado+'\', '+p.total+')"><i class="bx bx-show"></i></button></div></td></tr>';
+  }).join('');
+}
+
+function filtrarPedidos() { const q = document.getElementById('buscador-pedidos').value.toLowerCase(); renderPedidos(pedidos.filter(p => String(p.id_pedido).includes(q) || (p.nombres+' '+p.apellido_paterno).toLowerCase().includes(q))); }
+
+async function cargarComprobantes() {
+  const res = await fetch(URL_BACKEND + '/api/admin/comprobantes');
+  comprobantes = await res.json();
+  renderComprobantes();
+}
+
+function renderComprobantes(lista) {
+  const data = lista || comprobantes;
+  const tb = document.getElementById('body-comprobantes');
+  if (!data.length) { tb.innerHTML = '<tr><td colspan="7"><div class="estado-vacio"><i class="bx bx-receipt"></i>Sin resultados</div></td></tr>'; return; }
+  tb.innerHTML = data.map(c => {
+    const isAnulado = c.estado === 'Anulado';
+    const bs = !isAnulado ? '<span class="badge badge-verde">Vigente</span>' : '<span class="badge badge-rojo">Anulado</span>';
+    const btnA = !isAnulado ? '<button class="btn-accion anular" title="Anular" onclick="confirmarAnular('+c.id_pedido+','+c.id_comprobante+',\''+c.numero_correlativo+'\')"><i class="bx bx-block"></i></button>' : '';
+    const d = c.fecha_emision ? new Date(c.fecha_emision).toLocaleDateString('es-PE') : '-';
+    return '<tr><td><b>'+c.numero_correlativo+'</b></td><td><span class="badge badge-azul">'+c.tipo_comprobante+'</span></td><td>Pedido #'+c.id_pedido+'</td><td>'+d+'</td><td><b>S/ '+parseFloat(c.monto_total).toFixed(2)+'</b></td><td>'+bs+'</td><td><div class="acciones-fila"><button class="btn-accion ver" title="Ver detalle" onclick="verDetallePedido('+c.id_pedido+')"><i class="bx bx-show"></i></button>'+btnA+'</div></td></tr>';
+  }).join('');
+}
+
+function filtrarComprobantes() { const q = document.getElementById('buscador-comprobantes').value.toLowerCase(); renderComprobantes(comprobantes.filter(c => c.numero_correlativo.toLowerCase().includes(q) || String(c.id_pedido).includes(q))); }
+
+// ===============================================
+// ACCIONES Y MODALES
+// ===============================================
+
+function abrirModalProducto(id) {
+  productoEditar = id ? productos.find(p => p.id_producto === id) : null;
+  document.getElementById('titulo-modal-producto').textContent = productoEditar ? 'Editar Producto' : 'Nuevo Producto';
+  const sel = document.getElementById('producto-categoria');
+  sel.innerHTML = '<option value="">- Seleccionar -</option>' + categorias.map(c => '<option value="'+c.id_categoria+'">'+c.nombre+'</option>').join('');
+  if (productoEditar) {
+    document.getElementById('producto-id').value = productoEditar.id_producto;
+    document.getElementById('producto-codigo').value = productoEditar.codigo;
+    document.getElementById('producto-nombre').value = productoEditar.nombre;
+    document.getElementById('producto-descripcion').value = productoEditar.descripcion;
+    document.getElementById('producto-categoria').value = productoEditar.id_categoria;
+    document.getElementById('producto-precio').value = productoEditar.precio_venta;
+    document.getElementById('producto-stock').value = productoEditar.stock_actual;
+    document.getElementById('producto-stock-min').value = productoEditar.stock_minimo;
+    document.getElementById('producto-imagen').value = productoEditar.url_imagen;
+  } else document.getElementById('form-producto').reset();
   document.getElementById('modal-producto').classList.remove('oculto');
 }
-function guardarProducto(){
-  const codigo=document.getElementById('producto-codigo').value.trim(),nombre=document.getElementById('producto-nombre').value.trim(),categoria=parseInt(document.getElementById('producto-categoria').value),precio=parseFloat(document.getElementById('producto-precio').value),stock=parseInt(document.getElementById('producto-stock').value),stockMin=parseInt(document.getElementById('producto-stock-min').value),imagen=document.getElementById('producto-imagen').value.trim(),desc=document.getElementById('producto-descripcion').value.trim();
-  if(!codigo||!nombre||!categoria||isNaN(precio)||isNaN(stock)||isNaN(stockMin)){alert('Completa todos los campos obligatorios.');return;}
-  if(productoEditar)Object.assign(productoEditar,{codigo,nombre,descripcion:desc,id_categoria:categoria,precio_venta:precio,stock_actual:stock,stock_minimo:stockMin,url_imagen:imagen});
-  else{const nid=Math.max(...mockProductos.map(p=>p.id_producto))+1;mockProductos.push({id_producto:nid,codigo,nombre,descripcion:desc,id_categoria:categoria,url_imagen:imagen,precio_venta:precio,stock_actual:stock,stock_minimo:stockMin});}
-  cerrarModal('modal-producto');renderProductos();renderResumen();
-  // TODO: fetch(URL_BACKEND+'/api/productos',{method:productoEditar?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...})})
+
+async function guardarProducto() {
+  const codigo = document.getElementById('producto-codigo').value.trim();
+  const nombre = document.getElementById('producto-nombre').value.trim();
+  const id_categoria = parseInt(document.getElementById('producto-categoria').value);
+  const precio_venta = parseFloat(document.getElementById('producto-precio').value);
+  const stock_actual = parseInt(document.getElementById('producto-stock').value);
+  const stock_minimo = parseInt(document.getElementById('producto-stock-min').value);
+  const descripcion = document.getElementById('producto-descripcion').value.trim();
+  const url_imagen = document.getElementById('producto-imagen').value.trim();
+  if (!codigo || !nombre || !id_categoria || isNaN(precio_venta) || isNaN(stock_actual) || isNaN(stock_minimo)) { alert('Completa todos los campos obligatorios.'); return; }
+  
+  const payload = { codigo, nombre, descripcion, id_categoria, precio_venta, stock_actual, stock_minimo, url_imagen };
+  const method = productoEditar ? 'PUT' : 'POST';
+  const url = URL_BACKEND + '/api/productos' + (productoEditar ? '/' + productoEditar.id_producto : '');
+  
+  await fetch(url, { method, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+  cerrarModal('modal-producto');
+  cargarProductos();
+  cargarResumen();
 }
-function abrirModalCliente(id){
-  clienteEditar=id?mockClientes.find(c=>c.id_cliente===id):null;
-  document.getElementById('titulo-modal-cliente').textContent=clienteEditar?'Editar Cliente':'Nuevo Cliente';
-  if(clienteEditar){document.getElementById('cliente-id').value=clienteEditar.id_cliente;document.getElementById('cliente-tipo-doc').value=clienteEditar.tipo_documento;document.getElementById('cliente-num-doc').value=clienteEditar.numero_documento;document.getElementById('cliente-nombres').value=clienteEditar.nombres;document.getElementById('cliente-ap-paterno').value=clienteEditar.apellido_paterno;document.getElementById('cliente-ap-materno').value=clienteEditar.apellido_materno;document.getElementById('cliente-telefono').value=clienteEditar.telefono;document.getElementById('cliente-correo').value=clienteEditar.correo;}
-  else document.getElementById('form-cliente').reset();
+
+function abrirModalCliente(id) {
+  clienteEditar = id ? clientes.find(c => c.id_cliente === id) : null;
+  document.getElementById('titulo-modal-cliente').textContent = clienteEditar ? 'Editar Cliente' : 'Nuevo Cliente';
+  if (clienteEditar) {
+    document.getElementById('cliente-id').value = clienteEditar.id_cliente;
+    document.getElementById('cliente-tipo-doc').value = clienteEditar.tipo_documento;
+    document.getElementById('cliente-num-doc').value = clienteEditar.num_documento;
+    document.getElementById('cliente-nombres').value = clienteEditar.nombres;
+    document.getElementById('cliente-ap-paterno').value = clienteEditar.apellido_paterno;
+    document.getElementById('cliente-ap-materno').value = clienteEditar.apellido_materno;
+    document.getElementById('cliente-telefono').value = clienteEditar.telefono;
+    document.getElementById('cliente-correo').value = clienteEditar.correo;
+  } else document.getElementById('form-cliente').reset();
   document.getElementById('modal-cliente').classList.remove('oculto');
 }
-function guardarCliente(){
-  const tipoDoc=document.getElementById('cliente-tipo-doc').value,numDoc=document.getElementById('cliente-num-doc').value.trim(),nombres=document.getElementById('cliente-nombres').value.trim(),apP=document.getElementById('cliente-ap-paterno').value.trim(),apM=document.getElementById('cliente-ap-materno').value.trim(),tel=document.getElementById('cliente-telefono').value.trim(),correo=document.getElementById('cliente-correo').value.trim();
-  if(!numDoc||!nombres||!apP||!apM){alert('Completa los campos obligatorios.');return;}
-  const lon=tipoDoc==='DNI'?8:11;
-  if(numDoc.length!==lon){alert('El '+tipoDoc+' debe tener '+lon+' digitos.');return;}
-  if(clienteEditar)Object.assign(clienteEditar,{tipo_documento:tipoDoc,numero_documento:numDoc,nombres,apellido_paterno:apP,apellido_materno:apM,telefono:tel,correo});
-  else{const nid=Math.max(...mockClientes.map(c=>c.id_cliente))+1;mockClientes.push({id_cliente:nid,tipo_documento:tipoDoc,numero_documento:numDoc,nombres,apellido_paterno:apP,apellido_materno:apM,telefono:tel,correo});}
-  cerrarModal('modal-cliente');renderClientes();renderResumen();
-  // TODO: fetch(URL_BACKEND+'/api/registrar-cliente',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tipoDoc,numDoc,nombres,apellidoPaterno:apP,apellidoMaterno:apM,telefono:tel,correo,idCreador:localStorage.getItem('idUsuario')})})
+
+async function guardarCliente() {
+  const tipoDoc = document.getElementById('cliente-tipo-doc').value;
+  const numDoc = document.getElementById('cliente-num-doc').value.trim();
+  const nombres = document.getElementById('cliente-nombres').value.trim();
+  const apP = document.getElementById('cliente-ap-paterno').value.trim();
+  const apM = document.getElementById('cliente-ap-materno').value.trim();
+  const tel = document.getElementById('cliente-telefono').value.trim();
+  const correo = document.getElementById('cliente-correo').value.trim();
+  if (!numDoc || !nombres || !apP || !apM) { alert('Completa los campos obligatorios.'); return; }
+  
+  const payload = { tipoDoc, numDoc, nombres, apellidoPaterno: apP, apellidoMaterno: apM, telefono: tel, correo, idCreador: localStorage.getItem('idUsuario') };
+  // Aiven API usa camelCase en /api/registrar-cliente para insertar, pero el PUT espera snake_case (tipo_documento, numero_documento).
+  // Vamos a alinear ambos. Si es crear, usamos /api/registrar-cliente. Si es editar, usamos el nuevo /api/clientes/:id con snake_case
+  
+  if (clienteEditar) {
+    const payloadUpdate = { tipo_documento: tipoDoc, numero_documento: numDoc, nombres, apellido_paterno: apP, apellido_materno: apM, telefono: tel, correo };
+    await fetch(URL_BACKEND + '/api/clientes/' + clienteEditar.id_cliente, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payloadUpdate) });
+  } else {
+    await fetch(URL_BACKEND + '/api/registrar-cliente', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+  }
+  
+  cerrarModal('modal-cliente');
+  cargarClientes();
+  cargarResumen();
 }
-function confirmarEliminar(tipo,id,nombre){
-  let msg='Eliminar "'+nombre+'"? Esta accion no se puede deshacer.';
-  if(tipo==='cliente'&&mockPedidos.some(p=>p.id_cliente===id))msg='"'+nombre+'" tiene pedidos. Se realizara un Soft Delete (is_active=0).';
-  if(tipo==='producto'&&mockPedidos.some(p=>p.detalles.some(d=>d.id_producto===id)))msg='"'+nombre+'" esta en pedidos existentes. Se realizara un Soft Delete.';
-  document.getElementById('confirmar-titulo').textContent='Confirmar eliminacion';
-  document.getElementById('confirmar-mensaje').textContent=msg;
-  document.getElementById('btn-confirmar-accion').onclick=()=>ejecutarEliminar(tipo,id);
+
+function confirmarEliminar(tipo, id, nombre) {
+  document.getElementById('confirmar-titulo').textContent = 'Confirmar eliminacion';
+  document.getElementById('confirmar-mensaje').textContent = 'Eliminar "' + nombre + '"? (Solo Soft Delete).';
+  document.getElementById('btn-confirmar-accion').onclick = () => ejecutarEliminar(tipo, id);
   document.getElementById('modal-confirmar').classList.remove('oculto');
 }
-function ejecutarEliminar(tipo,id){
-  if(tipo==='producto'){const i=mockProductos.findIndex(p=>p.id_producto===id);if(i!==-1)mockProductos.splice(i,1);renderProductos();}
-  else{const i=mockClientes.findIndex(c=>c.id_cliente===id);if(i!==-1)mockClientes.splice(i,1);renderClientes();}
-  renderResumen();cerrarModal('modal-confirmar');
+
+async function ejecutarEliminar(tipo, id) {
+  const url = URL_BACKEND + (tipo === 'producto' ? '/api/productos/' : '/api/clientes/') + id;
+  await fetch(url, { method: 'DELETE' });
+  cerrarModal('modal-confirmar');
+  if (tipo === 'producto') cargarProductos(); else cargarClientes();
+  cargarResumen();
 }
-function confirmarAnular(idPedido,idComprobante){
-  document.getElementById('confirmar-titulo').textContent='Anular comprobante';
-  document.getElementById('confirmar-mensaje').textContent='Anular '+idComprobante+'? Se revertira el stock de los productos del pedido.';
-  document.getElementById('btn-confirmar-accion').onclick=()=>ejecutarAnular(idPedido,idComprobante);
+
+function confirmarAnular(idPedido, idComprobante, correlativo) {
+  document.getElementById('confirmar-titulo').textContent = 'Anular comprobante';
+  document.getElementById('confirmar-mensaje').textContent = 'Anular comprobante ' + correlativo + ' (Pedido #' + idPedido + ')?';
+  document.getElementById('btn-confirmar-accion').onclick = () => ejecutarAnular(idPedido, idComprobante);
   document.getElementById('modal-confirmar').classList.remove('oculto');
 }
-function ejecutarAnular(idPedido,idComprobante){
-  const pedido=mockPedidos.find(p=>p.id_pedido===idPedido);
-  if(pedido)pedido.detalles.forEach(d=>{const prod=mockProductos.find(p=>p.id_producto===d.id_producto);if(prod)prod.stock_actual+=d.cantidad;});
-  const comp=mockComprobantes.find(c=>c.id_comprobante===idComprobante);
-  if(comp)comp.estado='Anulado';
-  cerrarModal('modal-confirmar');renderComprobantes();renderProductos();renderResumen();
+
+async function ejecutarAnular(idPedido, idComprobante) {
+  await fetch(URL_BACKEND + '/api/admin/comprobantes/' + idComprobante + '/anular', { method: 'PUT' });
+  cerrarModal('modal-confirmar');
+  cargarComprobantes();
+  cargarPedidos();
+  cargarResumen();
 }
-function verDetallePedido(idPedido){
-  const p=mockPedidos.find(x=>x.id_pedido===idPedido);if(!p)return;
-  document.getElementById('titulo-modal-detalle').textContent='Detalle Pedido #'+p.id_pedido;
-  document.getElementById('info-pedido-detalle').innerHTML='<strong>Cliente:</strong> '+p.cliente+' &nbsp;|&nbsp; <strong>Fecha:</strong> '+p.fecha+' &nbsp;|&nbsp; <strong>Estado:</strong> '+p.estado;
-  document.getElementById('body-detalle-pedido').innerHTML=p.detalles.map(d=>'<tr><td>'+d.nombre+'</td><td>'+d.cantidad+'</td><td>S/ '+parseFloat(d.precio_unitario).toFixed(2)+'</td><td><b>S/ '+parseFloat(d.subtotal).toFixed(2)+'</b></td></tr>').join('');
-  document.getElementById('total-detalle').textContent='S/ '+parseFloat(p.total).toFixed(2);
+
+async function verDetallePedido(idPedido, cliente, fecha, estado, total) {
+  // If called from Comprobantes without extra parameters, fetch them from pedidos array
+  if (!cliente) {
+      const p = pedidos.find(x => x.id_pedido === idPedido);
+      if(p) {
+          cliente = (p.nombres + ' ' + p.apellido_paterno).trim();
+          fecha = p.fecha_pedido ? new Date(p.fecha_pedido).toLocaleDateString('es-PE') : '-';
+          estado = p.estado;
+          total = p.total;
+      }
+  }
+  const res = await fetch(URL_BACKEND + '/api/admin/pedidos/' + idPedido + '/detalles');
+  const detalles = await res.json();
+  
+  document.getElementById('titulo-modal-detalle').textContent = 'Detalle Pedido #' + idPedido;
+  document.getElementById('info-pedido-detalle').innerHTML = '<strong>Cliente:</strong> ' + cliente + ' &nbsp;|&nbsp; <strong>Fecha:</strong> ' + fecha + ' &nbsp;|&nbsp; <strong>Estado:</strong> ' + estado;
+  document.getElementById('body-detalle-pedido').innerHTML = detalles.map(d => '<tr><td>'+d.nombre+'</td><td>'+d.cantidad+'</td><td>S/ '+parseFloat(d.precio_unitario).toFixed(2)+'</td><td><b>S/ '+parseFloat(d.subtotal).toFixed(2)+'</b></td></tr>').join('');
+  document.getElementById('total-detalle').textContent = 'S/ ' + parseFloat(total).toFixed(2);
   document.getElementById('modal-detalle').classList.remove('oculto');
 }
-renderResumen();renderProductos();renderClientes();renderPedidos();renderComprobantes();
+
+// Inicialización de la vista
+async function inicializarDashboard() {
+  await cargarCategorias();
+  cargarResumen();
+  cargarProductos();
+  cargarClientes();
+  cargarPedidos();
+  cargarComprobantes();
+}
+
+inicializarDashboard();
+
 </script>
 </body>
 </html>

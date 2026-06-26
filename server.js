@@ -164,12 +164,16 @@ app.get('/api/clientes', (req, res) => {
     const query = `
         SELECT 
             id_cliente, 
+            nombres,
+            apellido_paterno,
+            apellido_materno,
             CONCAT_WS(' ', nombres, apellido_paterno, apellido_materno) AS nombre, 
             tipo_documento, 
             numero_documento AS num_documento, 
             telefono, 
             correo 
         FROM Cliente
+        WHERE is_active = 1
     `;
 
     db.query(query, (err, results) => {
@@ -259,7 +263,115 @@ app.post('/api/guardar-pedido', (req, res) => {
 });
 
 // ==========================================
-// E. RUTAS DE PÁGINAS (Sirve los archivos HTML)
+// E. RUTAS DE ADMINISTRADOR (Dashboard)
+// ==========================================
+
+// 7. OBTENER RESUMEN (KPIs)
+app.get('/api/admin/resumen', async (req, res) => {
+    try {
+        const p = db.promise();
+        const [[{ totalProductos }]] = await p.query('SELECT COUNT(*) as totalProductos FROM Producto WHERE is_active = 1');
+        const [[{ totalClientes }]] = await p.query('SELECT COUNT(*) as totalClientes FROM Cliente WHERE is_active = 1');
+        const [[{ totalPedidos }]] = await p.query('SELECT COUNT(*) as totalPedidos FROM Pedido');
+        const [[{ stockCritico }]] = await p.query('SELECT COUNT(*) as stockCritico FROM Producto WHERE is_active = 1 AND stock_actual <= stock_minimo');
+        
+        res.json({ totalProductos, totalClientes, totalPedidos, stockCritico });
+    } catch (err) {
+        console.error('Error KPIs:', err);
+        res.status(500).json({ error: 'Error obteniendo KPIs' });
+    }
+});
+
+// 8. CRUD PRODUCTOS
+app.post('/api/productos', (req, res) => {
+    const { codigo, nombre, descripcion, precio_venta, stock_actual, stock_minimo, id_categoria } = req.body;
+    const query = 'INSERT INTO Producto (codigo, nombre, descripcion, precio_venta, stock_actual, stock_minimo, id_categoria, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, 1)';
+    db.query(query, [codigo, nombre, descripcion, precio_venta, stock_actual, stock_minimo, id_categoria], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ exito: true });
+    });
+});
+app.put('/api/productos/:id', (req, res) => {
+    const { codigo, nombre, descripcion, precio_venta, stock_actual, stock_minimo, id_categoria } = req.body;
+    const query = 'UPDATE Producto SET codigo=?, nombre=?, descripcion=?, precio_venta=?, stock_actual=?, stock_minimo=?, id_categoria=? WHERE id_producto=?';
+    db.query(query, [codigo, nombre, descripcion, precio_venta, stock_actual, stock_minimo, id_categoria, req.params.id], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ exito: true });
+    });
+});
+app.delete('/api/productos/:id', (req, res) => {
+    db.query('UPDATE Producto SET is_active = 0 WHERE id_producto = ?', [req.params.id], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ exito: true });
+    });
+});
+
+// 9. CLIENTES (Actualizar y Eliminar Lógico)
+app.put('/api/clientes/:id', (req, res) => {
+    const { tipo_documento, numero_documento, nombres, apellido_paterno, apellido_materno, telefono, correo } = req.body;
+    const query = 'UPDATE Cliente SET tipo_documento=?, numero_documento=?, nombres=?, apellido_paterno=?, apellido_materno=?, telefono=?, correo=? WHERE id_cliente=?';
+    db.query(query, [tipo_documento, numero_documento, nombres, apellido_paterno, apellido_materno, telefono, correo, req.params.id], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ exito: true });
+    });
+});
+app.delete('/api/clientes/:id', (req, res) => {
+    db.query('UPDATE Cliente SET is_active = 0 WHERE id_cliente = ?', [req.params.id], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ exito: true });
+    });
+});
+
+// 10. PEDIDOS E HISTORIAL
+app.get('/api/admin/pedidos', (req, res) => {
+    const query = `
+        SELECT p.id_pedido, c.nombres, c.apellido_paterno, p.fecha_pedido, p.total, p.estado 
+        FROM Pedido p 
+        LEFT JOIN Cliente c ON p.id_cliente = c.id_cliente 
+        ORDER BY p.id_pedido DESC
+    `;
+    db.query(query, (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(results);
+    });
+});
+app.get('/api/admin/pedidos/:id/detalles', (req, res) => {
+    const query = `
+        SELECT dp.cantidad, dp.precio_unitario, dp.subtotal, pr.nombre 
+        FROM Detalle_Pedido dp 
+        JOIN Producto pr ON dp.id_producto = pr.id_producto 
+        WHERE dp.id_pedido = ?
+    `;
+    db.query(query, [req.params.id], (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(results);
+    });
+});
+
+// 11. COMPROBANTES Y ANULACIONES
+app.get('/api/admin/comprobantes', (req, res) => {
+    const query = `
+        SELECT cp.id_comprobante, cp.numero_correlativo, cp.tipo_comprobante, cp.fecha_emision, cp.monto_total, p.id_pedido, p.estado 
+        FROM Comprobante_Pago cp 
+        JOIN Pedido p ON cp.id_pedido = p.id_pedido 
+        ORDER BY cp.id_comprobante DESC
+    `;
+    db.query(query, (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(results);
+    });
+});
+app.put('/api/admin/comprobantes/:id/anular', (req, res) => {
+    // Al anular, pasamos el estado del pedido a 'Anulado'
+    const query = 'UPDATE Pedido SET estado = "Anulado" WHERE id_pedido = (SELECT id_pedido FROM Comprobante_Pago WHERE id_comprobante = ?)';
+    db.query(query, [req.params.id], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ exito: true });
+    });
+});
+
+// ==========================================
+// F. RUTAS DE PÁGINAS (Sirve los archivos HTML)
 // ==========================================
 // Esto le dice a Express que la carpeta "css" y "js" son públicas
 // para que el navegador pueda cargar los estilos e íconos
