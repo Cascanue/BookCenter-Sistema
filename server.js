@@ -273,6 +273,7 @@ app.get('/registrar-cliente', (req, res) => res.sendFile(__dirname + '/registrar
 app.get('/registrar-pedido', (req, res) => res.sendFile(__dirname + '/registrar-pedido.html'));
 app.get('/confirmar-pedido', (req, res) => res.sendFile(__dirname + '/confirmar-pedido.html'));
 app.get('/procesar-pago', (req, res) => res.sendFile(__dirname + '/procesar-pago.html'));
+app.get('/menu-admin', (req, res) => res.sendFile(__dirname + '/menu-admin.html'));
 
 // ==========================================
 // F. ENCENDIDO DEL SERVIDOR

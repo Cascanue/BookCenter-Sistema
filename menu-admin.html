@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Book Center - Panel de Administracion</title>
+<link rel="stylesheet" href="css/style.css">
+<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+<style>
+:root{--rojo:#ef4444;--rojo-claro:#fef2f2;--verde:#22c55e;--verde-claro:#f0fdf4;--amarillo:#f59e0b;--amarillo-claro:#fffbeb;--sidebar-ancho:240px;--fondo-area:#f8fafc}
+body{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+.encabezado{flex-shrink:0}
+.titulo-panel{font-weight:bold;color:var(--blanco);font-size:.95rem}
+.contenedor-admin{display:flex;flex:1;overflow:hidden}
+.sidebar{width:var(--sidebar-ancho);flex-shrink:0;background:var(--blanco);border-right:1px solid #e2e8f0;display:flex;flex-direction:column;padding:1.5rem 0;gap:.25rem;overflow-y:auto}
+.sidebar-titulo{font-size:.7rem;font-weight:700;color:var(--gris);text-transform:uppercase;letter-spacing:.08em;padding:0 1.25rem;margin-bottom:.5rem}
+.btn-sidebar{display:flex;align-items:center;gap:.75rem;padding:.75rem 1.25rem;border:none;background:transparent;color:var(--gris);font-size:.9rem;font-weight:500;cursor:pointer;transition:all .2s;text-align:left;border-left:3px solid transparent;font-family:inherit;width:100%}
+.btn-sidebar i{font-size:1.2rem}.btn-sidebar:hover{background:var(--azul-claro);color:var(--azul-primario)}
+.btn-sidebar.activo{background:var(--azul-claro);color:var(--azul-primario);border-left-color:var(--azul-primario);font-weight:700}
+.area-contenido{flex:1;background:var(--fondo-area);overflow-y:auto;padding:2rem}
+.vista{display:none;animation:fadeIn .2s ease}.vista.activa{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.vista-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem}
+.vista-titulo{font-size:1.4rem;font-weight:700;color:var(--azul-oscuro)}
+.grid-kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:2rem}
+.kpi-card{background:var(--blanco);border-radius:12px;padding:1.25rem 1.5rem;box-shadow:var(--sombra);display:flex;flex-direction:column;gap:.5rem}
+.kpi-label{font-size:.78rem;font-weight:600;color:var(--gris);text-transform:uppercase;letter-spacing:.05em}
+.kpi-valor{font-size:2rem;font-weight:800;color:var(--azul-oscuro)}
+.kpi-icono{font-size:1.5rem;width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:.25rem}
+.kpi-icono.azul{background:var(--azul-claro);color:var(--azul-primario)}.kpi-icono.verde{background:var(--verde-claro);color:var(--verde)}
+.kpi-icono.rojo{background:var(--rojo-claro);color:var(--rojo)}.kpi-icono.amarillo{background:var(--amarillo-claro);color:var(--amarillo)}
+.seccion-card{background:var(--blanco);border-radius:12px;box-shadow:var(--sombra);padding:1.5rem;margin-bottom:1.5rem}
+.seccion-titulo{font-size:1rem;font-weight:700;color:var(--azul-oscuro);margin-bottom:1rem;display:flex;align-items:center;gap:.5rem}
+.badge-alerta{background:var(--rojo);color:white;font-size:.7rem;font-weight:700;padding:.1rem .4rem;border-radius:20px}
+.tabla-wrapper{background:var(--blanco);border-radius:12px;box-shadow:var(--sombra);overflow:hidden}
+.tabla-header{display:flex;justify-content:space-between;align-items:center;padding:1rem 1.5rem;border-bottom:1px solid #e2e8f0;gap:1rem;flex-wrap:wrap}
+table{width:100%;border-collapse:collapse}
+thead th{background:var(--fondo-area);padding:.75rem 1rem;text-align:left;font-size:.75rem;font-weight:700;color:var(--gris);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid #e2e8f0}
+tbody td{padding:.875rem 1rem;font-size:.875rem;color:var(--azul-oscuro);border-bottom:1px solid #f1f5f9;vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}tbody tr:hover{background:#f8fafc}
+tbody tr.fila-alerta{background:var(--rojo-claro)}tbody tr.fila-alerta:hover{background:#fee2e2}
+.buscador-tabla{display:flex;align-items:center;gap:.5rem;background:var(--fondo-area);border:1px solid #e2e8f0;border-radius:8px;padding:.5rem .75rem;flex:1;max-width:320px}
+.buscador-tabla i{color:var(--gris);font-size:1.1rem}
+.buscador-tabla input{border:none;background:transparent;outline:none;font-size:.875rem;color:var(--azul-oscuro);width:100%;font-family:inherit}
+.badge{display:inline-flex;align-items:center;padding:.2rem .6rem;border-radius:20px;font-size:.75rem;font-weight:600}
+.badge-verde{background:var(--verde-claro);color:#16a34a}.badge-rojo{background:var(--rojo-claro);color:#dc2626}
+.badge-amarillo{background:var(--amarillo-claro);color:#d97706}.badge-azul{background:var(--azul-claro);color:var(--azul-primario)}
+.acciones-fila{display:flex;gap:.4rem}
+.btn-accion{border:none;cursor:pointer;width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1rem;transition:all .2s}
+.btn-accion.editar{background:var(--azul-claro);color:var(--azul-primario)}.btn-accion.editar:hover{background:var(--azul-primario);color:white}
+.btn-accion.eliminar{background:var(--rojo-claro);color:var(--rojo)}.btn-accion.eliminar:hover{background:var(--rojo);color:white}
+.btn-accion.ver{background:var(--verde-claro);color:var(--verde)}.btn-accion.ver:hover{background:var(--verde);color:white}
+.btn-accion.anular{background:var(--amarillo-claro);color:var(--amarillo)}.btn-accion.anular:hover{background:var(--amarillo);color:white}
+.btn-principal{display:inline-flex;align-items:center;gap:.4rem;background:var(--azul-primario);color:white;border:none;padding:.6rem 1.1rem;border-radius:8px;font-size:.875rem;font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit;white-space:nowrap}
+.btn-principal:hover{background:#1d4ed8;transform:translateY(-1px);box-shadow:0 4px 12px rgba(37,99,235,.3)}
+.btn-secundario{display:inline-flex;align-items:center;gap:.4rem;background:var(--blanco);color:var(--gris);border:1px solid #e2e8f0;padding:.6rem 1.1rem;border-radius:8px;font-size:.875rem;font-weight:500;cursor:pointer;transition:all .2s;font-family:inherit}
+.btn-secundario:hover{border-color:var(--azul-primario);color:var(--azul-primario)}
+.btn-peligro{background:var(--rojo);color:white;border:none;padding:.6rem 1.1rem;border-radius:8px;font-size:.875rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s}
+.btn-peligro:hover{background:#dc2626}
+.modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,23,42,.7);display:flex;justify-content:center;align-items:center;z-index:1000;animation:fadeIn .15s ease}
+.modal-contenido{background:white;border-radius:16px;width:100%;max-width:540px;max-height:88vh;overflow-y:auto;box-shadow:0 25px 50px rgba(0,0,0,.25)}
+.modal-contenido.modal-sm{max-width:400px}.modal-contenido.modal-lg{max-width:700px}
+.modal-header{display:flex;justify-content:space-between;align-items:center;padding:1.25rem 1.5rem;border-bottom:1px solid #e2e8f0}
+.modal-titulo{font-size:1.05rem;font-weight:700;color:var(--azul-oscuro)}
+.btn-cerrar-modal{background:none;border:none;font-size:1.5rem;color:var(--gris);cursor:pointer;line-height:1;padding:0;transition:color .2s}
+.btn-cerrar-modal:hover{color:var(--rojo)}.modal-body{padding:1.5rem}
+.modal-footer{display:flex;justify-content:flex-end;gap:.75rem;padding:1rem 1.5rem;border-top:1px solid #e2e8f0}
+.fila-doble{display:flex;gap:1rem}.fila-doble .input-grupo{flex:1}.input-grupo{margin-bottom:1.1rem}
+.input-grupo label{display:block;font-size:.8rem;font-weight:600;color:var(--gris);margin-bottom:.35rem}
+.input-moderno{width:100%;padding:.65rem .9rem;border:1px solid #e2e8f0;border-radius:8px;font-size:.875rem;font-family:inherit;color:var(--azul-oscuro);outline:none;transition:border-color .2s,box-shadow .2s;background:white}
+.input-moderno:focus{border-color:var(--azul-primario);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+select.input-moderno{cursor:pointer}
+.modal-icono-peligro{font-size:3rem;color:var(--rojo);text-align:center;margin-bottom:.75rem}
+.tabla-detalles{font-size:.85rem}.tabla-detalles thead th{font-size:.7rem}
+.total-pedido{display:flex;justify-content:flex-end;margin-top:1rem;font-weight:700;font-size:1rem;color:var(--azul-oscuro);gap:1rem}
+.estado-vacio{text-align:center;padding:3rem 2rem;color:var(--gris)}
+.estado-vacio i{font-size:3rem;display:block;margin-bottom:.75rem;opacity:.4}
+.img-miniatura{width:40px;height:40px;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0}
+.celda-producto{display:flex;align-items:center;gap:.75rem}
+</style>
+</head>
+<body>
+<header class="encabezado">
+  <div class="zona-izquierda"><a href="/menu" class="btn-salir"><i class="bx bx-arrow-back"></i> Volver al Menu</a></div>
+  <img src="https://res.cloudinary.com/dwk77ddoq/image/upload/v1781397979/imagen_2026-06-13_194618193_hkz2d2.png" alt="Logo Book Center" class="logo-header">
+  <div class="zona-derecha"><span class="titulo-panel">Panel de Control &mdash; Administracion</span></div>
+</header>
+<div class="contenedor-admin">
+  <aside class="sidebar">
+    <div class="sidebar-titulo">Navegacion</div>
+    <button class="btn-sidebar activo" id="nav-resumen" onclick="cambiarVista('resumen')"><i class="bx bx-bar-chart-alt-2"></i> Resumen</button>
+    <button class="btn-sidebar" id="nav-productos" onclick="cambiarVista('productos')"><i class="bx bx-package"></i> Productos</button>
+    <button class="btn-sidebar" id="nav-clientes" onclick="cambiarVista('clientes')"><i class="bx bx-group"></i> Clientes</button>
+    <button class="btn-sidebar" id="nav-pedidos" onclick="cambiarVista('pedidos')"><i class="bx bx-cart"></i> Pedidos</button>
+    <button class="btn-sidebar" id="nav-comprobantes" onclick="cambiarVista('comprobantes')"><i class="bx bx-receipt"></i> Comprobantes</button>
+  </aside>
+  <main class="area-contenido">
+    <div class="vista activa" id="vista-resumen">
+      <div class="vista-header"><h2 class="vista-titulo">Resumen General</h2></div>
+      <div class="grid-kpi">
+        <div class="kpi-card"><div class="kpi-icono azul"><i class="bx bx-package"></i></div><div class="kpi-label">Total Productos</div><div class="kpi-valor" id="kpi-productos">-</div></div>
+        <div class="kpi-card"><div class="kpi-icono verde"><i class="bx bx-group"></i></div><div class="kpi-label">Clientes</div><div class="kpi-valor" id="kpi-clientes">-</div></div>
+        <div class="kpi-card"><div class="kpi-icono amarillo"><i class="bx bx-cart"></i></div><div class="kpi-label">Pedidos</div><div class="kpi-valor" id="kpi-pedidos">-</div></div>
+        <div class="kpi-card"><div class="kpi-icono rojo"><i class="bx bx-error"></i></div><div class="kpi-label">Stock Critico</div><div class="kpi-valor" id="kpi-stock-critico">-</div></div>
+      </div>
+      <div class="seccion-card">
+        <div class="seccion-titulo"><i class="bx bx-error-circle" style="color:var(--rojo)"></i> Alertas de Stock Critico <span class="badge-alerta" id="badge-critico">0</span></div>
+        <table><thead><tr><th>Codigo</th><th>Producto</th><th>Categoria</th><th>Stock Actual</th><th>Stock Minimo</th><th>Estado</th></tr></thead>
+        <tbody id="body-stock-critico"><tr><td colspan="6" class="estado-vacio">Cargando...</td></tr></tbody></table>
+      </div>
+    </div>
+    <div class="vista" id="vista-productos">
+      <div class="vista-header"><h2 class="vista-titulo">Gestion de Productos</h2><button class="btn-principal" onclick="abrirModalProducto()"><i class="bx bx-plus"></i> Nuevo Producto</button></div>
+      <div class="tabla-wrapper">
+        <div class="tabla-header"><div class="buscador-tabla"><i class="bx bx-search"></i><input type="text" id="buscador-productos" placeholder="Buscar por nombre o codigo..." oninput="filtrarProductos()"></div></div>
+        <table><thead><tr><th>Imagen</th><th>Codigo</th><th>Nombre</th><th>Categoria</th><th>Precio</th><th>Stock</th><th>Estado</th><th>Acciones</th></tr></thead>
+        <tbody id="body-productos"><tr><td colspan="8" class="estado-vacio">Cargando...</td></tr></tbody></table>
+      </div>
+    </div>
+    <div class="vista" id="vista-clientes">
+      <div class="vista-header"><h2 class="vista-titulo">Gestion de Clientes</h2><button class="btn-principal" onclick="abrirModalCliente()"><i class="bx bx-plus"></i> Nuevo Cliente</button></div>
+      <div class="tabla-wrapper">
+        <div class="tabla-header"><div class="buscador-tabla"><i class="bx bx-search"></i><input type="text" id="buscador-clientes" placeholder="Buscar por nombre o documento..." oninput="filtrarClientes()"></div></div>
+        <table><thead><tr><th>Tipo Doc.</th><th>N. Documento</th><th>Nombres y Apellidos</th><th>Telefono</th><th>Correo</th><th>Acciones</th></tr></thead>
+        <tbody id="body-clientes"><tr><td colspan="6" class="estado-vacio">Cargando...</td></tr></tbody></table>
+      </div>
+    </div>
+    <div class="vista" id="vista-pedidos">
+      <div class="vista-header"><h2 class="vista-titulo">Historial de Pedidos</h2></div>
+      <div class="tabla-wrapper">
+        <div class="tabla-header"><div class="buscador-tabla"><i class="bx bx-search"></i><input type="text" id="buscador-pedidos" placeholder="Buscar por ID o cliente..." oninput="filtrarPedidos()"></div></div>
+        <table><thead><tr><th>ID Pedido</th><th>Cliente</th><th>Fecha</th><th>Total</th><th>Estado</th><th>Acciones</th></tr></thead>
+        <tbody id="body-pedidos"><tr><td colspan="6" class="estado-vacio">Cargando...</td></tr></tbody></table>
+      </div>
+    </div>
+    <div class="vista" id="vista-comprobantes">
+      <div class="vista-header"><h2 class="vista-titulo">Comprobantes</h2></div>
+      <div class="tabla-wrapper">
+        <div class="tabla-header"><div class="buscador-tabla"><i class="bx bx-search"></i><input type="text" id="buscador-comprobantes" placeholder="Buscar por comprobante o cliente..." oninput="filtrarComprobantes()"></div></div>
+        <table><thead><tr><th>N. Comprobante</th><th>Tipo</th><th>Cliente</th><th>Fecha</th><th>Total</th><th>Estado</th><th>Acciones</th></tr></thead>
+        <tbody id="body-comprobantes"><tr><td colspan="7" class="estado-vacio">Cargando...</td></tr></tbody></table>
+      </div>
+    </div>
+  </main>
+</div>
+<div class="modal-overlay oculto" id="modal-producto">
+  <div class="modal-contenido">
+    <div class="modal-header"><span class="modal-titulo" id="titulo-modal-producto">Nuevo Producto</span><button class="btn-cerrar-modal" onclick="cerrarModal('modal-producto')">&times;</button></div>
+    <div class="modal-body">
+      <form id="form-producto"><input type="hidden" id="producto-id">
+        <div class="fila-doble"><div class="input-grupo" style="flex:0.4"><label>Codigo</label><input type="text" id="producto-codigo" class="input-moderno" placeholder="LIB-001" required></div><div class="input-grupo"><label>Nombre</label><input type="text" id="producto-nombre" class="input-moderno" required></div></div>
+        <div class="input-grupo"><label>Descripcion</label><input type="text" id="producto-descripcion" class="input-moderno"></div>
+        <div class="fila-doble"><div class="input-grupo"><label>Categoria</label><select id="producto-categoria" class="input-moderno" required><option value="">- Seleccionar -</option></select></div><div class="input-grupo"><label>Precio Venta (S/)</label><input type="number" id="producto-precio" class="input-moderno" min="0" step="0.01" required></div></div>
+        <div class="fila-doble"><div class="input-grupo"><label>Stock Actual</label><input type="number" id="producto-stock" class="input-moderno" min="0" required></div><div class="input-grupo"><label>Stock Minimo</label><input type="number" id="producto-stock-min" class="input-moderno" min="0" required></div></div>
+        <div class="input-grupo"><label>URL Imagen</label><input type="url" id="producto-imagen" class="input-moderno" placeholder="https://..."></div>
+      </form>
+    </div>
+    <div class="modal-footer"><button class="btn-secundario" onclick="cerrarModal('modal-producto')">Cancelar</button><button class="btn-principal" onclick="guardarProducto()"><i class="bx bx-save"></i> Guardar</button></div>
+  </div>
+</div>
+<div class="modal-overlay oculto" id="modal-cliente">
+  <div class="modal-contenido">
+    <div class="modal-header"><span class="modal-titulo" id="titulo-modal-cliente">Nuevo Cliente</span><button class="btn-cerrar-modal" onclick="cerrarModal('modal-cliente')">&times;</button></div>
+    <div class="modal-body">
+      <form id="form-cliente"><input type="hidden" id="cliente-id">
+        <div class="fila-doble"><div class="input-grupo" style="flex:0.4"><label>Tipo Doc.</label><select id="cliente-tipo-doc" class="input-moderno"><option value="DNI">DNI</option><option value="RUC">RUC</option></select></div><div class="input-grupo"><label>N. Documento</label><input type="text" id="cliente-num-doc" class="input-moderno" required oninput="this.value=this.value.replace(/[^0-9]/g,'')"></div></div>
+        <div class="input-grupo"><label>Nombres</label><input type="text" id="cliente-nombres" class="input-moderno" required></div>
+        <div class="fila-doble"><div class="input-grupo"><label>Apellido Paterno</label><input type="text" id="cliente-ap-paterno" class="input-moderno" required></div><div class="input-grupo"><label>Apellido Materno</label><input type="text" id="cliente-ap-materno" class="input-moderno" required></div></div>
+        <div class="fila-doble"><div class="input-grupo"><label>Telefono</label><input type="text" id="cliente-telefono" class="input-moderno" maxlength="9" oninput="this.value=this.value.replace(/[^0-9]/g,'')"></div><div class="input-grupo"><label>Correo</label><input type="email" id="cliente-correo" class="input-moderno"></div></div>
+      </form>
+    </div>
+    <div class="modal-footer"><button class="btn-secundario" onclick="cerrarModal('modal-cliente')">Cancelar</button><button class="btn-principal" onclick="guardarCliente()"><i class="bx bx-save"></i> Guardar</button></div>
+  </div>
+</div>
+<div class="modal-overlay oculto" id="modal-confirmar">
+  <div class="modal-contenido modal-sm">
+    <div class="modal-body" style="text-align:center;padding:2rem 1.5rem">
+      <div class="modal-icono-peligro"><i class="bx bx-error"></i></div>
+      <h3 id="confirmar-titulo" style="margin-bottom:.5rem;color:var(--azul-oscuro)">Confirmar accion</h3>
+      <p id="confirmar-mensaje" style="color:var(--gris);font-size:.9rem;margin-bottom:1.5rem">Esta accion no se puede deshacer.</p>
+      <div style="display:flex;gap:.75rem;justify-content:center"><button class="btn-secundario" onclick="cerrarModal('modal-confirmar')">Cancelar</button><button class="btn-peligro" id="btn-confirmar-accion">Confirmar</button></div>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay oculto" id="modal-detalle">
+  <div class="modal-contenido modal-lg">
+    <div class="modal-header"><span class="modal-titulo" id="titulo-modal-detalle">Detalle del Pedido</span><button class="btn-cerrar-modal" onclick="cerrarModal('modal-detalle')">&times;</button></div>
+    <div class="modal-body">
+      <div id="info-pedido-detalle" style="margin-bottom:1rem;color:var(--gris);font-size:.875rem"></div>
+      <table class="tabla-detalles"><thead><tr><th>Producto</th><th>Cantidad</th><th>Precio Unit.</th><th>Subtotal</th></tr></thead><tbody id="body-detalle-pedido"></tbody></table>
+      <div class="total-pedido"><span>Total:</span><span id="total-detalle">S/ 0.00</span></div>
+    </div>
+    <div class="modal-footer"><button class="btn-secundario" onclick="cerrarModal('modal-detalle')">Cerrar</button></div>
+  </div>
+</div>
+<script src="js/config.js"></script>
+<script>
+const rolActual=localStorage.getItem('rolUsuario');
+if(!rolActual){window.location.href='/';}
+else if(rolActual!=='administrador'){alert('Acceso denegado: Solo administradores.');window.location.href='/menu';}
+
+const mockCategorias=[{id_categoria:1,nombre:'Literatura'},{id_categoria:2,nombre:'Ciencias'},{id_categoria:3,nombre:'Historia'},{id_categoria:4,nombre:'Infantil'}];
+const mockProductos=[
+  {id_producto:1,codigo:'LIB-001',nombre:'El Quijote',descripcion:'Clasico espanol',id_categoria:1,url_imagen:'https://placehold.co/40x40/e8f4fd/2563eb?text=L',precio_venta:35.90,stock_actual:12,stock_minimo:5},
+  {id_producto:2,codigo:'LIB-002',nombre:'Cien Anios de Soledad',descripcion:'Garcia Marquez',id_categoria:1,url_imagen:'https://placehold.co/40x40/e8f4fd/2563eb?text=L',precio_venta:42.00,stock_actual:3,stock_minimo:5},
+  {id_producto:3,codigo:'CIE-001',nombre:'Breve Historia Tiempo',descripcion:'Hawking',id_categoria:2,url_imagen:'https://placehold.co/40x40/e8f4fd/2563eb?text=C',precio_venta:55.00,stock_actual:8,stock_minimo:3},
+  {id_producto:4,codigo:'HIS-001',nombre:'Sapiens',descripcion:'Yuval Noah Harari',id_categoria:3,url_imagen:'https://placehold.co/40x40/e8f4fd/2563eb?text=H',precio_venta:48.50,stock_actual:1,stock_minimo:4},
+  {id_producto:5,codigo:'INF-001',nombre:'El Principito',descripcion:'Saint-Exupery',id_categoria:4,url_imagen:'https://placehold.co/40x40/e8f4fd/2563eb?text=I',precio_venta:22.90,stock_actual:20,stock_minimo:5}
+];
+const mockClientes=[
+  {id_cliente:1,tipo_documento:'DNI',numero_documento:'12345678',nombres:'Yair Asael',apellido_paterno:'Vasquez',apellido_materno:'Marquina',telefono:'987654321',correo:'yair@correo.com'},
+  {id_cliente:2,tipo_documento:'DNI',numero_documento:'87654321',nombres:'Ana Lucia',apellido_paterno:'Torres',apellido_materno:'Ruiz',telefono:'912345678',correo:'ana@correo.com'},
+  {id_cliente:3,tipo_documento:'RUC',numero_documento:'20501234567',nombres:'Carlos',apellido_paterno:'Mendoza',apellido_materno:'Paz',telefono:'998877665',correo:'carlos@empresa.com'}
+];
+const mockPedidos=[
+  {id_pedido:1001,id_cliente:1,cliente:'Yair Asael Vasquez Marquina',fecha:'2026-06-20',total:78.90,estado:'Completado',
+   detalles:[{id_producto:1,nombre:'El Quijote',cantidad:1,precio_unitario:35.90,subtotal:35.90},{id_producto:5,nombre:'El Principito',cantidad:1,precio_unitario:22.90,subtotal:22.90},{id_producto:3,nombre:'Breve Historia Tiempo',cantidad:1,precio_unitario:20.10,subtotal:20.10}]},
+  {id_pedido:1002,id_cliente:2,cliente:'Ana Lucia Torres Ruiz',fecha:'2026-06-22',total:42.00,estado:'Pendiente',
+   detalles:[{id_producto:2,nombre:'Cien Anios de Soledad',cantidad:1,precio_unitario:42.00,subtotal:42.00}]},
+  {id_pedido:1003,id_cliente:3,cliente:'Carlos Mendoza Paz',fecha:'2026-06-24',total:206.00,estado:'Completado',
+   detalles:[{id_producto:3,nombre:'Breve Historia Tiempo',cantidad:2,precio_unitario:55.00,subtotal:110.00},{id_producto:4,nombre:'Sapiens',cantidad:2,precio_unitario:48.50,subtotal:97.00}]}
+];
+const mockComprobantes=[
+  {id_comprobante:'B001-00001',tipo:'Boleta',id_cliente:1,cliente:'Yair Asael Vasquez Marquina',fecha:'2026-06-20',total:78.90,estado:'Vigente',id_pedido:1001},
+  {id_comprobante:'F001-00001',tipo:'Factura',id_cliente:3,cliente:'Carlos Mendoza Paz',fecha:'2026-06-24',total:206.00,estado:'Vigente',id_pedido:1003},
+  {id_comprobante:'B001-00002',tipo:'Boleta',id_cliente:2,cliente:'Ana Lucia Torres Ruiz',fecha:'2026-06-22',total:42.00,estado:'Anulado',id_pedido:1002}
+];
+let productoEditar=null,clienteEditar=null;
+function cambiarVista(n){document.querySelectorAll('.vista').forEach(v=>v.classList.remove('activa'));document.querySelectorAll('.btn-sidebar').forEach(b=>b.classList.remove('activo'));document.getElementById('vista-'+n).classList.add('activa');document.getElementById('nav-'+n).classList.add('activo');}
+function cerrarModal(id){document.getElementById(id).classList.add('oculto');}
+document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',function(e){if(e.target===this)cerrarModal(this.id);}));
+function renderResumen(){
+  const cr=mockProductos.filter(p=>p.stock_actual<=p.stock_minimo);
+  document.getElementById('kpi-productos').textContent=mockProductos.length;
+  document.getElementById('kpi-clientes').textContent=mockClientes.length;
+  document.getElementById('kpi-pedidos').textContent=mockPedidos.length;
+  document.getElementById('kpi-stock-critico').textContent=cr.length;
+  document.getElementById('badge-critico').textContent=cr.length;
+  const tb=document.getElementById('body-stock-critico');
+  if(!cr.length){tb.innerHTML='<tr><td colspan="6"><div class="estado-vacio"><i class="bx bx-check-circle"></i>Sin alertas de stock</div></td></tr>';return;}
+  tb.innerHTML=cr.map(p=>{const c=mockCategorias.find(x=>x.id_categoria===p.id_categoria);return '<tr class="fila-alerta"><td><b>'+p.codigo+'</b></td><td>'+p.nombre+'</td><td>'+(c?c.nombre:'-')+'</td><td><b style="color:var(--rojo)">'+p.stock_actual+'</b></td><td>'+p.stock_minimo+'</td><td><span class="badge badge-rojo">Stock Bajo</span></td></tr>';}).join('');
+}
+function renderProductos(lista){
+  const data=lista||mockProductos,tb=document.getElementById('body-productos');
+  if(!data.length){tb.innerHTML='<tr><td colspan="8"><div class="estado-vacio"><i class="bx bx-package"></i>Sin resultados</div></td></tr>';return;}
+  tb.innerHTML=data.map(p=>{
+    const cat=mockCategorias.find(c=>c.id_categoria===p.id_categoria),bajo=p.stock_actual<=p.stock_minimo;
+    const bs=bajo?'<span class="badge badge-rojo">'+p.stock_actual+'</span>':'<span class="badge badge-verde">'+p.stock_actual+'</span>';
+    const nm=p.nombre.replace(/'/g,"\'");
+    return '<tr class="'+(bajo?'fila-alerta':'')+'"><td><img src="'+p.url_imagen+'" class="img-miniatura" onerror="this.src=\'https://placehold.co/40x40\'"></td><td><code>'+p.codigo+'</code></td><td><b>'+p.nombre+'</b></td><td>'+(cat?cat.nombre:'-')+'</td><td><b>S/ '+parseFloat(p.precio_venta).toFixed(2)+'</b></td><td>'+bs+'</td><td><span class="badge badge-verde">Activo</span></td><td><div class="acciones-fila"><button class="btn-accion editar" title="Editar" onclick="abrirModalProducto('+p.id_producto+')"><i class="bx bx-edit"></i></button><button class="btn-accion eliminar" title="Eliminar" onclick="confirmarEliminar(\'producto\','+p.id_producto+',\''+nm+'\')"><i class="bx bx-trash"></i></button></div></td></tr>';
+  }).join('');
+}
+function filtrarProductos(){const q=document.getElementById('buscador-productos').value.toLowerCase();renderProductos(mockProductos.filter(p=>p.nombre.toLowerCase().includes(q)||p.codigo.toLowerCase().includes(q)));}
+function renderClientes(lista){
+  const data=lista||mockClientes,tb=document.getElementById('body-clientes');
+  if(!data.length){tb.innerHTML='<tr><td colspan="6"><div class="estado-vacio"><i class="bx bx-group"></i>Sin resultados</div></td></tr>';return;}
+  tb.innerHTML=data.map(c=>'<tr><td><span class="badge badge-azul">'+c.tipo_documento+'</span></td><td>'+c.numero_documento+'</td><td><b>'+c.nombres+' '+c.apellido_paterno+' '+c.apellido_materno+'</b></td><td>'+(c.telefono||'-')+'</td><td>'+(c.correo||'-')+'</td><td><div class="acciones-fila"><button class="btn-accion editar" title="Editar" onclick="abrirModalCliente('+c.id_cliente+')"><i class="bx bx-edit"></i></button><button class="btn-accion eliminar" title="Eliminar" onclick="confirmarEliminar(\'cliente\','+c.id_cliente+',\''+c.nombres+' '+c.apellido_paterno+'\')"><i class="bx bx-trash"></i></button></div></td></tr>').join('');
+}
+function filtrarClientes(){const q=document.getElementById('buscador-clientes').value.toLowerCase();renderClientes(mockClientes.filter(c=>(c.nombres+' '+c.apellido_paterno+' '+c.apellido_materno).toLowerCase().includes(q)||c.numero_documento.includes(q)));}
+function renderPedidos(lista){
+  const data=lista||mockPedidos,tb=document.getElementById('body-pedidos');
+  if(!data.length){tb.innerHTML='<tr><td colspan="6"><div class="estado-vacio"><i class="bx bx-cart"></i>Sin resultados</div></td></tr>';return;}
+  tb.innerHTML=data.map(p=>{const bs=p.estado==='Completado'?'<span class="badge badge-verde">'+p.estado+'</span>':'<span class="badge badge-amarillo">'+p.estado+'</span>';return '<tr><td><b>#'+p.id_pedido+'</b></td><td>'+p.cliente+'</td><td>'+p.fecha+'</td><td><b>S/ '+parseFloat(p.total).toFixed(2)+'</b></td><td>'+bs+'</td><td><div class="acciones-fila"><button class="btn-accion ver" title="Ver detalle" onclick="verDetallePedido('+p.id_pedido+')"><i class="bx bx-show"></i></button></div></td></tr>';}).join('');
+}
+function filtrarPedidos(){const q=document.getElementById('buscador-pedidos').value.toLowerCase();renderPedidos(mockPedidos.filter(p=>String(p.id_pedido).includes(q)||p.cliente.toLowerCase().includes(q)));}
+function renderComprobantes(lista){
+  const data=lista||mockComprobantes,tb=document.getElementById('body-comprobantes');
+  if(!data.length){tb.innerHTML='<tr><td colspan="7"><div class="estado-vacio"><i class="bx bx-receipt"></i>Sin resultados</div></td></tr>';return;}
+  tb.innerHTML=data.map(c=>{
+    const bs=c.estado==='Vigente'?'<span class="badge badge-verde">'+c.estado+'</span>':'<span class="badge badge-rojo">'+c.estado+'</span>';
+    const btnA=c.estado==='Vigente'?'<button class="btn-accion anular" title="Anular" onclick="confirmarAnular('+c.id_pedido+',\''+c.id_comprobante+'\')"><i class="bx bx-block"></i></button>':'';
+    return '<tr><td><b>'+c.id_comprobante+'</b></td><td><span class="badge badge-azul">'+c.tipo+'</span></td><td>'+c.cliente+'</td><td>'+c.fecha+'</td><td><b>S/ '+parseFloat(c.total).toFixed(2)+'</b></td><td>'+bs+'</td><td><div class="acciones-fila"><button class="btn-accion ver" title="Ver detalle" onclick="verDetallePedido('+c.id_pedido+')"><i class="bx bx-show"></i></button>'+btnA+'</div></td></tr>';
+  }).join('');
+}
+function filtrarComprobantes(){const q=document.getElementById('buscador-comprobantes').value.toLowerCase();renderComprobantes(mockComprobantes.filter(c=>c.id_comprobante.toLowerCase().includes(q)||c.cliente.toLowerCase().includes(q)));}
+function abrirModalProducto(id){
+  productoEditar=id?mockProductos.find(p=>p.id_producto===id):null;
+  document.getElementById('titulo-modal-producto').textContent=productoEditar?'Editar Producto':'Nuevo Producto';
+  const sel=document.getElementById('producto-categoria');
+  sel.innerHTML='<option value="">- Seleccionar -</option>'+mockCategorias.map(c=>'<option value="'+c.id_categoria+'">'+c.nombre+'</option>').join('');
+  if(productoEditar){document.getElementById('producto-id').value=productoEditar.id_producto;document.getElementById('producto-codigo').value=productoEditar.codigo;document.getElementById('producto-nombre').value=productoEditar.nombre;document.getElementById('producto-descripcion').value=productoEditar.descripcion;document.getElementById('producto-categoria').value=productoEditar.id_categoria;document.getElementById('producto-precio').value=productoEditar.precio_venta;document.getElementById('producto-stock').value=productoEditar.stock_actual;document.getElementById('producto-stock-min').value=productoEditar.stock_minimo;document.getElementById('producto-imagen').value=productoEditar.url_imagen;}
+  else document.getElementById('form-producto').reset();
+  document.getElementById('modal-producto').classList.remove('oculto');
+}
+function guardarProducto(){
+  const codigo=document.getElementById('producto-codigo').value.trim(),nombre=document.getElementById('producto-nombre').value.trim(),categoria=parseInt(document.getElementById('producto-categoria').value),precio=parseFloat(document.getElementById('producto-precio').value),stock=parseInt(document.getElementById('producto-stock').value),stockMin=parseInt(document.getElementById('producto-stock-min').value),imagen=document.getElementById('producto-imagen').value.trim(),desc=document.getElementById('producto-descripcion').value.trim();
+  if(!codigo||!nombre||!categoria||isNaN(precio)||isNaN(stock)||isNaN(stockMin)){alert('Completa todos los campos obligatorios.');return;}
+  if(productoEditar)Object.assign(productoEditar,{codigo,nombre,descripcion:desc,id_categoria:categoria,precio_venta:precio,stock_actual:stock,stock_minimo:stockMin,url_imagen:imagen});
+  else{const nid=Math.max(...mockProductos.map(p=>p.id_producto))+1;mockProductos.push({id_producto:nid,codigo,nombre,descripcion:desc,id_categoria:categoria,url_imagen:imagen,precio_venta:precio,stock_actual:stock,stock_minimo:stockMin});}
+  cerrarModal('modal-producto');renderProductos();renderResumen();
+  // TODO: fetch(URL_BACKEND+'/api/productos',{method:productoEditar?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...})})
+}
+function abrirModalCliente(id){
+  clienteEditar=id?mockClientes.find(c=>c.id_cliente===id):null;
+  document.getElementById('titulo-modal-cliente').textContent=clienteEditar?'Editar Cliente':'Nuevo Cliente';
+  if(clienteEditar){document.getElementById('cliente-id').value=clienteEditar.id_cliente;document.getElementById('cliente-tipo-doc').value=clienteEditar.tipo_documento;document.getElementById('cliente-num-doc').value=clienteEditar.numero_documento;document.getElementById('cliente-nombres').value=clienteEditar.nombres;document.getElementById('cliente-ap-paterno').value=clienteEditar.apellido_paterno;document.getElementById('cliente-ap-materno').value=clienteEditar.apellido_materno;document.getElementById('cliente-telefono').value=clienteEditar.telefono;document.getElementById('cliente-correo').value=clienteEditar.correo;}
+  else document.getElementById('form-cliente').reset();
+  document.getElementById('modal-cliente').classList.remove('oculto');
+}
+function guardarCliente(){
+  const tipoDoc=document.getElementById('cliente-tipo-doc').value,numDoc=document.getElementById('cliente-num-doc').value.trim(),nombres=document.getElementById('cliente-nombres').value.trim(),apP=document.getElementById('cliente-ap-paterno').value.trim(),apM=document.getElementById('cliente-ap-materno').value.trim(),tel=document.getElementById('cliente-telefono').value.trim(),correo=document.getElementById('cliente-correo').value.trim();
+  if(!numDoc||!nombres||!apP||!apM){alert('Completa los campos obligatorios.');return;}
+  const lon=tipoDoc==='DNI'?8:11;
+  if(numDoc.length!==lon){alert('El '+tipoDoc+' debe tener '+lon+' digitos.');return;}
+  if(clienteEditar)Object.assign(clienteEditar,{tipo_documento:tipoDoc,numero_documento:numDoc,nombres,apellido_paterno:apP,apellido_materno:apM,telefono:tel,correo});
+  else{const nid=Math.max(...mockClientes.map(c=>c.id_cliente))+1;mockClientes.push({id_cliente:nid,tipo_documento:tipoDoc,numero_documento:numDoc,nombres,apellido_paterno:apP,apellido_materno:apM,telefono:tel,correo});}
+  cerrarModal('modal-cliente');renderClientes();renderResumen();
+  // TODO: fetch(URL_BACKEND+'/api/registrar-cliente',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tipoDoc,numDoc,nombres,apellidoPaterno:apP,apellidoMaterno:apM,telefono:tel,correo,idCreador:localStorage.getItem('idUsuario')})})
+}
+function confirmarEliminar(tipo,id,nombre){
+  let msg='Eliminar "'+nombre+'"? Esta accion no se puede deshacer.';
+  if(tipo==='cliente'&&mockPedidos.some(p=>p.id_cliente===id))msg='"'+nombre+'" tiene pedidos. Se realizara un Soft Delete (is_active=0).';
+  if(tipo==='producto'&&mockPedidos.some(p=>p.detalles.some(d=>d.id_producto===id)))msg='"'+nombre+'" esta en pedidos existentes. Se realizara un Soft Delete.';
+  document.getElementById('confirmar-titulo').textContent='Confirmar eliminacion';
+  document.getElementById('confirmar-mensaje').textContent=msg;
+  document.getElementById('btn-confirmar-accion').onclick=()=>ejecutarEliminar(tipo,id);
+  document.getElementById('modal-confirmar').classList.remove('oculto');
+}
+function ejecutarEliminar(tipo,id){
+  if(tipo==='producto'){const i=mockProductos.findIndex(p=>p.id_producto===id);if(i!==-1)mockProductos.splice(i,1);renderProductos();}
+  else{const i=mockClientes.findIndex(c=>c.id_cliente===id);if(i!==-1)mockClientes.splice(i,1);renderClientes();}
+  renderResumen();cerrarModal('modal-confirmar');
+}
+function confirmarAnular(idPedido,idComprobante){
+  document.getElementById('confirmar-titulo').textContent='Anular comprobante';
+  document.getElementById('confirmar-mensaje').textContent='Anular '+idComprobante+'? Se revertira el stock de los productos del pedido.';
+  document.getElementById('btn-confirmar-accion').onclick=()=>ejecutarAnular(idPedido,idComprobante);
+  document.getElementById('modal-confirmar').classList.remove('oculto');
+}
+function ejecutarAnular(idPedido,idComprobante){
+  const pedido=mockPedidos.find(p=>p.id_pedido===idPedido);
+  if(pedido)pedido.detalles.forEach(d=>{const prod=mockProductos.find(p=>p.id_producto===d.id_producto);if(prod)prod.stock_actual+=d.cantidad;});
+  const comp=mockComprobantes.find(c=>c.id_comprobante===idComprobante);
+  if(comp)comp.estado='Anulado';
+  cerrarModal('modal-confirmar');renderComprobantes();renderProductos();renderResumen();
+}
+function verDetallePedido(idPedido){
+  const p=mockPedidos.find(x=>x.id_pedido===idPedido);if(!p)return;
+  document.getElementById('titulo-modal-detalle').textContent='Detalle Pedido #'+p.id_pedido;
+  document.getElementById('info-pedido-detalle').innerHTML='<strong>Cliente:</strong> '+p.cliente+' &nbsp;|&nbsp; <strong>Fecha:</strong> '+p.fecha+' &nbsp;|&nbsp; <strong>Estado:</strong> '+p.estado;
+  document.getElementById('body-detalle-pedido').innerHTML=p.detalles.map(d=>'<tr><td>'+d.nombre+'</td><td>'+d.cantidad+'</td><td>S/ '+parseFloat(d.precio_unitario).toFixed(2)+'</td><td><b>S/ '+parseFloat(d.subtotal).toFixed(2)+'</b></td></tr>').join('');
+  document.getElementById('total-detalle').textContent='S/ '+parseFloat(p.total).toFixed(2);
+  document.getElementById('modal-detalle').classList.remove('oculto');
+}
+renderResumen();renderProductos();renderClientes();renderPedidos();renderComprobantes();
+</script>
+</body>
+</html>
