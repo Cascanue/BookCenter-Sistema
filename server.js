@@ -160,9 +160,14 @@ app.get('/api/productos', (req, res) => {
 
 // 5. OBTENER CLIENTES (Para el buscador del modal)
 app.get('/api/clientes', (req, res) => {
-    // Añadimos telefono y correo a la consulta
     const query = `
-        SELECT numero_documento, nombres AS nombre, tipo_documento, numero_documento AS num_documento, telefono, correo 
+        SELECT 
+            id_cliente, 
+            CONCAT_WS(' ', nombres, apellido_paterno, apellido_materno) AS nombre, 
+            tipo_documento, 
+            numero_documento AS num_documento, 
+            telefono, 
+            correo 
         FROM Cliente
     `;
     

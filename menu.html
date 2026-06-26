@@ -75,6 +75,22 @@
     </div>
 
     <script>
+        // =============================================
+        // LÓGICA DE CERRAR SESIÓN
+        // =============================================
+        document.getElementById('btnCerrarSesion').addEventListener('click', function(e) {
+            e.preventDefault(); // Evita que el navegador salte de golpe
+            
+            // 1. Borramos quién eres
+            localStorage.clear(); 
+            
+            // 2. Borramos si dejaste un carrito de compras a medias
+            sessionStorage.clear(); 
+            
+            // 3. Te devolvemos al inicio
+            window.location.href = 'index.html'; 
+        });
+        
         // Lógica de Protección y Roles
         const rolActual = localStorage.getItem('rolUsuario');
         

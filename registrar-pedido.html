@@ -751,45 +751,22 @@
                 // 1. Cargar Categorías
                 const resCat = await fetch(`${URL_BACKEND}/api/categorias`);
                 const datosCat = await resCat.json();
-                // Mantenemos la opción "Todos" al inicio del array
                 CATEGORIAS = [{ id_categoria: 0, nombre: 'Todos', icono: 'bx-grid-alt' }, ...datosCat];
 
                 // 2. Cargar Productos Activos
                 const resProd = await fetch(`${URL_BACKEND}/api/productos`);
                 PRODUCTOS = await resProd.json();
 
-                // 3. Cargar Clientes para la búsqueda interna
+                // 3. Cargar Clientes
                 const resCli = await fetch(`${URL_BACKEND}/api/clientes`);
                 CLIENTES = await resCli.json();
 
-                // Una vez cargado todo con éxito, renderizamos la interfaz
+                // Renderizamos la interfaz
                 renderizarCategorias();
                 renderizarProductos();
                 validarBotonSiguiente();
 
-                // 1. Leemos la URL para ver si venimos de registrar un pedido
-                const urlParams = new URLSearchParams(window.location.search);
-                const origen = urlParams.get('origen');
-
-                if (origen === 'pedido') {
-                // MODO PEDIDO: Cambiamos el texto y la función del botón principal
-                const btnVolver = document.getElementById('ID_DE_TU_BOTON_VOLVER_AL_MENU'); // Reemplaza con tu ID real
-                btnVolver.innerHTML = "<i class='bx bx-cart'></i> Volver al Pedido";
-                btnVolver.onclick = function() {
-                    window.location.href = 'registrar-pedido.html';
-                };
-
-                // Ocultamos el botón de "Registrar Nuevo Cliente" para que no interrumpa el flujo
-                const btnNuevo = document.getElementById('ID_DE_TU_BOTON_REGISTRAR_NUEVO'); // Reemplaza con tu ID real
-                if(btnNuevo) btnNuevo.style.display = 'none';
-                
-                } else {
-                // MODO NORMAL: Se mantienen las funciones por defecto que ya tenías
-                // (Volver al menú y registrar otro cliente)
-                }
-
-                // Finalmente, abres tu modal de éxito como lo hacías normalmente
-                abrirModalExito();
+                // ¡AQUÍ TERMINA EL TRY! CERO MODALES Y CERO BOTONES.
 
             } catch (error) {
                 console.error("Error cargando los datos del sistema:", error);
