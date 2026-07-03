@@ -285,31 +285,31 @@ app.get('/api/admin/resumen', async (req, res) => {
 // 8. CRUD PRODUCTOS
 app.post('/api/productos', async (req, res) => {
     try {
-        const { nombre, descripcion, precio_venta, stock_actual, stock_minimo, id_categoria } = req.body;
+        const { nombre, descripcion, precio_venta, stock_actual, stock_minimo, id_categoria, url_imagen } = req.body;
         const p = db.promise();
-        
+
         // 1. Obtener la categoría para generar el prefijo
         const [[categoria]] = await p.query('SELECT nombre FROM Categoria WHERE id_categoria = ?', [id_categoria]);
         if (!categoria) return res.status(400).json({ error: 'Categoría no válida' });
-        
+
         // El prefijo son las 3 primeras letras en mayúscula (ej. "LIT" para Literatura)
         const prefijo = categoria.nombre.substring(0, 3).toUpperCase();
-        
+
         // 2. Buscar el número más alto para ese prefijo
         const [[result]] = await p.query(
-            `SELECT MAX(CAST(SUBSTRING_INDEX(codigo, '-', -1) AS UNSIGNED)) as maxNum 
-             FROM Producto WHERE codigo LIKE ?`, 
+            `SELECT MAX(CAST(SUBSTRING_INDEX(codigo, '-', -1) AS UNSIGNED)) as maxNum
+             FROM Producto WHERE codigo LIKE ?`,
             [`${prefijo}-%`]
         );
-        
+
         // 3. Generar el nuevo código (ej. LIT-001)
         const nextNum = (result.maxNum || 0) + 1;
         const nuevoCodigo = `${prefijo}-${String(nextNum).padStart(3, '0')}`;
-        
+
         // 4. Guardar en la base de datos
-        const query = 'INSERT INTO Producto (codigo, nombre, descripcion, precio_venta, stock_actual, stock_minimo, id_categoria, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, 1)';
-        await p.query(query, [nuevoCodigo, nombre, descripcion, precio_venta, stock_actual, stock_minimo, id_categoria]);
-        
+        const query = 'INSERT INTO Producto (codigo, nombre, descripcion, precio_venta, stock_actual, stock_minimo, id_categoria, url_imagen, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)';
+        await p.query(query, [nuevoCodigo, nombre, descripcion, precio_venta, stock_actual, stock_minimo, id_categoria, url_imagen || null]);
+
         res.json({ exito: true, codigo_generado: nuevoCodigo });
     } catch (err) {
         console.error('Error generando producto:', err);
@@ -317,12 +317,34 @@ app.post('/api/productos', async (req, res) => {
     }
 });
 app.put('/api/productos/:id', (req, res) => {
-    const { codigo, nombre, descripcion, precio_venta, stock_actual, stock_minimo, id_categoria } = req.body;
-    const query = 'UPDATE Producto SET codigo=?, nombre=?, descripcion=?, precio_venta=?, stock_actual=?, stock_minimo=?, id_categoria=? WHERE id_producto=?';
-    db.query(query, [codigo, nombre, descripcion, precio_venta, stock_actual, stock_minimo, id_categoria, req.params.id], (err) => {
+    const { nombre, descripcion, precio_venta, stock_actual, stock_minimo, id_categoria, url_imagen } = req.body;
+    const query = 'UPDATE Producto SET nombre=?, descripcion=?, precio_venta=?, stock_actual=?, stock_minimo=?, id_categoria=?, url_imagen=? WHERE id_producto=?';
+    db.query(query, [nombre, descripcion, precio_venta, stock_actual, stock_minimo, id_categoria, url_imagen || null, req.params.id], (err) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json({ exito: true });
     });
+});
+
+// 8b. SUBIDA DE IMAGEN DE PRODUCTO A CLOUDINARY
+app.post('/api/upload-imagen', upload.single('imagen'), (req, res) => {
+    if (!req.file) return res.status(400).json({ exito: false, mensaje: 'No se recibió ninguna imagen' });
+
+    const tiposPermitidos = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+    if (!tiposPermitidos.includes(req.file.mimetype)) {
+        return res.status(400).json({ exito: false, mensaje: 'Formato de imagen no permitido. Usa PNG, JPG o WEBP.' });
+    }
+
+    const stream = cloudinary.uploader.upload_stream(
+        { folder: 'bookcenter/productos' },
+        (err, result) => {
+            if (err) {
+                console.error('Error subiendo imagen a Cloudinary:', err);
+                return res.status(500).json({ exito: false, mensaje: 'Error al subir la imagen' });
+            }
+            res.json({ exito: true, url: result.secure_url });
+        }
+    );
+    stream.end(req.file.buffer);
 });
 app.delete('/api/productos/:id', (req, res) => {
     db.query('UPDATE Producto SET is_active = 0 WHERE id_producto = ?', [req.params.id], (err) => {
