@@ -203,10 +203,11 @@ app.post('/api/guardar-pedido', (req, res) => {
                 return res.status(500).json({ exito: false, mensaje: 'Error al iniciar transacción' });
             }
 
-            // PASO A: Insertar la cabecera en la tabla Pedido
-            const queryPedido = `INSERT INTO Pedido (id_cliente, id_usuario, total, estado) VALUES (?, ?, ?, 'Pendiente')`;
+            // PASO A: Insertar la cabecera en la tabla Pedido (Con hora exacta de Perú UTC-5)
+            const fechaPeru = new Date(Date.now() - 5 * 3600 * 1000).toISOString().slice(0, 19).replace('T', ' ');
+            const queryPedido = `INSERT INTO Pedido (id_cliente, id_usuario, total, estado, fecha_pedido) VALUES (?, ?, ?, 'Pendiente', ?)`;
 
-            connection.query(queryPedido, [id_cliente, id_usuario, total], (err, resultPedido) => {
+            connection.query(queryPedido, [id_cliente, id_usuario, total, fechaPeru], (err, resultPedido) => {
                 if (err) {
                     return connection.rollback(() => {
                         console.error('Error en Cabecera Pedido:', err);
