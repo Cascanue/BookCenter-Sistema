@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,7 +9,11 @@
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
     <style>
         /* ===== BASE ===== */
-        html, body { height: 100%; overflow: hidden; }
+        html,
+        body {
+            height: 100%;
+            overflow: hidden;
+        }
 
         .pagina-pago {
             display: flex;
@@ -86,7 +91,9 @@
             min-height: 0;
         }
 
-        .panel-tab.activo { display: flex; }
+        .panel-tab.activo {
+            display: flex;
+        }
 
         /* ===== SECCIÓN 1: CONSULTAR PEDIDO ===== */
         .seccion-consulta {
@@ -100,9 +107,18 @@
             scrollbar-color: var(--azul-primario) #e2e8f0;
         }
 
-        .seccion-consulta::-webkit-scrollbar { width: 7px; }
-        .seccion-consulta::-webkit-scrollbar-track { background: #e2e8f0; }
-        .seccion-consulta::-webkit-scrollbar-thumb { background: var(--azul-primario); border-radius: 4px; }
+        .seccion-consulta::-webkit-scrollbar {
+            width: 7px;
+        }
+
+        .seccion-consulta::-webkit-scrollbar-track {
+            background: #e2e8f0;
+        }
+
+        .seccion-consulta::-webkit-scrollbar-thumb {
+            background: var(--azul-primario);
+            border-radius: 4px;
+        }
 
         .buscador-pedido-wrapper {
             display: flex;
@@ -113,7 +129,9 @@
             margin-right: auto;
         }
 
-        .buscador-pedido-wrapper .campo-busqueda { flex: 1; }
+        .buscador-pedido-wrapper .campo-busqueda {
+            flex: 1;
+        }
 
         .buscador-pedido-wrapper label {
             display: block;
@@ -158,7 +176,10 @@
             font-family: inherit;
         }
 
-        .btn-buscar-pedido:hover { background: #1d4ed8; transform: translateY(-2px); }
+        .btn-buscar-pedido:hover {
+            background: #1d4ed8;
+            transform: translateY(-2px);
+        }
 
         /* Panel resultado */
         .panel-resultado {
@@ -175,9 +196,22 @@
             color: var(--gris);
         }
 
-        .placeholder-busqueda i { font-size: 3.5rem; display: block; margin-bottom: 0.75rem; opacity: 0.35; }
-        .placeholder-busqueda p:first-of-type { font-weight: 600; font-size: 0.95rem; margin-bottom: 0.3rem; }
-        .placeholder-busqueda p:last-of-type { font-size: 0.82rem; }
+        .placeholder-busqueda i {
+            font-size: 3.5rem;
+            display: block;
+            margin-bottom: 0.75rem;
+            opacity: 0.35;
+        }
+
+        .placeholder-busqueda p:first-of-type {
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .placeholder-busqueda p:last-of-type {
+            font-size: 0.82rem;
+        }
 
         .resultado-header {
             background: var(--azul-primario);
@@ -189,19 +223,33 @@
             flex-shrink: 0;
         }
 
-        .resultado-titulo { font-weight: 800; font-size: 1rem; }
+        .resultado-titulo {
+            font-weight: 800;
+            font-size: 1rem;
+        }
 
         .badge-estado-pedido {
             padding: 0.2rem 0.7rem;
             border-radius: 99px;
             font-size: 0.72rem;
             font-weight: 700;
-            background: rgba(255,255,255,0.22);
+            background: rgba(255, 255, 255, 0.22);
         }
 
-        .badge-estado-pedido.pendiente { background: #fef3c7; color: #92400e; }
-        .badge-estado-pedido.pagado { background: #dcfce7; color: #166534; }
-        .badge-estado-pedido.anulado { background: #fee2e2; color: #991b1b; }
+        .badge-estado-pedido.pendiente {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge-estado-pedido.pagado {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .badge-estado-pedido.anulado {
+            background: #fee2e2;
+            color: #991b1b;
+        }
 
         .resultado-cliente {
             padding: 0.7rem 1.4rem;
@@ -212,8 +260,15 @@
             flex-wrap: wrap;
         }
 
-        .dato-mini { font-size: 0.82rem; color: var(--azul-oscuro); }
-        .dato-mini strong { font-weight: 800; margin-right: 0.25rem; }
+        .dato-mini {
+            font-size: 0.82rem;
+            color: var(--azul-oscuro);
+        }
+
+        .dato-mini strong {
+            font-weight: 800;
+            margin-right: 0.25rem;
+        }
 
         .lista-items-pedido {
             max-height: 280px;
@@ -222,8 +277,14 @@
             scrollbar-color: #cbd5e1 #f8fafc;
         }
 
-        .lista-items-pedido::-webkit-scrollbar { width: 5px; }
-        .lista-items-pedido::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .lista-items-pedido::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .lista-items-pedido::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
 
         .item-resultado {
             display: flex;
@@ -234,8 +295,13 @@
             transition: background 0.15s;
         }
 
-        .item-resultado:last-child { border-bottom: none; }
-        .item-resultado:hover { background: #f8fafc; }
+        .item-resultado:last-child {
+            border-bottom: none;
+        }
+
+        .item-resultado:hover {
+            background: #f8fafc;
+        }
 
         .img-item {
             width: 50px;
@@ -246,7 +312,10 @@
             flex-shrink: 0;
         }
 
-        .item-datos-resultado { flex: 1; min-width: 0; }
+        .item-datos-resultado {
+            flex: 1;
+            min-width: 0;
+        }
 
         .item-nombre-resultado {
             font-weight: 600;
@@ -265,7 +334,10 @@
             color: var(--gris);
         }
 
-        .item-nums span strong { color: var(--azul-oscuro); font-weight: 700; }
+        .item-nums span strong {
+            color: var(--azul-oscuro);
+            font-weight: 700;
+        }
 
         .item-subtotal {
             font-weight: 800;
@@ -285,7 +357,10 @@
             align-items: center;
         }
 
-        .total-resultado { font-size: 1.25rem; font-weight: 800; }
+        .total-resultado {
+            font-size: 1.25rem;
+            font-weight: 800;
+        }
 
         /* ===== SECCIÓN 2: MÉTODO DE PAGO ===== */
         .seccion-metodo {
@@ -305,8 +380,14 @@
             scrollbar-color: var(--azul-primario) #e2e8f0;
         }
 
-        .panel-izq-metodo::-webkit-scrollbar { width: 6px; }
-        .panel-izq-metodo::-webkit-scrollbar-thumb { background: var(--azul-primario); border-radius: 3px; }
+        .panel-izq-metodo::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .panel-izq-metodo::-webkit-scrollbar-thumb {
+            background: var(--azul-primario);
+            border-radius: 3px;
+        }
 
         .subtitulo-panel {
             font-size: 0.82rem;
@@ -330,7 +411,9 @@
             background: white;
         }
 
-        .metodo-card.seleccionado { border-color: var(--azul-primario); }
+        .metodo-card.seleccionado {
+            border-color: var(--azul-primario);
+        }
 
         .metodo-cabecera {
             display: flex;
@@ -342,8 +425,13 @@
             transition: background 0.2s;
         }
 
-        .metodo-cabecera:hover { background: #f8fafc; }
-        .metodo-card.seleccionado .metodo-cabecera { background: #eff6ff; }
+        .metodo-cabecera:hover {
+            background: #f8fafc;
+        }
+
+        .metodo-card.seleccionado .metodo-cabecera {
+            background: #eff6ff;
+        }
 
         .radio-circulo {
             width: 20px;
@@ -371,7 +459,9 @@
             transition: opacity 0.2s;
         }
 
-        .metodo-card.seleccionado .radio-punto { opacity: 1; }
+        .metodo-card.seleccionado .radio-punto {
+            opacity: 1;
+        }
 
         .metodo-icono-box {
             width: 46px;
@@ -384,12 +474,32 @@
             flex-shrink: 0;
         }
 
-        .icono-verde  { background: #dcfce7; color: #16a34a; }
-        .icono-azul   { background: #dbeafe; color: var(--azul-primario); }
-        .icono-ambar  { background: #fef3c7; color: #d97706; }
+        .icono-verde {
+            background: #dcfce7;
+            color: #16a34a;
+        }
 
-        .metodo-info-texto .metodo-nombre { font-weight: 700; color: var(--azul-oscuro); font-size: 0.93rem; }
-        .metodo-info-texto .metodo-desc   { font-size: 0.76rem; color: var(--gris); margin-top: 0.1rem; }
+        .icono-azul {
+            background: #dbeafe;
+            color: var(--azul-primario);
+        }
+
+        .icono-ambar {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .metodo-info-texto .metodo-nombre {
+            font-weight: 700;
+            color: var(--azul-oscuro);
+            font-size: 0.93rem;
+        }
+
+        .metodo-info-texto .metodo-desc {
+            font-size: 0.76rem;
+            color: var(--gris);
+            margin-top: 0.1rem;
+        }
 
         /* Formularios expandibles */
         .metodo-formulario {
@@ -400,11 +510,20 @@
             animation: expandir 0.22s ease;
         }
 
-        .metodo-formulario.abierto { display: block; }
+        .metodo-formulario.abierto {
+            display: block;
+        }
 
         @keyframes expandir {
-            from { opacity: 0; transform: translateY(-8px); }
-            to   { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(-8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         /* Campos comunes */
@@ -437,11 +556,18 @@
 
         .campo-input:focus {
             border-color: var(--azul-primario);
-            box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
         }
 
-        .campo-input:read-only { background: #f1f5f9; cursor: default; }
-        .campo-input::placeholder { color: #94a3b8; font-weight: 400; }
+        .campo-input:read-only {
+            background: #f1f5f9;
+            cursor: default;
+        }
+
+        .campo-input::placeholder {
+            color: #94a3b8;
+            font-weight: 400;
+        }
 
         /* Efectivo */
         .grid-efectivo {
@@ -462,7 +588,9 @@
             text-align: center;
         }
 
-        .caja-vuelto.visible { display: block; }
+        .caja-vuelto.visible {
+            display: block;
+        }
 
         .placeholder-vuelto {
             padding: 0.65rem 0.9rem;
@@ -481,7 +609,9 @@
             gap: 0.9rem;
         }
 
-        .full-col { grid-column: 1 / -1; }
+        .full-col {
+            grid-column: 1 / -1;
+        }
 
         /* Billetera digital */
         .grid-billeteras {
@@ -508,8 +638,16 @@
             font-family: inherit;
         }
 
-        .billetera-btn:hover { border-color: var(--azul-primario); background: #eff6ff; }
-        .billetera-btn.seleccionada { border-color: var(--azul-primario); background: #eff6ff; box-shadow: 0 0 0 2px rgba(37,99,235,0.15); }
+        .billetera-btn:hover {
+            border-color: var(--azul-primario);
+            background: #eff6ff;
+        }
+
+        .billetera-btn.seleccionada {
+            border-color: var(--azul-primario);
+            background: #eff6ff;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+        }
 
         .logo-billetera {
             width: 38px;
@@ -523,8 +661,15 @@
             letter-spacing: -0.5px;
         }
 
-        .logo-yape { background: #7c3aed; color: white; }
-        .logo-plin { background: #059669; color: white; }
+        .logo-yape {
+            background: #7c3aed;
+            color: white;
+        }
+
+        .logo-plin {
+            background: #059669;
+            color: white;
+        }
 
         .panel-qr {
             display: none;
@@ -536,7 +681,9 @@
             margin-bottom: 0.9rem;
         }
 
-        .panel-qr.visible { display: block; }
+        .panel-qr.visible {
+            display: block;
+        }
 
         .cuadro-qr {
             width: 110px;
@@ -581,8 +728,14 @@
             scrollbar-color: #cbd5e1 #f1f5f9;
         }
 
-        .resumen-mini-items::-webkit-scrollbar { width: 4px; }
-        .resumen-mini-items::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
+        .resumen-mini-items::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .resumen-mini-items::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 2px;
+        }
 
         .mini-item {
             display: flex;
@@ -592,7 +745,9 @@
             border-bottom: 1px solid #e2e8f0;
         }
 
-        .mini-item:last-child { border-bottom: none; }
+        .mini-item:last-child {
+            border-bottom: none;
+        }
 
         .mini-img {
             width: 36px;
@@ -603,7 +758,10 @@
             flex-shrink: 0;
         }
 
-        .mini-datos { flex: 1; min-width: 0; }
+        .mini-datos {
+            flex: 1;
+            min-width: 0;
+        }
 
         .mini-nombre {
             font-size: 0.73rem;
@@ -614,7 +772,10 @@
             white-space: nowrap;
         }
 
-        .mini-precio { font-size: 0.7rem; color: var(--gris); }
+        .mini-precio {
+            font-size: 0.7rem;
+            color: var(--gris);
+        }
 
         .mini-subtotal {
             font-weight: 800;
@@ -645,8 +806,14 @@
             scrollbar-color: var(--azul-primario) #e2e8f0;
         }
 
-        .seccion-resumen::-webkit-scrollbar { width: 7px; }
-        .seccion-resumen::-webkit-scrollbar-thumb { background: var(--azul-primario); border-radius: 4px; }
+        .seccion-resumen::-webkit-scrollbar {
+            width: 7px;
+        }
+
+        .seccion-resumen::-webkit-scrollbar-thumb {
+            background: var(--azul-primario);
+            border-radius: 4px;
+        }
 
         .tarjeta-bloque {
             background: white;
@@ -668,7 +835,9 @@
             gap: 0.5rem;
         }
 
-        .bloque-body { padding: 1.1rem 1.25rem; }
+        .bloque-body {
+            padding: 1.1rem 1.25rem;
+        }
 
         .fila-dato {
             display: flex;
@@ -679,13 +848,30 @@
             font-size: 0.88rem;
         }
 
-        .fila-dato:last-child { border-bottom: none; }
-        .fila-dato .etiqueta { color: var(--gris); }
-        .fila-dato .valor    { font-weight: 700; color: var(--azul-oscuro); }
-        .fila-dato .valor-grande { font-size: 1.25rem; font-weight: 800; color: var(--azul-primario); }
+        .fila-dato:last-child {
+            border-bottom: none;
+        }
+
+        .fila-dato .etiqueta {
+            color: var(--gris);
+        }
+
+        .fila-dato .valor {
+            font-weight: 700;
+            color: var(--azul-oscuro);
+        }
+
+        .fila-dato .valor-grande {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--azul-primario);
+        }
 
         /* Tabla productos en resumen */
-        .tabla-resumen { width: 100%; border-collapse: collapse; }
+        .tabla-resumen {
+            width: 100%;
+            border-collapse: collapse;
+        }
 
         .tabla-resumen thead th {
             background: #f1f5f9;
@@ -703,7 +889,9 @@
             border-bottom: 1px solid #f1f5f9;
         }
 
-        .tabla-resumen tbody tr:last-child td { border-bottom: none; }
+        .tabla-resumen tbody tr:last-child td {
+            border-bottom: none;
+        }
 
         .celda-producto {
             display: flex;
@@ -728,7 +916,7 @@
             align-items: center;
             justify-content: space-between;
             flex-shrink: 0;
-            box-shadow: 0 -4px 14px rgba(0,0,0,0.18);
+            box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.18);
         }
 
         .btn-footer {
@@ -747,23 +935,61 @@
             font-family: inherit;
         }
 
-        .btn-atras { background: transparent; color: white; }
-        .btn-atras:hover { background: white; color: var(--azul-primario); }
+        .btn-atras {
+            background: transparent;
+            color: white;
+        }
 
-        .btn-siguiente { background: white; color: var(--azul-primario); }
-        .btn-siguiente:disabled { opacity: 0.38; cursor: not-allowed; }
-        .btn-siguiente:not(:disabled):hover { background: var(--azul-oscuro); border-color: var(--azul-oscuro); color: white; transform: translateY(-2px); }
+        .btn-atras:hover {
+            background: white;
+            color: var(--azul-primario);
+        }
 
-        .btn-confirmar { background: #22c55e; color: white; border-color: #22c55e; }
-        .btn-confirmar:disabled { opacity: 0.38; cursor: not-allowed; }
-        .btn-confirmar:not(:disabled):hover { background: #16a34a; border-color: #16a34a; transform: translateY(-2px); }
+        .btn-siguiente {
+            background: white;
+            color: var(--azul-primario);
+        }
+
+        .btn-siguiente:disabled {
+            opacity: 0.38;
+            cursor: not-allowed;
+        }
+
+        .btn-siguiente:not(:disabled):hover {
+            background: var(--azul-oscuro);
+            border-color: var(--azul-oscuro);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .btn-confirmar {
+            background: #22c55e;
+            color: white;
+            border-color: #22c55e;
+        }
+
+        .btn-confirmar:disabled {
+            opacity: 0.38;
+            cursor: not-allowed;
+        }
+
+        .btn-confirmar:not(:disabled):hover {
+            background: #16a34a;
+            border-color: #16a34a;
+            transform: translateY(-2px);
+        }
 
         /* ===== MODAL ÉXITO ===== */
         .modal-overlay {
-            position: fixed; top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: rgba(15,23,42,0.8);
-            display: flex; justify-content: center; align-items: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
             z-index: 1000;
             backdrop-filter: blur(3px);
         }
@@ -775,19 +1001,47 @@
             width: 92%;
             max-width: 420px;
             text-align: center;
-            box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
             animation: aparecer 0.22s ease;
         }
 
         @keyframes aparecer {
-            from { opacity: 0; transform: translateY(-20px); }
-            to   { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
-        .icono-exito { font-size: 4.5rem; color: #22c55e; margin-bottom: 0.75rem; }
-        .modal-titulo { font-size: 1.3rem; font-weight: 800; margin-bottom: 0.5rem; color: var(--azul-oscuro); }
-        .modal-texto  { color: var(--gris); font-size: 0.9rem; margin-bottom: 0.4rem; }
-        .modal-correlativo { font-weight: 800; color: var(--azul-primario); font-size: 1.05rem; margin-bottom: 1.5rem; }
+        .icono-exito {
+            font-size: 4.5rem;
+            color: #22c55e;
+            margin-bottom: 0.75rem;
+        }
+
+        .modal-titulo {
+            font-size: 1.3rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            color: var(--azul-oscuro);
+        }
+
+        .modal-texto {
+            color: var(--gris);
+            font-size: 0.9rem;
+            margin-bottom: 0.4rem;
+        }
+
+        .modal-correlativo {
+            font-weight: 800;
+            color: var(--azul-primario);
+            font-size: 1.05rem;
+            margin-bottom: 1.5rem;
+        }
 
         /* ===== LAYOUT 2 COLUMNAS PARA RESUMEN DE COMPRA ===== */
         .seccion-resumen {
@@ -841,446 +1095,457 @@
         }
     </style>
 </head>
+
 <body>
-<div class="pagina-pago">
+    <div class="pagina-pago">
 
-    <!-- ENCABEZADO -->
-    <header class="encabezado">
-        <div class="zona-izquierda">
-            <a href="/menu" class="btn-salir"><i class='bx bx-arrow-back'></i> Menú</a>
-        </div>
-        <img src="https://res.cloudinary.com/dwk77ddoq/image/upload/v1781397979/imagen_2026-06-13_194618193_hkz2d2.png"
-             alt="Logo Book Center" class="logo-header">
-        <div class="zona-derecha">
-            <span style="color:white;font-weight:600;font-size:0.88rem;opacity:0.95;">Procesar Pago</span>
-        </div>
-    </header>
-
-    <!-- TABS NAV -->
-    <nav class="tabs-nav">
-        <button class="tab-btn activo" id="tab1">
-            <i class='bx bx-search-alt'></i> Consultar Pedido
-        </button>
-        <button class="tab-btn" id="tab2">
-            <i class='bx bx-credit-card'></i> Seleccionar Método de Pago
-        </button>
-        <button class="tab-btn" id="tab3">
-            <i class='bx bx-receipt'></i> Resumen de Compra
-        </button>
-    </nav>
-
-    <!-- CONTENIDO -->
-    <div class="contenido-tabs">
-
-        <!-- ===== PANEL 1: CONSULTAR PEDIDO ===== -->
-        <div class="panel-tab activo" id="panel1">
-            <div class="seccion-consulta">
-
-                <div class="buscador-pedido-wrapper">
-                    <div class="campo-busqueda">
-                        <label>Ingrese código de pedido:</label>
-                        <input type="text" id="inputCodigoPedido" class="input-codigo"
-                               placeholder="Ej: 12"
-                               oninput="this.value = this.value.replace(/[^0-9]/g, '')"
-                               onkeydown="if(event.key==='Enter') buscarPedido()">
-                    </div>
-                    <button class="btn-buscar-pedido" onclick="buscarPedido()">
-                        <i class='bx bx-search'></i> Buscar
-                    </button>
-                </div>
-
-                <div class="panel-resultado" id="panelResultado">
-                    <!-- Placeholder -->
-                    <div class="placeholder-busqueda" id="placeholderBusqueda">
-                        <i class='bx bx-search-alt-2'></i>
-                        <p>Ingresa un código de pedido para consultar</p>
-                        <p>Los detalles del pedido aparecerán aquí</p>
-                    </div>
-
-                    <!-- Resultado real (oculto hasta búsqueda exitosa) -->
-                    <div id="contenidoResultado" style="display:none;">
-                        <div class="resultado-header">
-                            <span class="resultado-titulo" id="tituloPedido">Pedido #—</span>
-                            <span class="badge-estado-pedido" id="badgeEstadoPedido">—</span>
-                        </div>
-                        <div class="resultado-cliente">
-                            <span class="dato-mini"><strong>Cliente:</strong><span id="infoCliente">—</span></span>
-                            <span class="dato-mini"><strong>Documento:</strong><span id="infoDoc">—</span></span>
-                            <span class="dato-mini"><strong>Fecha:</strong><span id="infoFecha">—</span></span>
-                            <span class="dato-mini"><strong>Productos:</strong><span id="infoCantidad">—</span></span>
-                        </div>
-                        <div class="lista-items-pedido" id="listaItemsPedido"></div>
-                        <div class="resultado-footer">
-                            <span style="font-size:0.8rem;opacity:0.75;font-weight:600;">TOTAL A PAGAR</span>
-                            <span class="total-resultado" id="totalResultado">S/0.00</span>
-                        </div>
-                    </div>
-                </div>
-
+        <!-- ENCABEZADO -->
+        <header class="encabezado">
+            <div class="zona-izquierda">
+                <a href="/menu" class="btn-salir"><i class='bx bx-arrow-back'></i> Menú</a>
             </div>
-        </div>
-
-        <!-- ===== PANEL 2: MÉTODO DE PAGO ===== -->
-        <div class="panel-tab" id="panel2">
-            <div class="seccion-metodo">
-
-                <!-- Izquierdo 2/3 -->
-                <div class="panel-izq-metodo">
-                    <div class="subtitulo-panel">
-                        <i class='bx bx-credit-card'></i> Seleccione un método de pago
-                    </div>
-
-                    <!-- EFECTIVO -->
-                    <div class="metodo-card" id="cardEfectivo">
-                        <div class="metodo-cabecera" onclick="seleccionarMetodo('efectivo')">
-                            <div class="radio-circulo"><div class="radio-punto"></div></div>
-                            <div class="metodo-icono-box icono-verde"><i class='bx bx-money'></i></div>
-                            <div class="metodo-info-texto">
-                                <div class="metodo-nombre">Efectivo</div>
-                                <div class="metodo-desc">Pago en billetes o monedas</div>
-                            </div>
-                        </div>
-                        <div class="metodo-formulario" id="formEfectivo">
-                            <div class="grid-efectivo">
-                                <div class="campo-grupo">
-                                    <span class="campo-label">Total a pagar</span>
-                                    <input type="text" class="campo-input" id="displayTotalEfectivo" readonly>
-                                </div>
-                                <div class="campo-grupo">
-                                    <span class="campo-label">Monto recibido (S/)</span>
-                                    <input type="number" class="campo-input" id="montoRecibido"
-                                           placeholder="0.00" min="0" step="0.01"
-                                           oninput="calcularVuelto()">
-                                </div>
-                                <div class="campo-grupo">
-                                    <span class="campo-label">Vuelto (S/)</span>
-                                    <div class="caja-vuelto" id="cajaVuelto">S/0.00</div>
-                                    <div class="placeholder-vuelto" id="placeholderVuelto">Se calculará automáticamente</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- TARJETA -->
-                    <div class="metodo-card" id="cardTarjeta">
-                        <div class="metodo-cabecera" onclick="seleccionarMetodo('tarjeta')">
-                            <div class="radio-circulo"><div class="radio-punto"></div></div>
-                            <div class="metodo-icono-box icono-azul"><i class='bx bx-credit-card-alt'></i></div>
-                            <div class="metodo-info-texto">
-                                <div class="metodo-nombre">Tarjeta de Débito / Crédito</div>
-                                <div class="metodo-desc">Visa, Mastercard, Maestro</div>
-                            </div>
-                        </div>
-                        <div class="metodo-formulario" id="formTarjeta">
-                            <div class="grid-tarjeta">
-                                <!-- Fila 1: Nombre del titular (ancho completo) -->
-                                <div class="campo-grupo full-col">
-                                    <span class="campo-label">Nombre del titular</span>
-                                    <input type="text" class="campo-input" id="nombreTitular"
-                                           placeholder="Como aparece en la tarjeta"
-                                           oninput="this.value = this.value.toUpperCase().replace(/[^A-Z\u00C0-\u017E\s]/g, '')">
-                                </div>
-                                <!-- Fila 2: Número, Caducidad y CVV en la misma fila (grid 2fr 1fr 1fr) -->
-                                <div class="campo-grupo">
-                                    <span class="campo-label">Número de tarjeta</span>
-                                    <input type="text" class="campo-input" id="numTarjeta"
-                                           placeholder="0000 0000 0000 0000" maxlength="19"
-                                           oninput="formatearNumTarjeta(this)">
-                                </div>
-                                <div class="campo-grupo">
-                                    <span class="campo-label">Caducidad</span>
-                                    <input type="text" class="campo-input" id="fechaCaducidad"
-                                           placeholder="MM/AA" maxlength="5"
-                                           oninput="formatearFechaTarjeta(this)">
-                                </div>
-                                <div class="campo-grupo">
-                                    <span class="campo-label">CVV</span>
-                                    <input type="password" class="campo-input" id="cvvTarjeta"
-                                           placeholder="•••" maxlength="4"
-                                           oninput="this.value = this.value.replace(/[^0-9]/g, '')">
-                                </div>
-                                <!-- Fila 3: Cuotas (ancho completo al fondo) -->
-                                <div class="campo-grupo full-col">
-                                    <span class="campo-label">¿Pago en cuotas?</span>
-                                    <select class="campo-input" id="cuotasTarjeta" style="cursor:pointer;">
-                                        <option value="1">Sin cuotas — pago único</option>
-                                        <option value="3">3 cuotas</option>
-                                        <option value="6">6 cuotas</option>
-                                        <option value="12">12 cuotas</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- BILLETERA DIGITAL -->
-                    <div class="metodo-card" id="cardBilletera">
-                        <div class="metodo-cabecera" onclick="seleccionarMetodo('billetera')">
-                            <div class="radio-circulo"><div class="radio-punto"></div></div>
-                            <div class="metodo-icono-box icono-ambar"><i class='bx bx-wallet'></i></div>
-                            <div class="metodo-info-texto">
-                                <div class="metodo-nombre">Billetera Digital</div>
-                                <div class="metodo-desc">Yape, Plin</div>
-                            </div>
-                        </div>
-                        <div class="metodo-formulario" id="formBilletera">
-                            <p style="font-size:0.82rem;font-weight:700;color:var(--azul-oscuro);margin-bottom:0.7rem;">
-                                Selecciona la billetera del cliente:
-                            </p>
-                            <div class="grid-billeteras">
-                                <button class="billetera-btn" id="btnYape" onclick="seleccionarBilletera('yape')">
-                                    <div class="logo-billetera logo-yape">YAPE</div>
-                                    <span>Yape</span>
-                                </button>
-                                <button class="billetera-btn" id="btnPlin" onclick="seleccionarBilletera('plin')">
-                                    <div class="logo-billetera logo-plin">PLIN</div>
-                                    <span>Plin</span>
-                                </button>
-                            </div>
-                            <div class="panel-qr" id="panelQR">
-                                <div class="cuadro-qr"><i class='bx bx-qr-scan'></i></div>
-                                <p style="font-size:0.82rem;font-weight:700;color:var(--azul-oscuro);" id="textoQR">
-                                    Escanea el código QR con la app
-                                </p>
-                                <p style="font-size:0.78rem;color:var(--gris);margin-top:0.2rem;" id="montoQR">
-                                    Monto: —
-                                </p>
-                            </div>
-                            <div class="campo-grupo" style="margin-top:0.75rem;">
-                                <span class="campo-label">Código / N° de operación</span>
-                                <input type="text" class="campo-input" id="numOperacion"
-                                       placeholder="Ingresa el código de confirmación"
-                                       oninput="this.value = this.value.replace(/[^0-9]/g, '')">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Derecho 1/3: mini resumen -->
-                <aside class="panel-der-resumen">
-                    <div class="resumen-mini-cab">
-                        <i class='bx bx-list-ul'></i> Detalle actual del pedido
-                    </div>
-                    <div class="resumen-mini-items" id="resumenMiniItems"></div>
-                    <div class="resumen-mini-pie" id="resumenMiniTotal">TOTAL: S/0.00</div>
-                </aside>
-
+            <img src="https://res.cloudinary.com/dwk77ddoq/image/upload/v1781397979/imagen_2026-06-13_194618193_hkz2d2.png"
+                alt="Logo Book Center" class="logo-header">
+            <div class="zona-derecha">
+                <span style="color:white;font-weight:600;font-size:0.88rem;opacity:0.95;">Procesar Pago</span>
             </div>
-        </div>
+        </header>
 
-        <!-- ===== PANEL 3: RESUMEN DE COMPRA ===== -->
-        <div class="panel-tab" id="panel3">
-            <div class="seccion-resumen">
-            <div class="grid-resumen-2x2">
+        <!-- TABS NAV -->
+        <nav class="tabs-nav">
+            <button class="tab-btn activo" id="tab1">
+                <i class='bx bx-search-alt'></i> Consultar Pedido
+            </button>
+            <button class="tab-btn" id="tab2">
+                <i class='bx bx-credit-card'></i> Seleccionar Método de Pago
+            </button>
+            <button class="tab-btn" id="tab3">
+                <i class='bx bx-receipt'></i> Resumen de Compra
+            </button>
+        </nav>
 
-                <!-- COLUMNA IZQUIERDA: Info del pedido + Método de pago -->
-                <div class="col-izq-resumen">
+        <!-- CONTENIDO -->
+        <div class="contenido-tabs">
 
-                    <!-- Info del pedido -->
-                    <div class="tarjeta-bloque">
-                        <div class="bloque-header"><i class='bx bx-info-circle'></i> Información del Pedido</div>
-                        <div class="bloque-body">
-                            <div class="fila-dato">
-                                <span class="etiqueta">N° de Pedido</span>
-                                <span class="valor" id="r_nroPedido">—</span>
-                            </div>
-                            <div class="fila-dato">
-                                <span class="etiqueta">Cliente</span>
-                                <span class="valor" id="r_cliente">—</span>
-                            </div>
-                            <div class="fila-dato">
-                                <span class="etiqueta">Fecha del pedido</span>
-                                <span class="valor" id="r_fecha">—</span>
-                            </div>
-                            <div class="fila-dato">
-                                <span class="etiqueta">Estado</span>
-                                <span class="valor" id="r_estado">—</span>
-                            </div>
+            <!-- ===== PANEL 1: CONSULTAR PEDIDO ===== -->
+            <div class="panel-tab activo" id="panel1">
+                <div class="seccion-consulta">
+
+                    <div class="buscador-pedido-wrapper">
+                        <div class="campo-busqueda">
+                            <label>Ingrese código de pedido:</label>
+                            <input type="text" id="inputCodigoPedido" class="input-codigo" placeholder="Ej: 12"
+                                oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                                onkeydown="if(event.key==='Enter') buscarPedido()">
                         </div>
+                        <button class="btn-buscar-pedido" onclick="buscarPedido()">
+                            <i class='bx bx-search'></i> Buscar
+                        </button>
                     </div>
 
-                    <!-- Método de pago -->
-                    <div class="tarjeta-bloque">
-                        <div class="bloque-header"><i class='bx bx-credit-card'></i> Método de Pago</div>
-                        <div class="bloque-body" id="r_metodoPago"></div>
+                    <div class="panel-resultado" id="panelResultado">
+                        <!-- Placeholder -->
+                        <div class="placeholder-busqueda" id="placeholderBusqueda">
+                            <i class='bx bx-search-alt-2'></i>
+                            <p>Ingresa un código de pedido para consultar</p>
+                            <p>Los detalles del pedido aparecerán aquí</p>
+                        </div>
+
+                        <!-- Resultado real (oculto hasta búsqueda exitosa) -->
+                        <div id="contenidoResultado" style="display:none;">
+                            <div class="resultado-header">
+                                <span class="resultado-titulo" id="tituloPedido">Pedido #—</span>
+                                <span class="badge-estado-pedido" id="badgeEstadoPedido">—</span>
+                            </div>
+                            <div class="resultado-cliente">
+                                <span class="dato-mini"><strong>Cliente:</strong><span id="infoCliente">—</span></span>
+                                <span class="dato-mini"><strong>Documento:</strong><span id="infoDoc">—</span></span>
+                                <span class="dato-mini"><strong>Fecha:</strong><span id="infoFecha">—</span></span>
+                                <span class="dato-mini"><strong>Productos:</strong><span
+                                        id="infoCantidad">—</span></span>
+                            </div>
+                            <div class="lista-items-pedido" id="listaItemsPedido"></div>
+                            <div class="resultado-footer">
+                                <span style="font-size:0.8rem;opacity:0.75;font-weight:600;">TOTAL A PAGAR</span>
+                                <span class="total-resultado" id="totalResultado">S/0.00</span>
+                            </div>
+                        </div>
                     </div>
 
                 </div>
+            </div>
 
-                <!-- COLUMNA DERECHA: Productos (scroll) + Totales -->
-                <div class="col-der-resumen">
+            <!-- ===== PANEL 2: MÉTODO DE PAGO ===== -->
+            <div class="panel-tab" id="panel2">
+                <div class="seccion-metodo">
 
-                    <!-- Productos con scroll interno -->
-                    <div class="tarjeta-bloque productos-scroll">
-                        <div class="bloque-header"><i class='bx bx-package'></i> Productos del Pedido</div>
-                        <div class="bloque-body">
-                            <table class="tabla-resumen">
-                                <thead>
-                                    <tr>
-                                        <th style="text-align:left;">Producto</th>
-                                        <th style="text-align:center;">Cant.</th>
-                                        <th style="text-align:right;">Precio unit.</th>
-                                        <th style="text-align:right;">Subtotal</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="r_bodyProductos"></tbody>
-                            </table>
+                    <!-- Izquierdo 2/3 -->
+                    <div class="panel-izq-metodo">
+                        <div class="subtitulo-panel">
+                            <i class='bx bx-credit-card'></i> Seleccione un método de pago
                         </div>
-                    </div>
 
-                    <!-- Totales (fijo debajo, nunca oculto) -->
-                    <div class="tarjeta-bloque">
-                        <div class="bloque-header"><i class='bx bx-calculator'></i> Totales</div>
-                        <div class="bloque-body">
-                            <div class="fila-dato">
-                                <span class="etiqueta">Subtotal</span>
-                                <span class="valor" id="r_subtotal">S/0.00</span>
+                        <!-- EFECTIVO -->
+                        <div class="metodo-card" id="cardEfectivo">
+                            <div class="metodo-cabecera" onclick="seleccionarMetodo('efectivo')">
+                                <div class="radio-circulo">
+                                    <div class="radio-punto"></div>
+                                </div>
+                                <div class="metodo-icono-box icono-verde"><i class='bx bx-money'></i></div>
+                                <div class="metodo-info-texto">
+                                    <div class="metodo-nombre">Efectivo</div>
+                                    <div class="metodo-desc">Pago en billetes o monedas</div>
+                                </div>
                             </div>
-                        <div class="fila-dato" id="r_filaVuelto" style="display:none;">
-                            <span class="etiqueta">Monto recibido</span>
-                            <span class="valor" id="r_montoRecibido">S/0.00</span>
+                            <div class="metodo-formulario" id="formEfectivo">
+                                <div class="grid-efectivo">
+                                    <div class="campo-grupo">
+                                        <span class="campo-label">Total a pagar</span>
+                                        <input type="text" class="campo-input" id="displayTotalEfectivo" readonly>
+                                    </div>
+                                    <div class="campo-grupo">
+                                        <span class="campo-label">Monto recibido (S/)</span>
+                                        <input type="number" class="campo-input" id="montoRecibido" placeholder="0.00"
+                                            min="0" step="0.01" oninput="calcularVuelto()">
+                                    </div>
+                                    <div class="campo-grupo">
+                                        <span class="campo-label">Vuelto (S/)</span>
+                                        <div class="caja-vuelto" id="cajaVuelto">S/0.00</div>
+                                        <div class="placeholder-vuelto" id="placeholderVuelto">Se calculará
+                                            automáticamente</div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="fila-dato" id="r_filaVueltoValor" style="display:none;">
-                            <span class="etiqueta">Vuelto a entregar</span>
-                            <span class="valor" style="color:#16a34a;" id="r_vuelto">S/0.00</span>
+
+                        <!-- TARJETA -->
+                        <div class="metodo-card" id="cardTarjeta">
+                            <div class="metodo-cabecera" onclick="seleccionarMetodo('tarjeta')">
+                                <div class="radio-circulo">
+                                    <div class="radio-punto"></div>
+                                </div>
+                                <div class="metodo-icono-box icono-azul"><i class='bx bx-credit-card-alt'></i></div>
+                                <div class="metodo-info-texto">
+                                    <div class="metodo-nombre">Tarjeta de Débito / Crédito</div>
+                                    <div class="metodo-desc">Visa, Mastercard, Maestro</div>
+                                </div>
+                            </div>
+                            <div class="metodo-formulario" id="formTarjeta">
+                                <div class="grid-tarjeta">
+                                    <!-- Fila 1: Nombre del titular (ancho completo) -->
+                                    <div class="campo-grupo full-col">
+                                        <span class="campo-label">Nombre del titular</span>
+                                        <input type="text" class="campo-input" id="nombreTitular"
+                                            placeholder="Como aparece en la tarjeta"
+                                            oninput="this.value = this.value.toUpperCase().replace(/[^A-Z\u00C0-\u017E\s]/g, '')">
+                                    </div>
+                                    <!-- Fila 2: Número, Caducidad y CVV en la misma fila (grid 2fr 1fr 1fr) -->
+                                    <div class="campo-grupo">
+                                        <span class="campo-label">Número de tarjeta</span>
+                                        <input type="text" class="campo-input" id="numTarjeta"
+                                            placeholder="0000 0000 0000 0000" maxlength="19"
+                                            oninput="formatearNumTarjeta(this)">
+                                    </div>
+                                    <div class="campo-grupo">
+                                        <span class="campo-label">Caducidad</span>
+                                        <input type="text" class="campo-input" id="fechaCaducidad" placeholder="MM/AA"
+                                            maxlength="5" oninput="formatearFechaTarjeta(this)">
+                                    </div>
+                                    <div class="campo-grupo">
+                                        <span class="campo-label">CVV</span>
+                                        <input type="password" class="campo-input" id="cvvTarjeta" placeholder="•••"
+                                            maxlength="4" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                                    </div>
+                                    <!-- Fila 3: Cuotas (ancho completo al fondo) -->
+                                    <div class="campo-grupo full-col">
+                                        <span class="campo-label">¿Pago en cuotas?</span>
+                                        <select class="campo-input" id="cuotasTarjeta" style="cursor:pointer;">
+                                            <option value="1">Sin cuotas — pago único</option>
+                                            <option value="3">3 cuotas</option>
+                                            <option value="6">6 cuotas</option>
+                                            <option value="12">12 cuotas</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="fila-dato" style="padding-top:0.6rem;margin-top:0.15rem;border-top:2px solid #e2e8f0;">
-                            <span class="etiqueta" style="font-weight:800;color:var(--azul-oscuro);font-size:0.95rem;">TOTAL COBRADO</span>
-                            <span class="valor-grande" id="r_totalFinal">S/0.00</span>
-                        </div>
+
+                        <!-- BILLETERA DIGITAL -->
+                        <div class="metodo-card" id="cardBilletera">
+                            <div class="metodo-cabecera" onclick="seleccionarMetodo('billetera')">
+                                <div class="radio-circulo">
+                                    <div class="radio-punto"></div>
+                                </div>
+                                <div class="metodo-icono-box icono-ambar"><i class='bx bx-wallet'></i></div>
+                                <div class="metodo-info-texto">
+                                    <div class="metodo-nombre">Billetera Digital</div>
+                                    <div class="metodo-desc">Yape, Plin</div>
+                                </div>
+                            </div>
+                            <div class="metodo-formulario" id="formBilletera">
+                                <p
+                                    style="font-size:0.82rem;font-weight:700;color:var(--azul-oscuro);margin-bottom:0.7rem;">
+                                    Selecciona la billetera del cliente:
+                                </p>
+                                <div class="grid-billeteras">
+                                    <button class="billetera-btn" id="btnYape" onclick="seleccionarBilletera('yape')">
+                                        <div class="logo-billetera logo-yape">YAPE</div>
+                                        <span>Yape</span>
+                                    </button>
+                                    <button class="billetera-btn" id="btnPlin" onclick="seleccionarBilletera('plin')">
+                                        <div class="logo-billetera logo-plin">PLIN</div>
+                                        <span>Plin</span>
+                                    </button>
+                                </div>
+                                <div class="panel-qr" id="panelQR">
+                                    <div class="cuadro-qr"><i class='bx bx-qr-scan'></i></div>
+                                    <p style="font-size:0.82rem;font-weight:700;color:var(--azul-oscuro);" id="textoQR">
+                                        Escanea el código QR con la app
+                                    </p>
+                                    <p style="font-size:0.78rem;color:var(--gris);margin-top:0.2rem;" id="montoQR">
+                                        Monto: —
+                                    </p>
+                                </div>
+                                <div class="campo-grupo" style="margin-top:0.75rem;">
+                                    <span class="campo-label">Código / N° de operación</span>
+                                    <input type="text" class="campo-input" id="numOperacion"
+                                        placeholder="Ingresa el código de confirmación"
+                                        oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                </div><!-- /col-der-resumen -->
+                    <!-- Derecho 1/3: mini resumen -->
+                    <aside class="panel-der-resumen">
+                        <div class="resumen-mini-cab">
+                            <i class='bx bx-list-ul'></i> Detalle actual del pedido
+                        </div>
+                        <div class="resumen-mini-items" id="resumenMiniItems"></div>
+                        <div class="resumen-mini-pie" id="resumenMiniTotal">TOTAL: S/0.00</div>
+                    </aside>
 
-            </div><!-- /grid-resumen-2x2 -->
-            </div><!-- /seccion-resumen -->
+                </div>
+            </div>
+
+            <!-- ===== PANEL 3: RESUMEN DE COMPRA ===== -->
+            <div class="panel-tab" id="panel3">
+                <div class="seccion-resumen">
+                    <div class="grid-resumen-2x2">
+
+                        <!-- COLUMNA IZQUIERDA: Info del pedido + Método de pago -->
+                        <div class="col-izq-resumen">
+
+                            <!-- Info del pedido -->
+                            <div class="tarjeta-bloque">
+                                <div class="bloque-header"><i class='bx bx-info-circle'></i> Información del Pedido
+                                </div>
+                                <div class="bloque-body">
+                                    <div class="fila-dato">
+                                        <span class="etiqueta">N° de Pedido</span>
+                                        <span class="valor" id="r_nroPedido">—</span>
+                                    </div>
+                                    <div class="fila-dato">
+                                        <span class="etiqueta">Cliente</span>
+                                        <span class="valor" id="r_cliente">—</span>
+                                    </div>
+                                    <div class="fila-dato">
+                                        <span class="etiqueta">Fecha del pedido</span>
+                                        <span class="valor" id="r_fecha">—</span>
+                                    </div>
+                                    <div class="fila-dato">
+                                        <span class="etiqueta">Estado</span>
+                                        <span class="valor" id="r_estado">—</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Método de pago -->
+                            <div class="tarjeta-bloque">
+                                <div class="bloque-header"><i class='bx bx-credit-card'></i> Método de Pago</div>
+                                <div class="bloque-body" id="r_metodoPago"></div>
+                            </div>
+
+                        </div>
+
+                        <!-- COLUMNA DERECHA: Productos (scroll) + Totales -->
+                        <div class="col-der-resumen">
+
+                            <!-- Productos con scroll interno -->
+                            <div class="tarjeta-bloque productos-scroll">
+                                <div class="bloque-header"><i class='bx bx-package'></i> Productos del Pedido</div>
+                                <div class="bloque-body">
+                                    <table class="tabla-resumen">
+                                        <thead>
+                                            <tr>
+                                                <th style="text-align:left;">Producto</th>
+                                                <th style="text-align:center;">Cant.</th>
+                                                <th style="text-align:right;">Precio unit.</th>
+                                                <th style="text-align:right;">Subtotal</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="r_bodyProductos"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Totales (fijo debajo, nunca oculto) -->
+                            <div class="tarjeta-bloque">
+                                <div class="bloque-header"><i class='bx bx-calculator'></i> Totales</div>
+                                <div class="bloque-body">
+                                    <div class="fila-dato">
+                                        <span class="etiqueta">Subtotal</span>
+                                        <span class="valor" id="r_subtotal">S/0.00</span>
+                                    </div>
+                                    <div class="fila-dato" id="r_filaVuelto" style="display:none;">
+                                        <span class="etiqueta">Monto recibido</span>
+                                        <span class="valor" id="r_montoRecibido">S/0.00</span>
+                                    </div>
+                                    <div class="fila-dato" id="r_filaVueltoValor" style="display:none;">
+                                        <span class="etiqueta">Vuelto a entregar</span>
+                                        <span class="valor" style="color:#16a34a;" id="r_vuelto">S/0.00</span>
+                                    </div>
+                                    <div class="fila-dato"
+                                        style="padding-top:0.6rem;margin-top:0.15rem;border-top:2px solid #e2e8f0;">
+                                        <span class="etiqueta"
+                                            style="font-weight:800;color:var(--azul-oscuro);font-size:0.95rem;">TOTAL
+                                            COBRADO</span>
+                                        <span class="valor-grande" id="r_totalFinal">S/0.00</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div><!-- /col-der-resumen -->
+
+                    </div><!-- /grid-resumen-2x2 -->
+                </div><!-- /seccion-resumen -->
+            </div>
+
         </div>
+
+        <!-- FOOTER -->
+        <!-- FOOTER -->
+        <footer class="footer-pago">
+            <!-- Izquierda -->
+            <div style="flex: 1;">
+                <button class="btn-footer btn-atras" id="btnAtras" onclick="irAtras()" style="display: none;">
+                    <i class='bx bx-arrow-back'></i> ATRÁS
+                </button>
+            </div>
+
+            <!-- Derecha -->
+            <div style="display:flex;gap:0.75rem; justify-content: flex-end; flex: 1;">
+                <button class="btn-footer btn-siguiente" id="btnSiguiente" onclick="irSiguiente()" disabled>
+                    SIGUIENTE <i class='bx bx-right-arrow-alt'></i>
+                </button>
+                <button class="btn-footer btn-confirmar" id="btnConfirmar" onclick="confirmarPago()"
+                    style="display:none;" disabled>
+                    CONFIRMAR PAGO <i class='bx bx-check-circle'></i>
+                </button>
+            </div>
+        </footer>
 
     </div>
 
-    <!-- FOOTER -->
-    <!-- FOOTER -->
-    <footer class="footer-pago">
-        <!-- Izquierda -->
-        <div style="flex: 1;">
-            <button class="btn-footer btn-atras" id="btnAtras" onclick="irAtras()" style="display: none;">
-                <i class='bx bx-arrow-back'></i> ATRÁS
-            </button>
+    <!-- MODAL ÉXITO -->
+    <div class="modal-overlay oculto" id="modalExito">
+        <div class="modal-contenido">
+            <div class="icono-exito">✓</div>
+            <div class="modal-titulo">¡Pago procesado con éxito!</div>
+            <p class="modal-texto" id="textoExitoPago">El comprobante ha sido generado correctamente.</p>
+            <p class="modal-correlativo" id="nroComprobante"></p>
+            <button type="button" class="btn-principal" onclick="volverAlMenu()">Volver al Menú</button>
         </div>
-        
-        <!-- Derecha -->
-        <div style="display:flex;gap:0.75rem; justify-content: flex-end; flex: 1;">
-            <button class="btn-footer btn-siguiente" id="btnSiguiente" onclick="irSiguiente()" disabled>
-                SIGUIENTE <i class='bx bx-right-arrow-alt'></i>
-            </button>
-            <button class="btn-footer btn-confirmar" id="btnConfirmar" onclick="confirmarPago()" style="display:none;" disabled>
-                CONFIRMAR PAGO <i class='bx bx-check-circle'></i>
-            </button>
-        </div>
-    </footer>
-
-</div>
-
-<!-- MODAL ÉXITO -->
-<div class="modal-overlay oculto" id="modalExito">
-    <div class="modal-contenido">
-        <div class="icono-exito">✓</div>
-        <div class="modal-titulo">¡Pago procesado con éxito!</div>
-        <p class="modal-texto" id="textoExitoPago">El comprobante ha sido generado correctamente.</p>
-        <p class="modal-correlativo" id="nroComprobante"></p>
-        <button type="button" class="btn-principal" onclick="volverAlMenu()">Volver al Menú</button>
     </div>
-</div>
 
-<script src="js/config.js"></script>
-<script>
-    // =============================================
-    // PROTECCIÓN DE RUTA
-    // =============================================
-    const rolActual = localStorage.getItem('rolUsuario');
-    if (!rolActual) {
-        window.location.href = '/';
-    } else if (rolActual === 'vendedor') {
-        alert('Acceso denegado: los vendedores no pueden procesar pagos.');
-        window.location.href = '/menu';
-    }
-
-    // =============================================
-    // ESTADO GLOBAL
-    // =============================================
-    let tabActual = 1;
-    let pedidoActual = null;        // Datos completos del pedido buscado
-    let metodoPago = null;          // 'efectivo' | 'tarjeta' | 'billetera'
-    let billeteraElegida = null;    // 'yape' | 'plin' | 'lukita'
-
-    // =============================================
-    // SECCIÓN 1 — BUSCAR PEDIDO
-    // =============================================
-    async function buscarPedido() {
-        const codigo = document.getElementById('inputCodigoPedido').value.trim();
-        if (!codigo) {
-            alert('Por favor ingresa un código de pedido.');
-            return;
+    <script src="js/config.js"></script>
+    <script>
+        // =============================================
+        // PROTECCIÓN DE RUTA
+        // =============================================
+        const rolActual = localStorage.getItem('rolUsuario');
+        if (!rolActual) {
+            window.location.href = '/';
+        } else if (rolActual === 'vendedor') {
+            alert('Acceso denegado: los vendedores no pueden procesar pagos.');
+            window.location.href = '/menu';
         }
 
-        const btn = document.querySelector('.btn-buscar-pedido');
-        btn.innerHTML = `<i class='bx bx-loader-alt bx-spin'></i> Buscando...`;
-        btn.disabled = true;
+        // =============================================
+        // ESTADO GLOBAL
+        // =============================================
+        let tabActual = 1;
+        let pedidoActual = null;        // Datos completos del pedido buscado
+        let metodoPago = null;          // 'efectivo' | 'tarjeta' | 'billetera'
+        let billeteraElegida = null;    // 'yape' | 'plin' | 'lukita'
 
-        try {
-            const res = await fetch(`${URL_BACKEND}/api/pedidos/${codigo}`);
-
-            if (res.status === 404) {
-                alert('❌ No se encontró ningún pedido con ese código.');
-                limpiarResultado();
+        // =============================================
+        // SECCIÓN 1 — BUSCAR PEDIDO
+        // =============================================
+        async function buscarPedido() {
+            const codigo = document.getElementById('inputCodigoPedido').value.trim();
+            if (!codigo) {
+                alert('Por favor ingresa un código de pedido.');
                 return;
             }
 
-            const data = await res.json();
-            if (data.error) {
-                alert('❌ ' + data.error);
-                limpiarResultado();
-                return;
-            }
+            const btn = document.querySelector('.btn-buscar-pedido');
+            btn.innerHTML = `<i class='bx bx-loader-alt bx-spin'></i> Buscando...`;
+            btn.disabled = true;
 
-            pedidoActual = data;
-            renderizarResultado(data);
+            try {
+                const res = await fetch(`${URL_BACKEND}/api/pedidos/${codigo}`);
+
+                if (res.status === 404) {
+                    alert('❌ No se encontró ningún pedido con ese código.');
+                    limpiarResultado();
+                    return;
+                }
+
+                const data = await res.json();
+                if (data.error) {
+                    alert('❌ ' + data.error);
+                    limpiarResultado();
+                    return;
+                }
+
+                pedidoActual = data;
+                renderizarResultado(data);
+                actualizarBotonSiguiente();
+
+            } catch (err) {
+                alert('❌ Error al conectar con el servidor.');
+            } finally {
+                btn.innerHTML = `<i class='bx bx-search'></i> Buscar`;
+                btn.disabled = false;
+            }
+        }
+
+        function limpiarResultado() {
+            pedidoActual = null;
+            document.getElementById('placeholderBusqueda').style.display = '';
+            document.getElementById('contenidoResultado').style.display = 'none';
             actualizarBotonSiguiente();
-
-        } catch (err) {
-            alert('❌ Error al conectar con el servidor.');
-        } finally {
-            btn.innerHTML = `<i class='bx bx-search'></i> Buscar`;
-            btn.disabled = false;
         }
-    }
 
-    function limpiarResultado() {
-        pedidoActual = null;
-        document.getElementById('placeholderBusqueda').style.display = '';
-        document.getElementById('contenidoResultado').style.display = 'none';
-        actualizarBotonSiguiente();
-    }
+        function renderizarResultado(data) {
+            document.getElementById('placeholderBusqueda').style.display = 'none';
+            document.getElementById('contenidoResultado').style.display = 'block';
 
-    function renderizarResultado(data) {
-        document.getElementById('placeholderBusqueda').style.display = 'none';
-        document.getElementById('contenidoResultado').style.display = 'block';
+            document.getElementById('tituloPedido').textContent = `Pedido #${data.id_pedido}`;
 
-        document.getElementById('tituloPedido').textContent = `Pedido #${data.id_pedido}`;
+            const badge = document.getElementById('badgeEstadoPedido');
+            badge.textContent = data.estado || '—';
+            badge.className = 'badge-estado-pedido ' + (data.estado || '').toLowerCase();
 
-        const badge = document.getElementById('badgeEstadoPedido');
-        badge.textContent = data.estado || '—';
-        badge.className = 'badge-estado-pedido ' + (data.estado || '').toLowerCase();
+            // AQUÍ ESTABA EL ERROR. Ahora apunta a los IDs correctos de tu HTML
+            document.getElementById('infoCliente').textContent = `${data.nombres} ${data.apellido_paterno}`;
+            document.getElementById('infoDoc').textContent = `${data.tipo_documento}: ${data.numero_documento}`;
+            document.getElementById('infoFecha').textContent = ` ${formatearFecha(data.fecha_pedido)}`;
+            document.getElementById('infoCantidad').textContent = ` ${(data.detalles || []).length} producto(s)`;
 
-        // AQUÍ ESTABA EL ERROR. Ahora apunta a los IDs correctos de tu HTML
-        document.getElementById('infoCliente').textContent = `${data.nombres} ${data.apellido_paterno}`;
-        document.getElementById('infoDoc').textContent = `${data.tipo_documento}: ${data.numero_documento}`;
-        document.getElementById('infoFecha').textContent    = ` ${formatearFecha(data.fecha_pedido)}`;
-        document.getElementById('infoCantidad').textContent = ` ${(data.detalles || []).length} producto(s)`;
-
-        const lista = document.getElementById('listaItemsPedido');
-        lista.innerHTML = (data.detalles || []).map(item => `
+            const lista = document.getElementById('listaItemsPedido');
+            lista.innerHTML = (data.detalles || []).map(item => `
             <div class="item-resultado">
                 <img class="img-item"
                      src="${item.url_imagen || ''}"
@@ -1297,115 +1562,115 @@
             </div>
         `).join('');
 
-        document.getElementById('totalResultado').textContent = `S/${parseFloat(data.total).toFixed(2)}`;
-    }
-
-    function formatearFecha(fechaISO) {
-        if (!fechaISO) return '—';
-        const d = new Date(fechaISO);
-        return d.toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    }
-
-    // =============================================
-    // SECCIÓN 2 — MÉTODO DE PAGO
-    // =============================================
-    function seleccionarMetodo(tipo) {
-        // Deseleccionar todos
-        ['cardEfectivo', 'cardTarjeta', 'cardBilletera'].forEach(id =>
-            document.getElementById(id).classList.remove('seleccionado')
-        );
-        ['formEfectivo', 'formTarjeta', 'formBilletera'].forEach(id =>
-            document.getElementById(id).classList.remove('abierto')
-        );
-
-        // Seleccionar el elegido
-        metodoPago = tipo;
-        billeteraElegida = null;
-
-        const mapCard = { efectivo: 'cardEfectivo', tarjeta: 'cardTarjeta', billetera: 'cardBilletera' };
-        const mapForm = { efectivo: 'formEfectivo', tarjeta: 'formTarjeta', billetera: 'formBilletera' };
-
-        document.getElementById(mapCard[tipo]).classList.add('seleccionado');
-        document.getElementById(mapForm[tipo]).classList.add('abierto');
-
-        if (tipo === 'efectivo' && pedidoActual) {
-            document.getElementById('displayTotalEfectivo').value = `S/${parseFloat(pedidoActual.total).toFixed(2)}`;
-            document.getElementById('montoRecibido').value = '';
-            document.getElementById('cajaVuelto').classList.remove('visible');
-            document.getElementById('placeholderVuelto').style.display = '';
+            document.getElementById('totalResultado').textContent = `S/${parseFloat(data.total).toFixed(2)}`;
         }
 
-        if (tipo === 'billetera') {
-            document.getElementById('panelQR').classList.remove('visible');
-            ['btnYape','btnPlin'].forEach(id =>
+        function formatearFecha(fechaISO) {
+            if (!fechaISO) return '—';
+            const d = new Date(fechaISO);
+            return d.toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        }
+
+        // =============================================
+        // SECCIÓN 2 — MÉTODO DE PAGO
+        // =============================================
+        function seleccionarMetodo(tipo) {
+            // Deseleccionar todos
+            ['cardEfectivo', 'cardTarjeta', 'cardBilletera'].forEach(id =>
+                document.getElementById(id).classList.remove('seleccionado')
+            );
+            ['formEfectivo', 'formTarjeta', 'formBilletera'].forEach(id =>
+                document.getElementById(id).classList.remove('abierto')
+            );
+
+            // Seleccionar el elegido
+            metodoPago = tipo;
+            billeteraElegida = null;
+
+            const mapCard = { efectivo: 'cardEfectivo', tarjeta: 'cardTarjeta', billetera: 'cardBilletera' };
+            const mapForm = { efectivo: 'formEfectivo', tarjeta: 'formTarjeta', billetera: 'formBilletera' };
+
+            document.getElementById(mapCard[tipo]).classList.add('seleccionado');
+            document.getElementById(mapForm[tipo]).classList.add('abierto');
+
+            if (tipo === 'efectivo' && pedidoActual) {
+                document.getElementById('displayTotalEfectivo').value = `S/${parseFloat(pedidoActual.total).toFixed(2)}`;
+                document.getElementById('montoRecibido').value = '';
+                document.getElementById('cajaVuelto').classList.remove('visible');
+                document.getElementById('placeholderVuelto').style.display = '';
+            }
+
+            if (tipo === 'billetera') {
+                document.getElementById('panelQR').classList.remove('visible');
+                ['btnYape', 'btnPlin'].forEach(id =>
+                    document.getElementById(id).classList.remove('seleccionada')
+                );
+            }
+
+            actualizarBotonSiguiente();
+        }
+
+        function calcularVuelto() {
+            if (!pedidoActual) return;
+
+            const total = parseFloat(pedidoActual.total);
+            const recibido = parseFloat(document.getElementById('montoRecibido').value) || 0;
+            const cajaVuelto = document.getElementById('cajaVuelto');
+            const placeholderVuelto = document.getElementById('placeholderVuelto');
+
+            if (recibido >= total) {
+                const vuelto = recibido - total;
+                cajaVuelto.textContent = `S/${vuelto.toFixed(2)}`;
+                cajaVuelto.classList.add('visible');
+                placeholderVuelto.style.display = 'none';
+            } else {
+                cajaVuelto.classList.remove('visible');
+                placeholderVuelto.style.display = '';
+            }
+
+            actualizarBotonSiguiente();
+        }
+
+        function seleccionarBilletera(tipo) {
+            billeteraElegida = tipo;
+            const mapBtn = { yape: 'btnYape', plin: 'btnPlin' };
+            const mapNombre = { yape: 'Yape', plin: 'Plin' };
+
+            ['btnYape', 'btnPlin'].forEach(id =>
                 document.getElementById(id).classList.remove('seleccionada')
             );
+            document.getElementById(mapBtn[tipo]).classList.add('seleccionada');
+
+            const panelQR = document.getElementById('panelQR');
+            panelQR.classList.add('visible');
+            document.getElementById('textoQR').textContent =
+                `Escanea el código QR con ${mapNombre[tipo]} y paga el monto exacto`;
+            document.getElementById('montoQR').textContent =
+                `Monto: S/${parseFloat(pedidoActual.total).toFixed(2)}`;
+
+            actualizarBotonSiguiente();
         }
 
-        actualizarBotonSiguiente();
-    }
-
-    function calcularVuelto() {
-        if (!pedidoActual) return;
-
-        const total     = parseFloat(pedidoActual.total);
-        const recibido  = parseFloat(document.getElementById('montoRecibido').value) || 0;
-        const cajaVuelto        = document.getElementById('cajaVuelto');
-        const placeholderVuelto = document.getElementById('placeholderVuelto');
-
-        if (recibido >= total) {
-            const vuelto = recibido - total;
-            cajaVuelto.textContent = `S/${vuelto.toFixed(2)}`;
-            cajaVuelto.classList.add('visible');
-            placeholderVuelto.style.display = 'none';
-        } else {
-            cajaVuelto.classList.remove('visible');
-            placeholderVuelto.style.display = '';
+        function formatearNumTarjeta(input) {
+            let val = input.value.replace(/\D/g, '').slice(0, 16);
+            input.value = val.replace(/(.{4})/g, '$1 ').trim();
+            actualizarBotonSiguiente();
         }
 
-        actualizarBotonSiguiente();
-    }
+        function formatearFechaTarjeta(input) {
+            let val = input.value.replace(/\D/g, '').slice(0, 4);
+            if (val.length >= 3) val = val.slice(0, 2) + '/' + val.slice(2);
+            input.value = val;
+            actualizarBotonSiguiente();
+        }
 
-    function seleccionarBilletera(tipo) {
-        billeteraElegida = tipo;
-        const mapBtn = { yape: 'btnYape', plin: 'btnPlin' };
-        const mapNombre = { yape: 'Yape', plin: 'Plin' };
-
-        ['btnYape','btnPlin'].forEach(id =>
-            document.getElementById(id).classList.remove('seleccionada')
-        );
-        document.getElementById(mapBtn[tipo]).classList.add('seleccionada');
-
-        const panelQR = document.getElementById('panelQR');
-        panelQR.classList.add('visible');
-        document.getElementById('textoQR').textContent =
-            `Escanea el código QR con ${mapNombre[tipo]} y paga el monto exacto`;
-        document.getElementById('montoQR').textContent =
-            `Monto: S/${parseFloat(pedidoActual.total).toFixed(2)}`;
-
-        actualizarBotonSiguiente();
-    }
-
-    function formatearNumTarjeta(input) {
-        let val = input.value.replace(/\D/g, '').slice(0, 16);
-        input.value = val.replace(/(.{4})/g, '$1 ').trim();
-        actualizarBotonSiguiente();
-    }
-
-    function formatearFechaTarjeta(input) {
-        let val = input.value.replace(/\D/g, '').slice(0, 4);
-        if (val.length >= 3) val = val.slice(0, 2) + '/' + val.slice(2);
-        input.value = val;
-        actualizarBotonSiguiente();
-    }
-
-    // =============================================
-    // POBLAR RESUMEN MINI (1/3 derecha sección 2)
-    // =============================================
-    function poblarResumenMini() {
-        if (!pedidoActual) return;
-        const contenedor = document.getElementById('resumenMiniItems');
-        contenedor.innerHTML = (pedidoActual.detalles || []).map(item => `
+        // =============================================
+        // POBLAR RESUMEN MINI (1/3 derecha sección 2)
+        // =============================================
+        function poblarResumenMini() {
+            if (!pedidoActual) return;
+            const contenedor = document.getElementById('resumenMiniItems');
+            contenedor.innerHTML = (pedidoActual.detalles || []).map(item => `
             <div class="mini-item">
                 <img class="mini-img"
                      src="${item.url_imagen || ''}"
@@ -1418,24 +1683,25 @@
                 <div class="mini-subtotal">S/${parseFloat(item.subtotal).toFixed(2)}</div>
             </div>
         `).join('');
-        document.getElementById('resumenMiniTotal').textContent =
-            `TOTAL: S/${parseFloat(pedidoActual.total).toFixed(2)}`;
-    }
+            document.getElementById('resumenMiniTotal').textContent =
+                `TOTAL: S/${parseFloat(pedidoActual.total).toFixed(2)}`;
+        }
 
-    // =============================================
-    // POBLAR SECCIÓN 3
-    // =============================================
-    function poblarResumenFinal() {
-        if (!pedidoActual) return;
 
-        document.getElementById('r_nroPedido').textContent = `#${pedidoActual.id_pedido}`;
-        document.getElementById('r_cliente').textContent   = `${pedidoActual.nombres || ''} ${pedidoActual.apellido_paterno || ''}`.trim() || '—';
-        document.getElementById('r_fecha').textContent     = formatearFecha(pedidoActual.fecha_pedido);
-        document.getElementById('r_estado').textContent    = pedidoActual.estado || '—';
+        // =============================================
+        // POBLAR SECCIÓN 3
+        // =============================================
+        function poblarResumenFinal() {
+            if (!pedidoActual) return;
 
-        // Tabla de productos
-        const tbody = document.getElementById('r_bodyProductos');
-        tbody.innerHTML = (pedidoActual.detalles || []).map(item => `
+            document.getElementById('r_nroPedido').textContent = `#${pedidoActual.id_pedido}`;
+            document.getElementById('r_cliente').textContent = `${pedidoActual.nombres || ''} ${pedidoActual.apellido_paterno || ''}`.trim() || '—';
+            document.getElementById('r_fecha').textContent = formatearFecha(pedidoActual.fecha_pedido);
+            document.getElementById('r_estado').textContent = pedidoActual.estado || '—';
+
+            // Tabla de productos
+            const tbody = document.getElementById('r_bodyProductos');
+            tbody.innerHTML = (pedidoActual.detalles || []).map(item => `
             <tr>
                 <td>
                     <div class="celda-producto">
@@ -1450,232 +1716,234 @@
             </tr>
         `).join('');
 
-        // Método de pago
-        const divMetodo = document.getElementById('r_metodoPago');
-        const total = parseFloat(pedidoActual.total);
+            // Método de pago
+            const divMetodo = document.getElementById('r_metodoPago');
+            const total = parseFloat(pedidoActual.total);
 
-        if (metodoPago === 'efectivo') {
-            const recibido = parseFloat(document.getElementById('montoRecibido').value) || 0;
-            const vuelto   = Math.max(0, recibido - total);
-            divMetodo.innerHTML = `
+            if (metodoPago === 'efectivo') {
+                const recibido = parseFloat(document.getElementById('montoRecibido').value) || 0;
+                const vuelto = Math.max(0, recibido - total);
+                divMetodo.innerHTML = `
                 <div class="fila-dato"><span class="etiqueta">Método</span><span class="valor">Efectivo</span></div>
                 <div class="fila-dato"><span class="etiqueta">Monto recibido</span><span class="valor">S/${recibido.toFixed(2)}</span></div>
             `;
-            document.getElementById('r_filaVuelto').style.display = 'flex';
-            document.getElementById('r_filaVueltoValor').style.display = 'flex';
-            document.getElementById('r_montoRecibido').textContent = `S/${recibido.toFixed(2)}`;
-            document.getElementById('r_vuelto').textContent = `S/${vuelto.toFixed(2)}`;
-        } else if (metodoPago === 'tarjeta') {
-            const cuotas = document.getElementById('cuotasTarjeta').value;
-            const num    = document.getElementById('numTarjeta').value;
-            const ultimos4 = num.replace(/\s/g, '').slice(-4);
-            divMetodo.innerHTML = `
+                document.getElementById('r_filaVuelto').style.display = 'flex';
+                document.getElementById('r_filaVueltoValor').style.display = 'flex';
+                document.getElementById('r_montoRecibido').textContent = `S/${recibido.toFixed(2)}`;
+                document.getElementById('r_vuelto').textContent = `S/${vuelto.toFixed(2)}`;
+            } else if (metodoPago === 'tarjeta') {
+                const cuotas = document.getElementById('cuotasTarjeta').value;
+                const num = document.getElementById('numTarjeta').value;
+                const ultimos4 = num.replace(/\s/g, '').slice(-4);
+                divMetodo.innerHTML = `
                 <div class="fila-dato"><span class="etiqueta">Método</span><span class="valor">Tarjeta de Débito/Crédito</span></div>
                 <div class="fila-dato"><span class="etiqueta">Terminación</span><span class="valor">•••• •••• •••• ${ultimos4}</span></div>
                 <div class="fila-dato"><span class="etiqueta">Cuotas</span><span class="valor">${cuotas === '1' ? 'Sin cuotas (pago único)' : cuotas + ' cuotas'}</span></div>
                 <div class="fila-dato"><span class="etiqueta">Cuota mensual</span><span class="valor">${cuotas === '1' ? '—' : 'S/' + (total / parseInt(cuotas)).toFixed(2)}</span></div>
             `;
-            document.getElementById('r_filaVuelto').style.display      = 'none';
-            document.getElementById('r_filaVueltoValor').style.display = 'none';
-        } else if (metodoPago === 'billetera') {
-            const mapNombre = { yape: 'Yape', plin: 'Plin', lukita: 'Lukita' };
-            const numOp = document.getElementById('numOperacion').value;
-            divMetodo.innerHTML = `
+                document.getElementById('r_filaVuelto').style.display = 'none';
+                document.getElementById('r_filaVueltoValor').style.display = 'none';
+            } else if (metodoPago === 'billetera') {
+                const mapNombre = { yape: 'Yape', plin: 'Plin', lukita: 'Lukita' };
+                const numOp = document.getElementById('numOperacion').value;
+                divMetodo.innerHTML = `
                 <div class="fila-dato"><span class="etiqueta">Método</span><span class="valor">Billetera Digital — ${mapNombre[billeteraElegida] || '—'}</span></div>
                 <div class="fila-dato"><span class="etiqueta">N° de operación</span><span class="valor">${numOp || '—'}</span></div>
             `;
-            document.getElementById('r_filaVuelto').style.display      = 'none';
-            document.getElementById('r_filaVueltoValor').style.display = 'none';
+                document.getElementById('r_filaVuelto').style.display = 'none';
+                document.getElementById('r_filaVueltoValor').style.display = 'none';
+            }
+
+            document.getElementById('r_subtotal').textContent = `S/${total.toFixed(2)}`;
+            document.getElementById('r_totalFinal').textContent = `S/${total.toFixed(2)}`;
+
+            document.getElementById('btnConfirmar').disabled = false;
         }
 
-        document.getElementById('r_subtotal').textContent  = `S/${total.toFixed(2)}`;
-        document.getElementById('r_totalFinal').textContent = `S/${total.toFixed(2)}`;
-
-        document.getElementById('btnConfirmar').disabled = false;
-    }
-
-    // =============================================
-    // VALIDACIONES
-    // =============================================
-    function validarSeccion1() {
-        if (!pedidoActual) return false;
-        if (pedidoActual.estado === 'Completado' || pedidoActual.estado === 'Pagado') {
-            alert('⚠️ Este pedido ya fue procesado anteriormente.');
-            return false;
-        }
-        if (pedidoActual.estado === 'Anulado') {
-            alert('⚠️ Este pedido está anulado y no puede procesarse.');
-            return false;
-        }
-        return true;
-    }
-
-    function validarSeccion2() {
-        if (!metodoPago) {
-            alert('Por favor selecciona un método de pago.');
-            return false;
-        }
-
-        if (metodoPago === 'efectivo') {
-            const total    = parseFloat(pedidoActual.total);
-            const recibido = parseFloat(document.getElementById('montoRecibido').value) || 0;
-            if (!recibido || recibido <= 0) {
-                alert('Ingresa el monto recibido del cliente.');
+        // =============================================
+        // VALIDACIONES
+        // =============================================
+        function validarSeccion1() {
+            if (!pedidoActual) return false;
+            if (pedidoActual.estado === 'Completado' || pedidoActual.estado === 'Pagado') {
+                alert('⚠️ Este pedido ya fue procesado anteriormente.');
                 return false;
             }
-            if (recibido < total) {
-                alert(`El monto recibido (S/${recibido.toFixed(2)}) es menor al total (S/${total.toFixed(2)}).`);
+            if (pedidoActual.estado === 'Anulado') {
+                alert('⚠️ Este pedido está anulado y no puede procesarse.');
                 return false;
             }
+            return true;
         }
 
-        if (metodoPago === 'tarjeta') {
-            const num   = document.getElementById('numTarjeta').value.replace(/\s/g, '');
-            const nom   = document.getElementById('nombreTitular').value.trim();
-            const fecha = document.getElementById('fechaCaducidad').value.trim();
-            const cvv   = document.getElementById('cvvTarjeta').value.trim();
-
-            if (num.length < 13) { alert('Ingresa un número de tarjeta válido.'); return false; }
-            if (!nom)            { alert('Ingresa el nombre del titular.'); return false; }
-            if (fecha.length < 5){ alert('Ingresa la fecha de caducidad (MM/AA).'); return false; }
-            if (cvv.length < 3)  { alert('Ingresa el CVV.'); return false; }
-        }
-
-        if (metodoPago === 'billetera') {
-            if (!billeteraElegida) {
-                alert('Selecciona la billetera digital.');
+        function validarSeccion2() {
+            if (!metodoPago) {
+                alert('Por favor selecciona un método de pago.');
                 return false;
             }
-            const numOp = document.getElementById('numOperacion').value.trim();
-            if (!numOp) {
-                alert('Ingresa el código de operación de la billetera.');
-                return false;
+
+            if (metodoPago === 'efectivo') {
+                const total = parseFloat(pedidoActual.total);
+                const recibido = parseFloat(document.getElementById('montoRecibido').value) || 0;
+                if (!recibido || recibido <= 0) {
+                    alert('Ingresa el monto recibido del cliente.');
+                    return false;
+                }
+                if (recibido < total) {
+                    alert(`El monto recibido (S/${recibido.toFixed(2)}) es menor al total (S/${total.toFixed(2)}).`);
+                    return false;
+                }
             }
+
+            if (metodoPago === 'tarjeta') {
+                const num = document.getElementById('numTarjeta').value.replace(/\s/g, '');
+                const nom = document.getElementById('nombreTitular').value.trim();
+                const fecha = document.getElementById('fechaCaducidad').value.trim();
+                const cvv = document.getElementById('cvvTarjeta').value.trim();
+
+                if (num.length < 13) { alert('Ingresa un número de tarjeta válido.'); return false; }
+                if (!nom) { alert('Ingresa el nombre del titular.'); return false; }
+                if (fecha.length < 5) { alert('Ingresa la fecha de caducidad (MM/AA).'); return false; }
+                if (cvv.length < 3) { alert('Ingresa el CVV.'); return false; }
+            }
+
+            if (metodoPago === 'billetera') {
+                if (!billeteraElegida) {
+                    alert('Selecciona la billetera digital.');
+                    return false;
+                }
+                const numOp = document.getElementById('numOperacion').value.trim();
+                if (!numOp) {
+                    alert('Ingresa el código de operación de la billetera.');
+                    return false;
+                }
+            }
+
+            return true;
         }
 
-        return true;
-    }
-
-    function actualizarBotonSiguiente() {
-        const btn = document.getElementById('btnSiguiente');
-        if (tabActual === 1) btn.disabled = !pedidoActual || pedidoActual.estado === 'Completado' || pedidoActual.estado === 'Pagado' || pedidoActual.estado === 'Anulado';
-        if (tabActual === 2) btn.disabled = false; // la validación real se hace al presionar
-    }
-
-    // =============================================
-    // NAVEGACIÓN DE TABS
-    // =============================================
-    function irSiguiente() {
-        if (tabActual === 1 && !validarSeccion1()) return;
-        if (tabActual === 2 && !validarSeccion2()) return;
-        if (tabActual >= 3) return;
-
-        // Marcar tab actual como completado
-        document.getElementById('tab' + tabActual).classList.remove('activo');
-        document.getElementById('tab' + tabActual).classList.add('completado');
-
-        tabActual++;
-
-        // Activar nuevo tab
-        document.getElementById('tab' + tabActual).classList.add('activo');
-        document.getElementById('panel' + (tabActual - 1)).classList.remove('activo');
-        document.getElementById('panel' + tabActual).classList.add('activo');
-
-        // Acciones al entrar a un panel
-        if (tabActual === 2) {
-            poblarResumenMini();
-        }
-        if (tabActual === 3) {
-            poblarResumenFinal();
+        function actualizarBotonSiguiente() {
+            const btn = document.getElementById('btnSiguiente');
+            if (tabActual === 1) btn.disabled = !pedidoActual || pedidoActual.estado === 'Completado' || pedidoActual.estado === 'Pagado' || pedidoActual.estado === 'Anulado';
+            if (tabActual === 2) btn.disabled = false; // la validación real se hace al presionar
         }
 
-        actualizarFooter();
-    }
+        // =============================================
+        // NAVEGACIÓN DE TABS
+        // =============================================
+        function irSiguiente() {
+            if (tabActual === 1 && !validarSeccion1()) return;
+            if (tabActual === 2 && !validarSeccion2()) return;
+            if (tabActual >= 3) return;
 
-    function irAtras() {
-        if (tabActual <= 1) return;
+            // Marcar tab actual como completado
+            document.getElementById('tab' + tabActual).classList.remove('activo');
+            document.getElementById('tab' + tabActual).classList.add('completado');
 
-        document.getElementById('tab' + tabActual).classList.remove('activo');
-        document.getElementById('panel' + tabActual).classList.remove('activo');
+            tabActual++;
 
-        tabActual--;
+            // Activar nuevo tab
+            document.getElementById('tab' + tabActual).classList.add('activo');
+            document.getElementById('panel' + (tabActual - 1)).classList.remove('activo');
+            document.getElementById('panel' + tabActual).classList.add('activo');
 
-        document.getElementById('tab' + tabActual).classList.remove('completado');
-        document.getElementById('tab' + tabActual).classList.add('activo');
-        document.getElementById('panel' + tabActual).classList.add('activo');
+            // Acciones al entrar a un panel
+            if (tabActual === 2) {
+                poblarResumenMini();
+            }
+            if (tabActual === 3) {
+                poblarResumenFinal();
+            }
 
-        actualizarFooter();
-        actualizarBotonSiguiente();
-    }
-
-    function actualizarFooter() {
-        const btnAtras     = document.getElementById('btnAtras');
-        const btnSiguiente = document.getElementById('btnSiguiente');
-        const btnConfirmar = document.getElementById('btnConfirmar');
-
-        btnAtras.style.display = tabActual === 1 ? 'none' : 'flex';
-
-        if (tabActual === 3) {
-            btnSiguiente.style.display = 'none';
-            btnConfirmar.style.display = 'flex';
-        } else {
-            btnSiguiente.style.display = 'flex';
-            btnConfirmar.style.display = 'none';
+            actualizarFooter();
         }
 
-        actualizarBotonSiguiente();
-    }
+        function irAtras() {
+            if (tabActual <= 1) return;
 
-    // =============================================
-    // CONFIRMAR PAGO → BACKEND
-    // =============================================
-    async function confirmarPago() {
-        const btn = document.getElementById('btnConfirmar');
-        btn.innerHTML = `PROCESANDO... <i class='bx bx-loader-alt bx-spin'></i>`;
-        btn.disabled = true;
+            document.getElementById('tab' + tabActual).classList.remove('activo');
+            document.getElementById('panel' + tabActual).classList.remove('activo');
 
-        const cuotas  = metodoPago === 'tarjeta' ? parseInt(document.getElementById('cuotasTarjeta').value) : 1;
-        const payload = {
-            id_pedido   : pedidoActual.id_pedido,
-            metodo_pago : metodoPago,
-            cuotas      : cuotas,
-            referencia  : metodoPago === 'billetera' ? document.getElementById('numOperacion').value : null
-        };
+            tabActual--;
 
-        try {
-            const res  = await fetch(`${URL_BACKEND}/api/procesar-pago`, {
-                method  : 'POST',
-                headers : { 'Content-Type': 'application/json' },
-                body    : JSON.stringify(payload)
-            });
-            const data = await res.json();
+            document.getElementById('tab' + tabActual).classList.remove('completado');
+            document.getElementById('tab' + tabActual).classList.add('activo');
+            document.getElementById('panel' + tabActual).classList.add('activo');
 
-            if (data.exito) {
-                document.getElementById('textoExitoPago').textContent =
-                    `El comprobante del pedido #${pedidoActual.id_pedido} ha sido generado.`;
-                document.getElementById('nroComprobante').textContent =
-                    `Comprobante N°: ${data.numero_correlativo}`;
-                document.getElementById('modalExito').classList.remove('oculto');
+            actualizarFooter();
+            actualizarBotonSiguiente();
+        }
+
+        function actualizarFooter() {
+            const btnAtras = document.getElementById('btnAtras');
+            const btnSiguiente = document.getElementById('btnSiguiente');
+            const btnConfirmar = document.getElementById('btnConfirmar');
+
+            btnAtras.style.display = tabActual === 1 ? 'none' : 'flex';
+
+            if (tabActual === 3) {
+                btnSiguiente.style.display = 'none';
+                btnConfirmar.style.display = 'flex';
             } else {
-                alert('❌ ' + (data.mensaje || 'Error al procesar el pago.'));
+                btnSiguiente.style.display = 'flex';
+                btnConfirmar.style.display = 'none';
+            }
+
+            actualizarBotonSiguiente();
+        }
+
+        // =============================================
+        // CONFIRMAR PAGO → BACKEND
+        // =============================================
+        async function confirmarPago() {
+            const btn = document.getElementById('btnConfirmar');
+            btn.innerHTML = `PROCESANDO... <i class='bx bx-loader-alt bx-spin'></i>`;
+            btn.disabled = true;
+
+            const cuotas = metodoPago === 'tarjeta' ? parseInt(document.getElementById('cuotasTarjeta').value) : 1;
+            const payload = {
+                id_pedido: pedidoActual.id_pedido,
+                metodo_pago: metodoPago,
+                cuotas: cuotas,
+                referencia: metodoPago === 'billetera' ? document.getElementById('numOperacion').value : null
+            };
+
+            try {
+                const res = await fetch(`${URL_BACKEND}/api/procesar-pago`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+
+                if (data.exito) {
+                    document.getElementById('textoExitoPago').textContent =
+                        `El comprobante del pedido #${pedidoActual.id_pedido} ha sido generado.`;
+                    document.getElementById('nroComprobante').textContent =
+                        `Comprobante N°: ${data.numero_correlativo}`;
+                    document.getElementById('modalExito').classList.remove('oculto');
+                } else {
+                    alert('❌ ' + (data.mensaje || 'Error al procesar el pago.'));
+                    btn.innerHTML = `CONFIRMAR PAGO <i class='bx bx-check-circle'></i>`;
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                alert('❌ Error de conexión con el servidor.');
                 btn.innerHTML = `CONFIRMAR PAGO <i class='bx bx-check-circle'></i>`;
                 btn.disabled = false;
             }
-        } catch (err) {
-            alert('❌ Error de conexión con el servidor.');
-            btn.innerHTML = `CONFIRMAR PAGO <i class='bx bx-check-circle'></i>`;
-            btn.disabled = false;
         }
-    }
 
-    function volverAlMenu() {
-        window.location.href = '/menu';
-    }
+        function volverAlMenu() {
+            window.location.href = '/menu';
+        }
 
-    // =============================================
-    // INICIALIZACIÓN
-    // =============================================
-    actualizarFooter();
-</script>
+        // =============================================
+        // INICIALIZACIÓN
+        // =============================================
+        //hola
+        actualizarFooter();
+    </script>
 </body>
+
 </html>
