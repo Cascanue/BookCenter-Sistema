@@ -109,6 +109,8 @@
             gap: 0.85rem;
             align-items: flex-end;
             max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .buscador-pedido-wrapper .campo-busqueda { flex: 1; }
@@ -475,7 +477,7 @@
         /* Tarjeta */
         .grid-tarjeta {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 2fr 1fr 1fr;
             gap: 0.9rem;
         }
 
@@ -484,7 +486,7 @@
         /* Billetera digital */
         .grid-billeteras {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(2, 1fr);
             gap: 0.65rem;
             margin-bottom: 1rem;
         }
@@ -521,9 +523,8 @@
             letter-spacing: -0.5px;
         }
 
-        .logo-yape   { background: #7c3aed; color: white; }
-        .logo-plin   { background: #059669; color: white; }
-        .logo-lukita { background: #f59e0b; color: white; }
+        .logo-yape { background: #7c3aed; color: white; }
+        .logo-plin { background: #059669; color: white; }
 
         .panel-qr {
             display: none;
@@ -788,22 +789,51 @@
         .modal-texto  { color: var(--gris); font-size: 0.9rem; margin-bottom: 0.4rem; }
         .modal-correlativo { font-weight: 800; color: var(--azul-primario); font-size: 1.05rem; margin-bottom: 1.5rem; }
 
-        /* ===== NUEVA GRILLA 2x2 PARA RESUMEN DE COMPRA ===== */
+        /* ===== LAYOUT 2 COLUMNAS PARA RESUMEN DE COMPRA ===== */
+        .seccion-resumen {
+            overflow-y: auto;
+            align-items: stretch;
+        }
+
         .grid-resumen-2x2 {
             display: grid;
-            grid-template-columns: 1fr 1fr; /* Dos columnas iguales */
-            grid-auto-rows: min-content; /* Se ajustan al tamaño de la tabla/contenido */
-            gap: 1.5rem;
-            align-items: start; /* Para que las tarjetas no se estiren verticalmente si la otra es más alta */
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: auto;
+            gap: 1.25rem;
+            align-items: start;
+            width: 100%;
+            max-width: 1100px;
+            margin: 0 auto;
         }
-        
-        /* Aseguramos que las tarjetas ocupen bien el ancho de su columna */
-        .grid-resumen-2x2 .tarjeta-bloque {
+
+        /* Columna IZQUIERDA: Info del Pedido + Método de Pago */
+        .col-izq-resumen {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        /* Columna DERECHA: Productos (scroll) + Totales (fijo abajo) */
+        .col-der-resumen {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        /* Sólo la tabla de productos tiene scroll interno */
+        .tarjeta-bloque.productos-scroll .bloque-body {
+            max-height: 350px;
+            overflow-y: auto;
+            padding: 0;
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 #f8fafc;
+        }
+
+        .tarjeta-bloque {
             max-width: 100%;
             margin: 0;
         }
 
-        /* Si quieres que en pantallas muy pequeñas se vuelva a poner 1 arriba de otro */
         @media (max-width: 900px) {
             .grid-resumen-2x2 {
                 grid-template-columns: 1fr;
@@ -943,20 +973,22 @@
                         </div>
                         <div class="metodo-formulario" id="formTarjeta">
                             <div class="grid-tarjeta">
+                                <!-- Fila 1: Nombre del titular (ancho completo) -->
                                 <div class="campo-grupo full-col">
+                                    <span class="campo-label">Nombre del titular</span>
+                                    <input type="text" class="campo-input" id="nombreTitular"
+                                           placeholder="Como aparece en la tarjeta"
+                                           oninput="this.value = this.value.toUpperCase().replace(/[^A-Z\u00C0-\u017E\s]/g, '')">
+                                </div>
+                                <!-- Fila 2: Número, Caducidad y CVV en la misma fila (grid 2fr 1fr 1fr) -->
+                                <div class="campo-grupo">
                                     <span class="campo-label">Número de tarjeta</span>
                                     <input type="text" class="campo-input" id="numTarjeta"
                                            placeholder="0000 0000 0000 0000" maxlength="19"
                                            oninput="formatearNumTarjeta(this)">
                                 </div>
-                                <div class="campo-grupo full-col">
-                                    <span class="campo-label">Nombre del titular</span>
-                                    <input type="text" class="campo-input" id="nombreTitular"
-                                           placeholder="Como aparece en la tarjeta"
-                                           oninput="this.value = this.value.toUpperCase().replace(/[^A-ZÁÉÍÓÚÑa-záéíóúñ\s]/g, '')">
-                                </div>
                                 <div class="campo-grupo">
-                                    <span class="campo-label">Fecha de caducidad</span>
+                                    <span class="campo-label">Caducidad</span>
                                     <input type="text" class="campo-input" id="fechaCaducidad"
                                            placeholder="MM/AA" maxlength="5"
                                            oninput="formatearFechaTarjeta(this)">
@@ -967,6 +999,7 @@
                                            placeholder="•••" maxlength="4"
                                            oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                                 </div>
+                                <!-- Fila 3: Cuotas (ancho completo al fondo) -->
                                 <div class="campo-grupo full-col">
                                     <span class="campo-label">¿Pago en cuotas?</span>
                                     <select class="campo-input" id="cuotasTarjeta" style="cursor:pointer;">
@@ -987,7 +1020,7 @@
                             <div class="metodo-icono-box icono-ambar"><i class='bx bx-wallet'></i></div>
                             <div class="metodo-info-texto">
                                 <div class="metodo-nombre">Billetera Digital</div>
-                                <div class="metodo-desc">Yape, Plin, Lukita</div>
+                                <div class="metodo-desc">Yape, Plin</div>
                             </div>
                         </div>
                         <div class="metodo-formulario" id="formBilletera">
@@ -1002,10 +1035,6 @@
                                 <button class="billetera-btn" id="btnPlin" onclick="seleccionarBilletera('plin')">
                                     <div class="logo-billetera logo-plin">PLIN</div>
                                     <span>Plin</span>
-                                </button>
-                                <button class="billetera-btn" id="btnLukita" onclick="seleccionarBilletera('lukita')">
-                                    <div class="logo-billetera logo-lukita">LUKI</div>
-                                    <span>Lukita</span>
                                 </button>
                             </div>
                             <div class="panel-qr" id="panelQR">
@@ -1041,63 +1070,72 @@
 
         <!-- ===== PANEL 3: RESUMEN DE COMPRA ===== -->
         <div class="panel-tab" id="panel3">
-            <div class="seccion-resumen grid-resumen-2x2">
+            <div class="seccion-resumen">
+            <div class="grid-resumen-2x2">
 
-                <!-- Info del pedido -->
-                <div class="tarjeta-bloque">
-                    <div class="bloque-header"><i class='bx bx-info-circle'></i> Información del Pedido</div>
-                    <div class="bloque-body">
-                        <div class="fila-dato">
-                            <span class="etiqueta">N° de Pedido</span>
-                            <span class="valor" id="r_nroPedido">—</span>
-                        </div>
-                        <div class="fila-dato">
-                            <span class="etiqueta">Cliente</span>
-                            <span class="valor" id="r_cliente">—</span>
-                        </div>
-                        <div class="fila-dato">
-                            <span class="etiqueta">Fecha del pedido</span>
-                            <span class="valor" id="r_fecha">—</span>
-                        </div>
-                        <div class="fila-dato">
-                            <span class="etiqueta">Estado</span>
-                            <span class="valor" id="r_estado">—</span>
+                <!-- COLUMNA IZQUIERDA: Info del pedido + Método de pago -->
+                <div class="col-izq-resumen">
+
+                    <!-- Info del pedido -->
+                    <div class="tarjeta-bloque">
+                        <div class="bloque-header"><i class='bx bx-info-circle'></i> Información del Pedido</div>
+                        <div class="bloque-body">
+                            <div class="fila-dato">
+                                <span class="etiqueta">N° de Pedido</span>
+                                <span class="valor" id="r_nroPedido">—</span>
+                            </div>
+                            <div class="fila-dato">
+                                <span class="etiqueta">Cliente</span>
+                                <span class="valor" id="r_cliente">—</span>
+                            </div>
+                            <div class="fila-dato">
+                                <span class="etiqueta">Fecha del pedido</span>
+                                <span class="valor" id="r_fecha">—</span>
+                            </div>
+                            <div class="fila-dato">
+                                <span class="etiqueta">Estado</span>
+                                <span class="valor" id="r_estado">—</span>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Productos -->
-                <div class="tarjeta-bloque">
-                    <div class="bloque-header"><i class='bx bx-package'></i> Productos del Pedido</div>
-                    <div class="bloque-body" style="padding:0;">
-                        <table class="tabla-resumen">
-                            <thead>
-                                <tr>
-                                    <th style="text-align:left;">Producto</th>
-                                    <th style="text-align:center;">Cant.</th>
-                                    <th style="text-align:right;">Precio unit.</th>
-                                    <th style="text-align:right;">Subtotal</th>
-                                </tr>
-                            </thead>
-                            <tbody id="r_bodyProductos"></tbody>
-                        </table>
+                    <!-- Método de pago -->
+                    <div class="tarjeta-bloque">
+                        <div class="bloque-header"><i class='bx bx-credit-card'></i> Método de Pago</div>
+                        <div class="bloque-body" id="r_metodoPago"></div>
                     </div>
+
                 </div>
 
-                <!-- Método de pago -->
-                <div class="tarjeta-bloque">
-                    <div class="bloque-header"><i class='bx bx-credit-card'></i> Método de Pago</div>
-                    <div class="bloque-body" id="r_metodoPago"></div>
-                </div>
+                <!-- COLUMNA DERECHA: Productos (scroll) + Totales -->
+                <div class="col-der-resumen">
 
-                <!-- Totales -->
-                <div class="tarjeta-bloque">
-                    <div class="bloque-header"><i class='bx bx-calculator'></i> Totales</div>
-                    <div class="bloque-body">
-                        <div class="fila-dato">
-                            <span class="etiqueta">Subtotal</span>
-                            <span class="valor" id="r_subtotal">S/0.00</span>
+                    <!-- Productos con scroll interno -->
+                    <div class="tarjeta-bloque productos-scroll">
+                        <div class="bloque-header"><i class='bx bx-package'></i> Productos del Pedido</div>
+                        <div class="bloque-body">
+                            <table class="tabla-resumen">
+                                <thead>
+                                    <tr>
+                                        <th style="text-align:left;">Producto</th>
+                                        <th style="text-align:center;">Cant.</th>
+                                        <th style="text-align:right;">Precio unit.</th>
+                                        <th style="text-align:right;">Subtotal</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="r_bodyProductos"></tbody>
+                            </table>
                         </div>
+                    </div>
+
+                    <!-- Totales (fijo debajo, nunca oculto) -->
+                    <div class="tarjeta-bloque">
+                        <div class="bloque-header"><i class='bx bx-calculator'></i> Totales</div>
+                        <div class="bloque-body">
+                            <div class="fila-dato">
+                                <span class="etiqueta">Subtotal</span>
+                                <span class="valor" id="r_subtotal">S/0.00</span>
+                            </div>
                         <div class="fila-dato" id="r_filaVuelto" style="display:none;">
                             <span class="etiqueta">Monto recibido</span>
                             <span class="valor" id="r_montoRecibido">S/0.00</span>
@@ -1110,10 +1148,13 @@
                             <span class="etiqueta" style="font-weight:800;color:var(--azul-oscuro);font-size:0.95rem;">TOTAL COBRADO</span>
                             <span class="valor-grande" id="r_totalFinal">S/0.00</span>
                         </div>
+                        </div>
                     </div>
-                </div>
 
-            </div>
+                </div><!-- /col-der-resumen -->
+
+            </div><!-- /grid-resumen-2x2 -->
+            </div><!-- /seccion-resumen -->
         </div>
 
     </div>
@@ -1296,7 +1337,7 @@
 
         if (tipo === 'billetera') {
             document.getElementById('panelQR').classList.remove('visible');
-            ['btnYape','btnPlin','btnLukita'].forEach(id =>
+            ['btnYape','btnPlin'].forEach(id =>
                 document.getElementById(id).classList.remove('seleccionada')
             );
         }
@@ -1327,10 +1368,10 @@
 
     function seleccionarBilletera(tipo) {
         billeteraElegida = tipo;
-        const mapBtn = { yape: 'btnYape', plin: 'btnPlin', lukita: 'btnLukita' };
-        const mapNombre = { yape: 'Yape', plin: 'Plin', lukita: 'Lukita' };
+        const mapBtn = { yape: 'btnYape', plin: 'btnPlin' };
+        const mapNombre = { yape: 'Yape', plin: 'Plin' };
 
-        ['btnYape','btnPlin','btnLukita'].forEach(id =>
+        ['btnYape','btnPlin'].forEach(id =>
             document.getElementById(id).classList.remove('seleccionada')
         );
         document.getElementById(mapBtn[tipo]).classList.add('seleccionada');
@@ -1388,7 +1429,7 @@
         if (!pedidoActual) return;
 
         document.getElementById('r_nroPedido').textContent = `#${pedidoActual.id_pedido}`;
-        document.getElementById('r_cliente').textContent   = pedidoActual.nombre_cliente || '—';
+        document.getElementById('r_cliente').textContent   = `${pedidoActual.nombres || ''} ${pedidoActual.apellido_paterno || ''}`.trim() || '—';
         document.getElementById('r_fecha').textContent     = formatearFecha(pedidoActual.fecha_pedido);
         document.getElementById('r_estado').textContent    = pedidoActual.estado || '—';
 
@@ -1458,8 +1499,8 @@
     // =============================================
     function validarSeccion1() {
         if (!pedidoActual) return false;
-        if (pedidoActual.estado === 'Pagado') {
-            alert('⚠️ Este pedido ya fue pagado anteriormente.');
+        if (pedidoActual.estado === 'Completado' || pedidoActual.estado === 'Pagado') {
+            alert('⚠️ Este pedido ya fue procesado anteriormente.');
             return false;
         }
         if (pedidoActual.estado === 'Anulado') {
@@ -1517,7 +1558,7 @@
 
     function actualizarBotonSiguiente() {
         const btn = document.getElementById('btnSiguiente');
-        if (tabActual === 1) btn.disabled = !pedidoActual || pedidoActual.estado === 'Pagado' || pedidoActual.estado === 'Anulado';
+        if (tabActual === 1) btn.disabled = !pedidoActual || pedidoActual.estado === 'Completado' || pedidoActual.estado === 'Pagado' || pedidoActual.estado === 'Anulado';
         if (tabActual === 2) btn.disabled = false; // la validación real se hace al presionar
     }
 
