@@ -463,6 +463,8 @@ app.post('/api/procesar-pago', (req, res) => {
                 }
 
                 const total = rows[0].total;
+                // IGV peruano 18% incluido en el precio (precio ya incluye IGV)
+                const igv = parseFloat((total - (total / 1.18)).toFixed(2));
 
                 // Generar número correlativo
                 connection.query('SELECT COUNT(*) + 1 AS siguiente FROM Comprobante_Pago', (err, conteo) => {
@@ -470,19 +472,27 @@ app.post('/api/procesar-pago', (req, res) => {
 
                     const correlativo = String(conteo[0].siguiente).padStart(8, '0');
 
-                    // Insertar comprobante
-                    const qComp = `INSERT INTO Comprobante_Pago (id_pedido, numero_correlativo, tipo_comprobante, monto_total) VALUES (?, ?, 'Boleta', ?)`;
-                    connection.query(qComp, [id_pedido, correlativo, total], (err, result) => {
+                    // Insertar comprobante (con igv calculado)
+                    const qComp = `INSERT INTO Comprobante_Pago (id_pedido, id_cajero, numero_correlativo, tipo_comprobante, monto_total, igv) VALUES (?, ?, ?, 'Boleta', ?, ?)`;
+                    const idCajero = parseInt(req.body.id_cajero) || 1;
+                    connection.query(qComp, [id_pedido, idCajero, correlativo, total, igv], (err, result) => {
                         if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false, mensaje: err.message }); });
 
-                        // Actualizar estado del pedido
-                        connection.query('UPDATE Pedido SET estado = "Pagado" WHERE id_pedido = ?', [id_pedido], err => {
-                            if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false }); });
+                        // Insertar registro de pago
+                        const qPago = `INSERT INTO Pago (id_comprobante, metodo_pago, monto_recibido) VALUES (?, ?, ?)`;
+                        const metodoDB = metodo_pago === 'billetera' ? 'Billetera Digital' : (metodo_pago === 'tarjeta' ? 'Tarjeta' : 'Efectivo');
+                        connection.query(qPago, [result.insertId, metodoDB, total], (err) => {
+                            if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false, mensaje: err.message }); });
 
-                            connection.commit(err => {
+                            // Actualizar estado del pedido → "Completado"
+                            connection.query('UPDATE Pedido SET estado = "Completado" WHERE id_pedido = ?', [id_pedido], err => {
                                 if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false }); });
-                                connection.release();
-                                res.json({ exito: true, numero_correlativo: correlativo, id_comprobante: result.insertId });
+
+                                connection.commit(err => {
+                                    if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false }); });
+                                    connection.release();
+                                    res.json({ exito: true, numero_correlativo: correlativo, id_comprobante: result.insertId });
+                                });
                             });
                         });
                     });
