@@ -254,7 +254,7 @@ app.post('/api/guardar-pedido', (req, res) => {
                 });
             }
 
-            const queryStock = `SELECT id_producto, stock, nombre FROM Producto WHERE id_producto IN (?)`;
+            const queryStock = `SELECT id_producto, stock_actual, nombre FROM Producto WHERE id_producto IN (?)`;
             connection.query(queryStock, [productoIds], (err, resultsStock) => {
                 if (err) {
                     return connection.rollback(() => {
@@ -262,12 +262,12 @@ app.post('/api/guardar-pedido', (req, res) => {
                         res.status(500).json({ exito: false, mensaje: 'Error al verificar stock' });
                     });
                 }
-                
+
                 // Mapear stock actual
                 const stockMap = {};
                 const nombresMap = {};
-                resultsStock.forEach(r => { 
-                    stockMap[r.id_producto] = r.stock; 
+                resultsStock.forEach(r => {
+                    stockMap[r.id_producto] = r.stock_actual;
                     nombresMap[r.id_producto] = r.nombre;
                 });
 
@@ -606,7 +606,7 @@ app.put('/api/admin/comprobantes/:id/anular', (req, res) => {
                                     let pendientes = detalles.length;
                                     let huboError = false;
                                     detalles.forEach(item => {
-                                        connection.query('UPDATE Producto SET stock = stock + ? WHERE id_producto = ?', [item.cantidad, item.id_producto], (err) => {
+                                        connection.query('UPDATE Producto SET stock_actual = stock_actual + ? WHERE id_producto = ?', [item.cantidad, item.id_producto], (err) => {
                                             if (huboError) return;
                                             if (err) {
                                                 huboError = true;
@@ -715,7 +715,7 @@ app.post('/api/procesar-pago', (req, res) => {
                                     let errorDescuento = false;
                                     
                                     detalles.forEach(item => {
-                                        connection.query('UPDATE Producto SET stock = stock - ? WHERE id_producto = ?', [item.cantidad, item.id_producto], (err) => {
+                                        connection.query('UPDATE Producto SET stock_actual = stock_actual - ? WHERE id_producto = ?', [item.cantidad, item.id_producto], (err) => {
                                             if (errorDescuento) return;
                                             if (err) {
                                                 errorDescuento = true;
