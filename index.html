@@ -86,7 +86,11 @@ document.getElementById('formularioLogin').addEventListener('submit', async (e) 
     e.preventDefault();
     const usuario = document.getElementById('usuario').value;
     const password = document.getElementById('password').value;
-    
+
+    const btn = document.querySelector('#formularioLogin button[type="submit"]');
+    btn.disabled = true;
+    btn.textContent = 'Verificando...';
+
     try {
         const respuesta = await fetch(`${URL_BACKEND}/api/login`, {
             method: 'POST',
@@ -97,16 +101,19 @@ document.getElementById('formularioLogin').addEventListener('submit', async (e) 
         const resultado = await respuesta.json();
         
         if (resultado.exito) {
-            
             localStorage.setItem('rolUsuario', resultado.usuario.nombre_rol.toLowerCase());
             localStorage.setItem('idUsuario', resultado.usuario.id_usuario);
             localStorage.setItem('nombreUsuario', resultado.usuario.nombre_completo); 
             window.location.href = '/menu';
         } else {
-            alert("❌ " + resultado.mensaje); // Muestra error si pone mal la clave
+            alert("❌ " + resultado.mensaje);
+            btn.disabled = false;
+            btn.textContent = 'Ingresar';
         }
     } catch (error) {
-        alert("❌ Error de conexión con el servidor.");
+        alert("❌ Error de conexión con el servidor. Si es la primera vez que ingresas hoy, el servidor puede estar iniciando. Espera unos segundos y vuelve a intentarlo.");
+        btn.disabled = false;
+        btn.textContent = 'Ingresar';
     }
 });
     </script>

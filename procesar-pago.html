@@ -188,6 +188,7 @@
             overflow: hidden;
             background: white;
             max-width: 860px;
+            margin: 0 auto;
         }
 
         .placeholder-busqueda {
@@ -1458,6 +1459,15 @@
         </div>
     </div>
 
+    <div class="modal-overlay oculto" id="modalYaCompletado">
+        <div class="modal-contenido">
+            <div style="font-size:3rem;text-align:center;margin-bottom:.75rem;">✅</div>
+            <div class="modal-titulo" style="text-align:center;color:#065f46">Pedido ya Completado</div>
+            <p class="modal-texto" style="text-align:center;color:#6b7280">Este pedido ya fue procesado y tiene un comprobante emitido. No puede volver a cobrarse.</p>
+            <button type="button" class="btn-principal" style="margin-top:.5rem" onclick="document.getElementById('modalYaCompletado').classList.add('oculto')">Entendido</button>
+        </div>
+    </div>
+
     <script src="js/config.js"></script>
     <script>
         // =============================================
@@ -1510,6 +1520,15 @@
                 }
 
                 pedidoActual = data;
+
+                // Mostrar modal si el pedido ya fue completado
+                if (data.estado === 'Completado' || data.estado === 'Pagado') {
+                    renderizarResultado(data);
+                    actualizarBotonSiguiente();
+                    document.getElementById('modalYaCompletado').classList.remove('oculto');
+                    return;
+                }
+
                 renderizarResultado(data);
                 actualizarBotonSiguiente();
 

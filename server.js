@@ -547,15 +547,17 @@ app.delete('/api/admin/pedidos/:id', (req, res) => {
 // 11. COMPROBANTES Y ANULACIONES
 app.get('/api/admin/comprobantes', (req, res) => {
     const { estado, fecha } = req.query;
+    // La tabla Comprobante_Pago no tiene estado propio; el estado se deduce del pedido asociado
     let query = `
         SELECT cp.id_comprobante, cp.numero_correlativo, cp.tipo_comprobante, cp.fecha_emision, cp.monto_total,
-               cp.motivo_anulacion, cp.estado_comprobante AS estado, p.id_pedido
+               p.id_pedido, p.estado AS estado_pedido,
+               CASE WHEN p.estado = 'Anulado' THEN 'Anulado' ELSE 'Vigente' END AS estado
         FROM Comprobante_Pago cp
         JOIN Pedido p ON cp.id_pedido = p.id_pedido
         WHERE 1=1
     `;
     const params = [];
-    if (estado) { query += ' AND cp.estado_comprobante = ?'; params.push(estado); }
+    if (estado) { query += ` AND CASE WHEN p.estado = 'Anulado' THEN 'Anulado' ELSE 'Vigente' END = ?`; params.push(estado); }
     if (fecha) { query += ' AND DATE(cp.fecha_emision) = ?'; params.push(fecha); }
     query += ' ORDER BY cp.id_comprobante DESC';
 
