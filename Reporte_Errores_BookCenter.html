@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte de Errores - BookCenter</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; margin: 40px; color: #333; }
+        h1 { color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        h2 { color: #34495e; margin-top: 30px; }
+        h3 { color: #16a085; }
+        ul { margin-bottom: 20px; }
+        li { margin-bottom: 10px; }
+        strong { color: #d35400; }
+        .conclusion { background: #f9f9f9; padding: 15px; border-left: 5px solid #2980b9; margin-top: 30px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>REPORTE DE ERRORES: ESPECIFICACIONES Y DIAGRAMAS VS. SISTEMA WEB</h1>
+    <p>Este documento detalla todas las inconsistencias encontradas al comparar la documentación (diagramas y texto) del proyecto "BookCenter" contra el código real ejecutado en el backend (server.js).</p>
+
+    <h2>PARTE 1: ERRORES EN LAS ESPECIFICACIONES (TEXTO DE CASOS DE USO)</h2>
+    <p>Estas son las discrepancias lógicas generales que afectan tanto al texto del informe como a sus respectivos diagramas.</p>
+    <ul>
+        <li><strong>Caso de Uso 01 (Iniciar Sesión):</strong> <br><em>El error:</em> La especificación dice que se utiliza encriptación segura y que se registra el inicio de sesión en un log de auditoría.<br><em>La realidad:</em> El backend evalúa la contraseña en texto plano (ignorando bcrypt) y NO inserta ningún registro en la base de datos como auditoría (solo hace un print en consola).</li>
+        <li><strong>Caso de Uso 05 (Registrar Pedido):</strong> <br><em>El error:</em> Indica que el sistema verifica el stock en tiempo real con la base de datos al guardar.<br><em>La realidad:</em> El backend (/api/guardar-pedido) guarda directamente el pedido asumiendo que está correcto. No realiza un SELECT a la tabla producto para validar si hay stock antes de insertar.</li>
+        <li><strong>Caso de Uso 06 (Registrar Pago):</strong> <br><em>El error:</em> Indica que el sistema descuenta automáticamente el stock y que genera una boleta o factura dependiendo de si hay RUC.<br><em>La realidad:</em> El sistema NUNCA descuenta el stock en la base de datos. Además, la lógica para Boleta/Factura no existe; el sistema emite siempre una "Boleta" por defecto de manera forzada en el código.</li>
+        <li><strong>Caso de Uso 07 (Listar/Anular Comprobante):</strong> <br><em>El error:</em> El flujo alterno indica que al anular, el sistema solicita un motivo, regresa el pedido al estado "Pendiente" y restaura el stock.<br><em>La realidad:</em> El sistema solo le cambia el estado al pedido a "Anulado". No lo devuelve a pendiente, no restaura stock y no registra motivos.</li>
+        <li><strong>Caso de Uso 08 (Modificar y Eliminar Pedidos):</strong> <br><em>El error:</em> Describe que el Administrador puede editar cantidades de un pedido o eliminarlo por completo.<br><em>La realidad:</em> El servidor no tiene programadas las rutas (endpoints) para modificar (PUT) ni para eliminar (DELETE) pedidos. Solo puede listarlos.</li>
+    </ul>
+
+    <h2>PARTE 2: ERRORES ESPECÍFICOS EN LAS IMÁGENES (DIAGRAMAS UML)</h2>
+    <p>Estos son los errores exactos ubicados en los diagramas de Actividades, Secuencia y Colaboración.</p>
+    
+    <h3>Errores Graves</h3>
+    <ul>
+        <li><strong>Actividades CU-01 (image31.jpg):</strong> Muestra un fork paralelo "Registrar ingreso" en log. Esto no existe en el sistema.</li>
+        <li><strong>Colaboración CU-01 (image13.png):</strong> Muestra la entidad <em>e_logAuditoria</em> y flecha <em>registrarIngreso</em>. Estos no existen.</li>
+        <li><strong>Secuencia CU-01 (image28.png):</strong> Muestra la línea de vida <em>e_logAuditoria</em> y mensajes de auditoría que el código no hace.</li>
+        <li><strong>Actividades CU-05 (image3.png):</strong> Fork <em>stock = stock - cantidad</em> al agregar producto. El backend NO descuenta stock al registrar un pedido.</li>
+        <li><strong>Colaboración CU-05 (image8.png):</strong> Muestra un controlador <em>c_actualizarStock</em> y la entidad <em>e_productos</em>. El sistema no los utiliza en este proceso.</li>
+        <li><strong>Secuencia CU-05 (image30.png):</strong> Mensajes <em>verificarStockYPrecio()</em> hacia <em>e_productos</em>. El servidor recibe todo y guarda sin consultar de nuevo a la base de datos.</li>
+        <li><strong>Actividades CU-06 (image22.png):</strong> Muestra la decisión <em>RUC</em> → Factura/Boleta. El sistema siempre genera Boleta, sin evaluar condiciones.</li>
+        <li><strong>Colaboración CU-06 (image16.png):</strong> Muestra el controlador <em>c_calcularVuelo</em> (calcular vuelto). El cálculo del vuelto se hace en el Frontend, no existe controlador en el servidor para eso.</li>
+        <li><strong>Secuencia CU-06 (image7.png):</strong> El estado se actualiza a <em>"Pagado"</em>. En el código real es <em>"Completado"</em>.</li>
+        <li><strong>Colaboración CU-08 (image2.png):</strong> El actor se llama <em>Gerente</em>. En el sistema web, el rol que existe para esto se llama <em>Administrador</em>.</li>
+        <li><strong>Colaboración y Actividades CU-08 (image2.png):</strong> Muestran sub-flujos para "Modificar" y "Eliminar" pedido. Como se indicó antes, no existen en el código.</li>
+    </ul>
+
+    <h3>Errores Menores</h3>
+    <ul>
+        <li><strong>Secuencia CU-07 (image15.png):</strong> Filtro por rango de fechas que no existe en el backend.</li>
+        <li><strong>Secuencia CU-08 (image18.png):</strong> Filtro por estado de pedido que no existe en el backend.</li>
+        <li><strong>Diagrama de Dominio (image23.jpg):</strong> Muestra <em>Metodo_Pago</em> como entidad independiente. En la base de datos es solo una columna de la tabla <em>Pago</em>.</li>
+    </ul>
+
+    <div class="conclusion">
+        Conclusión: Los diagramas deben simplificarse eliminando las validaciones de stock, los flujos de auditoría, las bifurcaciones lógicas de factura/boleta y los sub-flujos de edición/eliminación de pedidos para que coincidan 100% con el sistema web desplegado.
+    </div>
+</body>
+</html>
