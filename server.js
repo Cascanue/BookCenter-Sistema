@@ -677,7 +677,7 @@ app.post('/api/procesar-pago', (req, res) => {
 
                 // Generar número correlativo
                 connection.query('SELECT COUNT(*) + 1 AS siguiente FROM Comprobante_Pago', (err, conteo) => {
-                    if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false }); });
+                    if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false, mensaje: err ? err.message : 'Error desconocido' }); });
 
                     const correlativo = String(conteo[0].siguiente).padStart(8, '0');
 
@@ -695,8 +695,8 @@ app.post('/api/procesar-pago', (req, res) => {
                             if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false, mensaje: err.message }); });
 
                             // Actualizar estado del pedido → "Completado"
-                            connection.query('UPDATE Pedido SET estado = "Completado" WHERE id_pedido = ?', [id_pedido], err => {
-                                if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false }); });
+                            connection.query("UPDATE Pedido SET estado = 'Completado' WHERE id_pedido = ?", [id_pedido], err => {
+                                if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false, mensaje: err ? err.message : 'Error desconocido' }); });
 
                                 // DESCONTAR STOCK REAL
                                 connection.query('SELECT id_producto, cantidad FROM Detalle_Pedido WHERE id_pedido = ?', [id_pedido], (err, detalles) => {
@@ -704,7 +704,7 @@ app.post('/api/procesar-pago', (req, res) => {
 
                                     if (detalles.length === 0) {
                                         connection.commit(err => {
-                                            if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false }); });
+                                            if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false, mensaje: err ? err.message : 'Error desconocido' }); });
                                             connection.release();
                                             res.json({ exito: true, numero_correlativo: correlativo, id_comprobante: result.insertId });
                                         });
@@ -724,7 +724,7 @@ app.post('/api/procesar-pago', (req, res) => {
                                             updatesPendientes--;
                                             if (updatesPendientes === 0) {
                                                 connection.commit(err => {
-                                                    if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false }); });
+                                                    if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false, mensaje: err ? err.message : 'Error desconocido' }); });
                                                     connection.release();
                                                     res.json({ exito: true, numero_correlativo: correlativo, id_comprobante: result.insertId });
                                                 });
