@@ -47,24 +47,12 @@ db.getConnection((err, connection) => {
         const sqlCrear = "ALTER TABLE Usuario ADD COLUMN IF NOT EXISTS nombre_completo VARCHAR(150) NOT NULL DEFAULT 'Usuario del Sistema' AFTER username;";
         const sqlActualizar = "UPDATE Usuario SET nombre_completo = 'Diego Sebastián' WHERE id_usuario = 1;";
 
-        // Auditoría (CU-01): tabla de bitácora de acciones
-        const sqlCrearLog = `
-            CREATE TABLE IF NOT EXISTS LogAuditoria (
-                id_log INT AUTO_INCREMENT PRIMARY KEY,
-                fecha DATE NOT NULL,
-                hora TIME NOT NULL,
-                id_usuario INT NULL,
-                accion VARCHAR(255) NOT NULL
-            );
-        `;
-
         // Anulación de comprobantes (CU-07): motivo y estado propio del comprobante
         const sqlColMotivo = "ALTER TABLE Comprobante_Pago ADD COLUMN IF NOT EXISTS motivo_anulacion VARCHAR(255) NULL;";
         const sqlColEstadoComprobante = "ALTER TABLE Comprobante_Pago ADD COLUMN IF NOT EXISTS estado_comprobante ENUM('Vigente','Anulado') NOT NULL DEFAULT 'Vigente';";
 
         connection.query(sqlCrear, () => {
             connection.query(sqlActualizar, () => {
-                connection.query(sqlCrearLog, (err) => { if (err) console.error('❌ Error creando LogAuditoria:', err); });
                 connection.query(sqlColMotivo, (err) => { if (err) console.error('❌ Error creando columna motivo_anulacion:', err); });
                 connection.query(sqlColEstadoComprobante, (err) => { if (err) console.error('❌ Error creando columna estado_comprobante:', err); });
                 console.log('🌟 ¡LISTO! Base de datos actualizada con tu nombre. Ya puedes iniciar sesión.');
@@ -78,14 +66,13 @@ db.getConnection((err, connection) => {
 // C. RUTAS DEL SISTEMA (Endpoints)
 // ==========================================
 
-// Auditoría (CU-01): registra una acción en LogAuditoria (hora de Perú UTC-5)
-function registrarAuditoria(idUsuario, accion) {
-    const ahoraPeru = new Date(Date.now() - 5 * 3600 * 1000);
-    const fecha = ahoraPeru.toISOString().slice(0, 10);
-    const hora = ahoraPeru.toISOString().slice(11, 19);
+// Auditoría (CU-01): registra una acción en Auditoria_Log (hora de Perú UTC-5)
+// accion: código corto (máx 50 char, ej. 'LOGIN_EXITOSO'); detalle: texto libre con el contexto
+function registrarAuditoria(idUsuario, accion, tablaAfectada, detalle) {
+    const fechaHoraPeru = new Date(Date.now() - 5 * 3600 * 1000).toISOString().slice(0, 19).replace('T', ' ');
     db.query(
-        'INSERT INTO LogAuditoria (fecha, hora, id_usuario, accion) VALUES (?, ?, ?, ?)',
-        [fecha, hora, idUsuario, accion],
+        'INSERT INTO Auditoria_Log (id_usuario, accion, tabla_afectada, detalle, fecha_hora) VALUES (?, ?, ?, ?, ?)',
+        [idUsuario, accion, tablaAfectada, detalle || null, fechaHoraPeru],
         (err) => { if (err) console.error('❌ Error registrando auditoría:', err); }
     );
 }
@@ -108,7 +95,7 @@ app.post('/api/login', (req, res) => {
         }
 
         if (results.length === 0) {
-            registrarAuditoria(null, `Login fallido (usuario inexistente: ${username})`);
+            registrarAuditoria(null, 'LOGIN_FALLIDO', 'Usuario', `Usuario inexistente: ${username}`);
             return res.status(401).json({ exito: false, mensaje: "Usuario no encontrado" });
         }
 
@@ -118,11 +105,11 @@ app.post('/api/login', (req, res) => {
 
         const continuarConResultado = (coincide) => {
             if (!coincide) {
-                registrarAuditoria(usuario.id_usuario, 'Login fallido (contraseña incorrecta)');
+                registrarAuditoria(usuario.id_usuario, 'LOGIN_FALLIDO', 'Usuario', `Contraseña incorrecta para: ${usuario.username}`);
                 return res.status(401).json({ exito: false, mensaje: "Contraseña incorrecta" });
             }
 
-            registrarAuditoria(usuario.id_usuario, 'Inicio de sesión exitoso');
+            registrarAuditoria(usuario.id_usuario, 'LOGIN_EXITOSO', 'Usuario', `Inicio de sesión: ${usuario.username}`);
             res.json({
                 exito: true,
                 usuario: {
