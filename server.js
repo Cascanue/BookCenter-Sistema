@@ -47,8 +47,26 @@ db.getConnection((err, connection) => {
         const sqlCrear = "ALTER TABLE Usuario ADD COLUMN IF NOT EXISTS nombre_completo VARCHAR(150) NOT NULL DEFAULT 'Usuario del Sistema' AFTER username;";
         const sqlActualizar = "UPDATE Usuario SET nombre_completo = 'Diego Sebastián' WHERE id_usuario = 1;";
 
+        // Auditoría (CU-01): tabla de bitácora de acciones
+        const sqlCrearLog = `
+            CREATE TABLE IF NOT EXISTS LogAuditoria (
+                id_log INT AUTO_INCREMENT PRIMARY KEY,
+                fecha DATE NOT NULL,
+                hora TIME NOT NULL,
+                id_usuario INT NULL,
+                accion VARCHAR(255) NOT NULL
+            );
+        `;
+
+        // Anulación de comprobantes (CU-07): motivo y estado propio del comprobante
+        const sqlColMotivo = "ALTER TABLE Comprobante_Pago ADD COLUMN IF NOT EXISTS motivo_anulacion VARCHAR(255) NULL;";
+        const sqlColEstadoComprobante = "ALTER TABLE Comprobante_Pago ADD COLUMN IF NOT EXISTS estado_comprobante ENUM('Vigente','Anulado') NOT NULL DEFAULT 'Vigente';";
+
         connection.query(sqlCrear, () => {
             connection.query(sqlActualizar, () => {
+                connection.query(sqlCrearLog, (err) => { if (err) console.error('❌ Error creando LogAuditoria:', err); });
+                connection.query(sqlColMotivo, (err) => { if (err) console.error('❌ Error creando columna motivo_anulacion:', err); });
+                connection.query(sqlColEstadoComprobante, (err) => { if (err) console.error('❌ Error creando columna estado_comprobante:', err); });
                 console.log('🌟 ¡LISTO! Base de datos actualizada con tu nombre. Ya puedes iniciar sesión.');
                 connection.release();
             });
@@ -60,17 +78,26 @@ db.getConnection((err, connection) => {
 // C. RUTAS DEL SISTEMA (Endpoints)
 // ==========================================
 
-// 1. RUTA DE LOGIN (Verifica credenciales y rol)
+// Auditoría (CU-01): registra una acción en LogAuditoria (hora de Perú UTC-5)
+function registrarAuditoria(idUsuario, accion) {
+    const ahoraPeru = new Date(Date.now() - 5 * 3600 * 1000);
+    const fecha = ahoraPeru.toISOString().slice(0, 10);
+    const hora = ahoraPeru.toISOString().slice(11, 19);
+    db.query(
+        'INSERT INTO LogAuditoria (fecha, hora, id_usuario, accion) VALUES (?, ?, ?, ?)',
+        [fecha, hora, idUsuario, accion],
+        (err) => { if (err) console.error('❌ Error registrando auditoría:', err); }
+    );
+}
+
+// 1. RUTA DE LOGIN (Verifica credenciales y rol, con hash bcrypt y auditoría)
 app.post('/api/login', (req, res) => {
     const { username, password } = req.body;
 
-    // Log de intento de login
-    console.log("INTENTO DE LOGIN -> Usuario:", username);
-
     const query = `
-        SELECT u.id_usuario, u.username, u.nombre_completo, u.password_hash, r.nombre_rol 
-        FROM Usuario u 
-        INNER JOIN Rol r ON u.id_rol = r.id_rol 
+        SELECT u.id_usuario, u.username, u.nombre_completo, u.password_hash, r.nombre_rol
+        FROM Usuario u
+        INNER JOIN Rol r ON u.id_rol = r.id_rol
         WHERE u.username = ? AND u.is_active = TRUE
     `;
 
@@ -81,26 +108,54 @@ app.post('/api/login', (req, res) => {
         }
 
         if (results.length === 0) {
+            registrarAuditoria(null, `Login fallido (usuario inexistente: ${username})`);
             return res.status(401).json({ exito: false, mensaje: "Usuario no encontrado" });
         }
 
         const usuario = results[0];
+        const hashGuardado = usuario.password_hash;
+        const yaEncriptada = typeof hashGuardado === 'string' && hashGuardado.startsWith('$2');
 
-        // Retornamos a la validación clásica (texto plano)
-        // Ya no usamos bcrypt porque la base de datos no está encriptada aún
-        if (password !== usuario.password_hash) {
-            return res.status(401).json({ exito: false, mensaje: "Contraseña incorrecta" });
-        }
-
-        res.json({
-            exito: true,
-            usuario: {
-                id_usuario: usuario.id_usuario,
-                username: usuario.username,
-                nombre_completo: usuario.nombre_completo,
-                nombre_rol: usuario.nombre_rol
+        const continuarConResultado = (coincide) => {
+            if (!coincide) {
+                registrarAuditoria(usuario.id_usuario, 'Login fallido (contraseña incorrecta)');
+                return res.status(401).json({ exito: false, mensaje: "Contraseña incorrecta" });
             }
-        });
+
+            registrarAuditoria(usuario.id_usuario, 'Inicio de sesión exitoso');
+            res.json({
+                exito: true,
+                usuario: {
+                    id_usuario: usuario.id_usuario,
+                    username: usuario.username,
+                    nombre_completo: usuario.nombre_completo,
+                    nombre_rol: usuario.nombre_rol
+                }
+            });
+        };
+
+        if (yaEncriptada) {
+            bcrypt.compare(password, hashGuardado, (errBcrypt, coincide) => {
+                if (errBcrypt) {
+                    console.error('❌ Error verificando contraseña:', errBcrypt);
+                    return res.status(500).json({ exito: false, mensaje: 'Error interno del servidor' });
+                }
+                continuarConResultado(coincide);
+            });
+        } else {
+            // Migración perezosa: la contraseña aún está en texto plano en la BD.
+            // Si coincide, la reemplazamos por su hash bcrypt para futuras validaciones.
+            const coincide = password === hashGuardado;
+            if (coincide) {
+                bcrypt.hash(password, 10, (errHash, nuevoHash) => {
+                    if (errHash) return console.error('❌ Error generando hash de contraseña:', errHash);
+                    db.query('UPDATE Usuario SET password_hash = ? WHERE id_usuario = ?', [nuevoHash, usuario.id_usuario], (errUpdate) => {
+                        if (errUpdate) console.error('❌ Error migrando contraseña a bcrypt:', errUpdate);
+                    });
+                });
+            }
+            continuarConResultado(coincide);
+        }
     });
 });
 
@@ -304,6 +359,7 @@ app.post('/api/guardar-pedido', (req, res) => {
         });
     });
 });
+});
 
 // ==========================================
 // E. RUTAS DE ADMINISTRADOR (Dashboard)
@@ -414,22 +470,28 @@ app.delete('/api/clientes/:id', (req, res) => {
 
 // 10. PEDIDOS E HISTORIAL
 app.get('/api/admin/pedidos', (req, res) => {
-    const query = `
-        SELECT p.id_pedido, c.nombres, c.apellido_paterno, p.fecha_pedido, p.total, p.estado 
-        FROM Pedido p 
-        LEFT JOIN Cliente c ON p.id_cliente = c.id_cliente 
-        ORDER BY p.id_pedido DESC
+    const { estado, fecha } = req.query;
+    let query = `
+        SELECT p.id_pedido, c.nombres, c.apellido_paterno, p.fecha_pedido, p.total, p.estado
+        FROM Pedido p
+        LEFT JOIN Cliente c ON p.id_cliente = c.id_cliente
+        WHERE 1=1
     `;
-    db.query(query, (err, results) => {
+    const params = [];
+    if (estado) { query += ' AND p.estado = ?'; params.push(estado); }
+    if (fecha) { query += ' AND DATE(p.fecha_pedido) = ?'; params.push(fecha); }
+    query += ' ORDER BY p.id_pedido DESC';
+
+    db.query(query, params, (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json(results);
     });
 });
 app.get('/api/admin/pedidos/:id/detalles', (req, res) => {
     const query = `
-        SELECT dp.cantidad, dp.precio_unitario, dp.subtotal, pr.nombre 
-        FROM Detalle_Pedido dp 
-        JOIN Producto pr ON dp.id_producto = pr.id_producto 
+        SELECT dp.cantidad, dp.precio_unitario, dp.subtotal, pr.nombre
+        FROM Detalle_Pedido dp
+        JOIN Producto pr ON dp.id_producto = pr.id_producto
         WHERE dp.id_pedido = ?
     `;
     db.query(query, [req.params.id], (err, results) => {
@@ -438,25 +500,142 @@ app.get('/api/admin/pedidos/:id/detalles', (req, res) => {
     });
 });
 
+// Mantenimiento de Pedidos (CU-08): editar estado del pedido
+app.put('/api/admin/pedidos/:id', (req, res) => {
+    const { estado } = req.body;
+    const estadosValidos = ['Pendiente', 'Completado', 'Anulado'];
+    if (!estadosValidos.includes(estado)) {
+        return res.status(400).json({ exito: false, mensaje: 'Estado no válido' });
+    }
+
+    db.query('UPDATE Pedido SET estado = ? WHERE id_pedido = ?', [estado, req.params.id], (err, result) => {
+        if (err) return res.status(500).json({ exito: false, mensaje: err.message });
+        if (result.affectedRows === 0) return res.status(404).json({ exito: false, mensaje: 'Pedido no encontrado' });
+        res.json({ exito: true });
+    });
+});
+
+// Mantenimiento de Pedidos (CU-08): eliminar pedido (solo si sigue Pendiente, sin comprobante emitido)
+app.delete('/api/admin/pedidos/:id', (req, res) => {
+    db.getConnection((err, connection) => {
+        if (err) return res.status(500).json({ exito: false, mensaje: 'Error de conexión a la BD' });
+
+        connection.beginTransaction(err => {
+            if (err) { connection.release(); return res.status(500).json({ exito: false, mensaje: 'Error al iniciar transacción' }); }
+
+            connection.query('SELECT estado FROM Pedido WHERE id_pedido = ?', [req.params.id], (err, rows) => {
+                if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false, mensaje: err.message }); });
+                if (rows.length === 0) return connection.rollback(() => { connection.release(); res.status(404).json({ exito: false, mensaje: 'Pedido no encontrado' }); });
+                if (rows[0].estado !== 'Pendiente') {
+                    return connection.rollback(() => { connection.release(); res.status(400).json({ exito: false, mensaje: 'Solo se pueden eliminar pedidos en estado Pendiente' }); });
+                }
+
+                connection.query('DELETE FROM Detalle_Pedido WHERE id_pedido = ?', [req.params.id], (err) => {
+                    if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false, mensaje: err.message }); });
+
+                    connection.query('DELETE FROM Pedido WHERE id_pedido = ?', [req.params.id], (err) => {
+                        if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false, mensaje: err.message }); });
+
+                        connection.commit(err => {
+                            if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false, mensaje: 'Error al confirmar la transacción' }); });
+                            connection.release();
+                            res.json({ exito: true });
+                        });
+                    });
+                });
+            });
+        });
+    });
+});
+
 // 11. COMPROBANTES Y ANULACIONES
 app.get('/api/admin/comprobantes', (req, res) => {
-    const query = `
-        SELECT cp.id_comprobante, cp.numero_correlativo, cp.tipo_comprobante, cp.fecha_emision, cp.monto_total, p.id_pedido, p.estado 
-        FROM Comprobante_Pago cp 
-        JOIN Pedido p ON cp.id_pedido = p.id_pedido 
-        ORDER BY cp.id_comprobante DESC
+    const { estado, fecha } = req.query;
+    let query = `
+        SELECT cp.id_comprobante, cp.numero_correlativo, cp.tipo_comprobante, cp.fecha_emision, cp.monto_total,
+               cp.motivo_anulacion, cp.estado_comprobante AS estado, p.id_pedido
+        FROM Comprobante_Pago cp
+        JOIN Pedido p ON cp.id_pedido = p.id_pedido
+        WHERE 1=1
     `;
-    db.query(query, (err, results) => {
+    const params = [];
+    if (estado) { query += ' AND cp.estado_comprobante = ?'; params.push(estado); }
+    if (fecha) { query += ' AND DATE(cp.fecha_emision) = ?'; params.push(fecha); }
+    query += ' ORDER BY cp.id_comprobante DESC';
+
+    db.query(query, params, (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json(results);
     });
 });
+
+// Anular comprobante (CU-07): guarda el motivo, regresa el pedido a "Pendiente" y devuelve el stock
 app.put('/api/admin/comprobantes/:id/anular', (req, res) => {
-    // Al anular, pasamos el estado del pedido a 'Anulado'
-    const query = 'UPDATE Pedido SET estado = "Anulado" WHERE id_pedido = (SELECT id_pedido FROM Comprobante_Pago WHERE id_comprobante = ?)';
-    db.query(query, [req.params.id], (err) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ exito: true });
+    const { motivo } = req.body;
+    if (!motivo || !motivo.trim()) {
+        return res.status(400).json({ exito: false, mensaje: 'Debes indicar el motivo de la anulación' });
+    }
+
+    db.getConnection((err, connection) => {
+        if (err) return res.status(500).json({ exito: false, mensaje: 'Error de conexión a la BD' });
+
+        connection.beginTransaction(err => {
+            if (err) { connection.release(); return res.status(500).json({ exito: false, mensaje: 'Error al iniciar transacción' }); }
+
+            connection.query(
+                'SELECT id_pedido, estado_comprobante FROM Comprobante_Pago WHERE id_comprobante = ?',
+                [req.params.id],
+                (err, rows) => {
+                    if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false, mensaje: err.message }); });
+                    if (rows.length === 0) return connection.rollback(() => { connection.release(); res.status(404).json({ exito: false, mensaje: 'Comprobante no encontrado' }); });
+                    if (rows[0].estado_comprobante === 'Anulado') {
+                        return connection.rollback(() => { connection.release(); res.status(400).json({ exito: false, mensaje: 'El comprobante ya se encuentra anulado' }); });
+                    }
+
+                    const idPedido = rows[0].id_pedido;
+
+                    connection.query(
+                        'UPDATE Comprobante_Pago SET estado_comprobante = "Anulado", motivo_anulacion = ? WHERE id_comprobante = ?',
+                        [motivo.trim(), req.params.id],
+                        (err) => {
+                            if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false, mensaje: err.message }); });
+
+                            connection.query('UPDATE Pedido SET estado = "Pendiente" WHERE id_pedido = ?', [idPedido], (err) => {
+                                if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false, mensaje: err.message }); });
+
+                                connection.query('SELECT id_producto, cantidad FROM Detalle_Pedido WHERE id_pedido = ?', [idPedido], (err, detalles) => {
+                                    if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false, mensaje: err.message }); });
+
+                                    const confirmar = () => {
+                                        connection.commit(err => {
+                                            if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false, mensaje: 'Error al confirmar la transacción' }); });
+                                            connection.release();
+                                            res.json({ exito: true });
+                                        });
+                                    };
+
+                                    if (detalles.length === 0) return confirmar();
+
+                                    let pendientes = detalles.length;
+                                    let huboError = false;
+                                    detalles.forEach(item => {
+                                        connection.query('UPDATE Producto SET stock = stock + ? WHERE id_producto = ?', [item.cantidad, item.id_producto], (err) => {
+                                            if (huboError) return;
+                                            if (err) {
+                                                huboError = true;
+                                                return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false, mensaje: 'Error al devolver el stock' }); });
+                                            }
+                                            pendientes--;
+                                            if (pendientes === 0) confirmar();
+                                        });
+                                    });
+                                });
+                            });
+                        }
+                    );
+                }
+            );
+        });
     });
 });
 

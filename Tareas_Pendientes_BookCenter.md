@@ -8,7 +8,7 @@
 ### 1. Seguridad y Auditoría (CU-01 Iniciar Sesión)
 - **Base de Datos (MySQL):** Crear tabla `LogAuditoria` (fecha, hora, id_usuario, accion).
 - **Backend (`server.js`):** Modificar el endpoint `app.post('/api/login')` para usar `bcrypt.compare` (si se encriptan) y hacer un `INSERT` en `LogAuditoria`.
-- **Frontend (`index.html`):** (Opcional) Ajustar manejo de errores si el backend cambia sus respuestas.
+- **Frontend (`index.html`):** (Opcional) Ajustar manejo de errores si el backend cambia sus respuestas. 
 
 ### 2. Gestión de Stock (CU-05 y CU-06)
 - **Backend (`server.js`):**

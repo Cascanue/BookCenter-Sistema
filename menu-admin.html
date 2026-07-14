@@ -128,7 +128,18 @@ select.input-moderno{cursor:pointer}
     <div class="vista" id="vista-pedidos">
       <div class="vista-header"><h2 class="vista-titulo">Historial de Pedidos</h2></div>
       <div class="tabla-wrapper">
-        <div class="tabla-header"><div class="buscador-tabla"><i class="bx bx-search"></i><input type="text" id="buscador-pedidos" placeholder="Buscar por ID o cliente..." oninput="filtrarPedidos()"></div></div>
+        <div class="tabla-header">
+          <div class="buscador-tabla"><i class="bx bx-search"></i><input type="text" id="buscador-pedidos" placeholder="Buscar por ID o cliente..." oninput="filtrarPedidos()"></div>
+          <div style="display:flex;gap:.5rem">
+            <select id="filtro-estado-pedidos" class="input-moderno" style="width:auto" onchange="cargarPedidos()">
+              <option value="">Todos los estados</option>
+              <option value="Pendiente">Pendiente</option>
+              <option value="Completado">Completado</option>
+              <option value="Anulado">Anulado</option>
+            </select>
+            <input type="date" id="filtro-fecha-pedidos" class="input-moderno" style="width:auto" onchange="cargarPedidos()">
+          </div>
+        </div>
         <table><thead><tr><th>ID Pedido</th><th>Cliente</th><th>Fecha</th><th>Total</th><th>Estado</th><th>Acciones</th></tr></thead>
         <tbody id="body-pedidos"><tr><td colspan="6" class="estado-vacio">Cargando...</td></tr></tbody></table>
       </div>
@@ -136,7 +147,17 @@ select.input-moderno{cursor:pointer}
     <div class="vista" id="vista-comprobantes">
       <div class="vista-header"><h2 class="vista-titulo">Comprobantes</h2></div>
       <div class="tabla-wrapper">
-        <div class="tabla-header"><div class="buscador-tabla"><i class="bx bx-search"></i><input type="text" id="buscador-comprobantes" placeholder="Buscar por comprobante o cliente..." oninput="filtrarComprobantes()"></div></div>
+        <div class="tabla-header">
+          <div class="buscador-tabla"><i class="bx bx-search"></i><input type="text" id="buscador-comprobantes" placeholder="Buscar por comprobante o cliente..." oninput="filtrarComprobantes()"></div>
+          <div style="display:flex;gap:.5rem">
+            <select id="filtro-estado-comprobantes" class="input-moderno" style="width:auto" onchange="cargarComprobantes()">
+              <option value="">Todos los estados</option>
+              <option value="Vigente">Vigente</option>
+              <option value="Anulado">Anulado</option>
+            </select>
+            <input type="date" id="filtro-fecha-comprobantes" class="input-moderno" style="width:auto" onchange="cargarComprobantes()">
+          </div>
+        </div>
         <table><thead><tr><th>N. Comprobante</th><th>Tipo</th><th>Cliente</th><th>Fecha</th><th>Total</th><th>Estado</th><th>Acciones</th></tr></thead>
         <tbody id="body-comprobantes"><tr><td colspan="7" class="estado-vacio">Cargando...</td></tr></tbody></table>
       </div>
@@ -178,8 +199,29 @@ select.input-moderno{cursor:pointer}
       <div class="modal-icono-peligro"><i class="bx bx-error"></i></div>
       <h3 id="confirmar-titulo" style="margin-bottom:.5rem;color:var(--azul-oscuro)">Confirmar accion</h3>
       <p id="confirmar-mensaje" style="color:var(--gris);font-size:.9rem;margin-bottom:1.5rem">Esta accion no se puede deshacer.</p>
+      <div class="input-grupo oculto" id="grupo-motivo-anulacion" style="text-align:left">
+        <label>Motivo de la anulación</label>
+        <textarea id="input-motivo-anulacion" class="input-moderno" rows="3" maxlength="255" placeholder="Ej. Cliente solicitó cambio de producto"></textarea>
+      </div>
       <div style="display:flex;gap:.75rem;justify-content:center"><button class="btn-secundario" onclick="cerrarModal('modal-confirmar')">Cancelar</button><button class="btn-peligro" id="btn-confirmar-accion">Confirmar</button></div>
     </div>
+  </div>
+</div>
+<div class="modal-overlay oculto" id="modal-editar-pedido">
+  <div class="modal-contenido modal-sm">
+    <div class="modal-header"><span class="modal-titulo">Editar Pedido</span><button class="btn-cerrar-modal" onclick="cerrarModal('modal-editar-pedido')">&times;</button></div>
+    <div class="modal-body">
+      <form id="form-editar-pedido"><input type="hidden" id="editar-pedido-id">
+        <div class="input-grupo"><label>Estado del pedido</label>
+          <select id="editar-pedido-estado" class="input-moderno">
+            <option value="Pendiente">Pendiente</option>
+            <option value="Completado">Completado</option>
+            <option value="Anulado">Anulado</option>
+          </select>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer"><button class="btn-secundario" onclick="cerrarModal('modal-editar-pedido')">Cancelar</button><button class="btn-principal" onclick="guardarEstadoPedido()"><i class="bx bx-save"></i> Guardar</button></div>
   </div>
 </div>
 <div class="modal-overlay oculto" id="modal-detalle">
@@ -277,7 +319,12 @@ function renderClientes(lista) {
 function filtrarClientes() { const q = document.getElementById('buscador-clientes').value.toLowerCase(); renderClientes(clientes.filter(c => c.nombre.toLowerCase().includes(q) || c.num_documento.includes(q))); }
 
 async function cargarPedidos() {
-  const res = await fetch(URL_BACKEND + '/api/admin/pedidos');
+  const estado = document.getElementById('filtro-estado-pedidos').value;
+  const fecha = document.getElementById('filtro-fecha-pedidos').value;
+  const params = new URLSearchParams();
+  if (estado) params.append('estado', estado);
+  if (fecha) params.append('fecha', fecha);
+  const res = await fetch(URL_BACKEND + '/api/admin/pedidos' + (params.toString() ? '?' + params.toString() : ''));
   pedidos = await res.json();
   renderPedidos();
 }
@@ -290,14 +337,20 @@ function renderPedidos(lista) {
     const bs = p.estado === 'Completado' ? '<span class="badge badge-verde">'+p.estado+'</span>' : (p.estado === 'Anulado' ? '<span class="badge badge-rojo">'+p.estado+'</span>' : '<span class="badge badge-amarillo">'+p.estado+'</span>');
     const d = p.fecha_pedido ? new Date(p.fecha_pedido).toLocaleDateString('es-PE') : '-';
     const nombreCompleto = (p.nombres+' '+p.apellido_paterno).trim();
-    return '<tr><td><b>#'+p.id_pedido+'</b></td><td>'+nombreCompleto+'</td><td>'+d+'</td><td><b>S/ '+parseFloat(p.total).toFixed(2)+'</b></td><td>'+bs+'</td><td><div class="acciones-fila"><button class="btn-accion ver" title="Ver detalle" onclick="verDetallePedido('+p.id_pedido+', \''+nombreCompleto+'\', \''+d+'\', \''+p.estado+'\', '+p.total+')"><i class="bx bx-show"></i></button></div></td></tr>';
+    const btnEliminar = p.estado === 'Pendiente' ? '<button class="btn-accion eliminar" title="Eliminar" onclick="confirmarEliminar(\'pedido\','+p.id_pedido+',\'Pedido #'+p.id_pedido+'\')"><i class="bx bx-trash"></i></button>' : '';
+    return '<tr><td><b>#'+p.id_pedido+'</b></td><td>'+nombreCompleto+'</td><td>'+d+'</td><td><b>S/ '+parseFloat(p.total).toFixed(2)+'</b></td><td>'+bs+'</td><td><div class="acciones-fila"><button class="btn-accion ver" title="Ver detalle" onclick="verDetallePedido('+p.id_pedido+', \''+nombreCompleto+'\', \''+d+'\', \''+p.estado+'\', '+p.total+')"><i class="bx bx-show"></i></button><button class="btn-accion editar" title="Editar estado" onclick="abrirModalEditarPedido('+p.id_pedido+',\''+p.estado+'\')"><i class="bx bx-edit"></i></button>'+btnEliminar+'</div></td></tr>';
   }).join('');
 }
 
 function filtrarPedidos() { const q = document.getElementById('buscador-pedidos').value.toLowerCase(); renderPedidos(pedidos.filter(p => String(p.id_pedido).includes(q) || (p.nombres+' '+p.apellido_paterno).toLowerCase().includes(q))); }
 
 async function cargarComprobantes() {
-  const res = await fetch(URL_BACKEND + '/api/admin/comprobantes');
+  const estado = document.getElementById('filtro-estado-comprobantes').value;
+  const fecha = document.getElementById('filtro-fecha-comprobantes').value;
+  const params = new URLSearchParams();
+  if (estado) params.append('estado', estado);
+  if (fecha) params.append('fecha', fecha);
+  const res = await fetch(URL_BACKEND + '/api/admin/comprobantes' + (params.toString() ? '?' + params.toString() : ''));
   comprobantes = await res.json();
   renderComprobantes();
 }
@@ -466,32 +519,67 @@ async function guardarCliente() {
 }
 
 function confirmarEliminar(tipo, id, nombre) {
+  document.getElementById('grupo-motivo-anulacion').classList.add('oculto');
   document.getElementById('confirmar-titulo').textContent = 'Confirmar eliminacion';
-  document.getElementById('confirmar-mensaje').textContent = 'Eliminar "' + nombre + '"? (Solo Soft Delete).';
+  document.getElementById('confirmar-mensaje').textContent = 'Eliminar "' + nombre + '"? ' + (tipo === 'pedido' ? '(Esta acción no se puede deshacer).' : '(Solo Soft Delete).');
   document.getElementById('btn-confirmar-accion').onclick = () => ejecutarEliminar(tipo, id);
   document.getElementById('modal-confirmar').classList.remove('oculto');
 }
 
 async function ejecutarEliminar(tipo, id) {
-  const url = URL_BACKEND + (tipo === 'producto' ? '/api/productos/' : '/api/clientes/') + id;
-  await fetch(url, { method: 'DELETE' });
+  const url = URL_BACKEND + (tipo === 'producto' ? '/api/productos/' : tipo === 'cliente' ? '/api/clientes/' : '/api/admin/pedidos/') + id;
+  const res = await fetch(url, { method: 'DELETE' });
+  const data = await res.json().catch(() => ({}));
   cerrarModal('modal-confirmar');
-  if (tipo === 'producto') cargarProductos(); else cargarClientes();
+  if (!res.ok) { alert('❌ ' + (data.mensaje || 'No se pudo eliminar.')); return; }
+  if (tipo === 'producto') cargarProductos(); else if (tipo === 'cliente') cargarClientes(); else cargarPedidos();
   cargarResumen();
 }
 
 function confirmarAnular(idPedido, idComprobante, correlativo) {
+  document.getElementById('input-motivo-anulacion').value = '';
+  document.getElementById('grupo-motivo-anulacion').classList.remove('oculto');
   document.getElementById('confirmar-titulo').textContent = 'Anular comprobante';
-  document.getElementById('confirmar-mensaje').textContent = 'Anular comprobante ' + correlativo + ' (Pedido #' + idPedido + ')?';
+  document.getElementById('confirmar-mensaje').textContent = 'Anular comprobante ' + correlativo + ' (Pedido #' + idPedido + ')? El pedido volverá a estado "Pendiente" y se restaurará el stock.';
   document.getElementById('btn-confirmar-accion').onclick = () => ejecutarAnular(idPedido, idComprobante);
   document.getElementById('modal-confirmar').classList.remove('oculto');
 }
 
 async function ejecutarAnular(idPedido, idComprobante) {
-  await fetch(URL_BACKEND + '/api/admin/comprobantes/' + idComprobante + '/anular', { method: 'PUT' });
+  const motivo = document.getElementById('input-motivo-anulacion').value.trim();
+  if (!motivo) { alert('Debes indicar el motivo de la anulación.'); return; }
+  const res = await fetch(URL_BACKEND + '/api/admin/comprobantes/' + idComprobante + '/anular', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ motivo })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) { alert('❌ ' + (data.mensaje || 'No se pudo anular el comprobante.')); return; }
   cerrarModal('modal-confirmar');
   cargarComprobantes();
   cargarPedidos();
+  cargarResumen();
+}
+
+function abrirModalEditarPedido(id, estadoActual) {
+  document.getElementById('editar-pedido-id').value = id;
+  document.getElementById('editar-pedido-estado').value = estadoActual;
+  document.getElementById('modal-editar-pedido').classList.remove('oculto');
+}
+
+async function guardarEstadoPedido() {
+  const id = document.getElementById('editar-pedido-id').value;
+  const estado = document.getElementById('editar-pedido-estado').value;
+  const res = await fetch(URL_BACKEND + '/api/admin/pedidos/' + id, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ estado })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) { alert('❌ ' + (data.mensaje || 'No se pudo actualizar el pedido.')); return; }
+  cerrarModal('modal-editar-pedido');
+  cargarPedidos();
+  cargarComprobantes();
   cargarResumen();
 }
 
