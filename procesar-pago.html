@@ -1905,7 +1905,8 @@
                 id_pedido: pedidoActual.id_pedido,
                 metodo_pago: metodoPago,
                 cuotas: cuotas,
-                referencia: metodoPago === 'billetera' ? document.getElementById('numOperacion').value : null
+                referencia: metodoPago === 'billetera' ? document.getElementById('numOperacion').value : null,
+                tipo_documento: pedidoActual.tipo_documento
             };
 
             try {

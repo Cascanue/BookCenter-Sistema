@@ -354,7 +354,13 @@
             border-radius: 0 0 12px 0;
         }
 
-        .btn-cantidad:hover {
+        .btn-cantidad:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            color: #94a3b8;
+        }
+
+        .btn-cantidad:not(:disabled):hover {
             background: var(--azul-primario);
             color: white;
         }
@@ -844,12 +850,12 @@
                         </div>
                     </div>
                     <div class="card-selector">
-                        <button class="btn-cantidad" onclick="cambiarCantidad(${p.id_producto}, -1, ${p.stock_actual})">−</button>
+                        <button class="btn-cantidad btn-menos-${p.id_producto}" onclick="cambiarCantidad(${p.id_producto}, -1, ${p.stock_actual})" ${cant <= 0 ? 'disabled' : ''}>−</button>
                         <input type="number" class="input-cantidad"
                                id="input-${p.id_producto}" value="${cant}" min="0" max="${p.stock_actual}"
                                onchange="setCantidad(${p.id_producto}, this.value, ${p.stock_actual})"
-                               onfocus="this.select()">
-                        <button class="btn-cantidad" onclick="cambiarCantidad(${p.id_producto}, 1, ${p.stock_actual})">+</button>
+                               onfocus="this.select()" ${p.stock_actual <= 0 ? 'disabled' : ''}>
+                        <button class="btn-cantidad btn-mas-${p.id_producto}" onclick="cambiarCantidad(${p.id_producto}, 1, ${p.stock_actual})" ${cant >= p.stock_actual || p.stock_actual <= 0 ? 'disabled' : ''}>+</button>
                     </div>
                 </div>`;
             }).join('');
@@ -867,6 +873,7 @@
             if (input) input.value = nueva;
 
             actualizarEstadoCard(id, nueva);
+            actualizarBotonesCantidad(id, nueva, stockMax);
             validarBotonSiguiente();
             actualizarBadge();
         }
@@ -880,8 +887,16 @@
             if (input) input.value = nueva;
 
             actualizarEstadoCard(id, nueva);
+            actualizarBotonesCantidad(id, nueva, stockMax);
             validarBotonSiguiente();
             actualizarBadge();
+        }
+
+        function actualizarBotonesCantidad(id, nueva, stockMax) {
+            const btnMenos = document.querySelector(`.btn-menos-${id}`);
+            const btnMas = document.querySelector(`.btn-mas-${id}`);
+            if (btnMenos) btnMenos.disabled = (nueva <= 0);
+            if (btnMas) btnMas.disabled = (nueva >= stockMax || stockMax <= 0);
         }
 
         function actualizarEstadoCard(id, cantidad) {

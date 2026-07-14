@@ -203,11 +203,53 @@ app.post('/api/guardar-pedido', (req, res) => {
                 return res.status(500).json({ exito: false, mensaje: 'Error al iniciar transacción' });
             }
 
-            // PASO A: Insertar la cabecera en la tabla Pedido (Con hora exacta de Perú UTC-5)
-            const fechaPeru = new Date(Date.now() - 5 * 3600 * 1000).toISOString().slice(0, 19).replace('T', ' ');
-            const queryPedido = `INSERT INTO Pedido (id_cliente, id_usuario, total, estado, fecha_pedido) VALUES (?, ?, ?, 'Pendiente', ?)`;
+            // PASO 0: Validar Stock Real
+            const productoIds = detalles.map(d => d.id_producto);
+            if (productoIds.length === 0) {
+                return connection.rollback(() => {
+                    connection.release();
+                    res.status(400).json({ exito: false, mensaje: 'El pedido no tiene productos' });
+                });
+            }
 
-            connection.query(queryPedido, [id_cliente, id_usuario, total, fechaPeru], (err, resultPedido) => {
+            const queryStock = `SELECT id_producto, stock, nombre FROM Producto WHERE id_producto IN (?)`;
+            connection.query(queryStock, [productoIds], (err, resultsStock) => {
+                if (err) {
+                    return connection.rollback(() => {
+                        connection.release();
+                        res.status(500).json({ exito: false, mensaje: 'Error al verificar stock' });
+                    });
+                }
+                
+                // Mapear stock actual
+                const stockMap = {};
+                const nombresMap = {};
+                resultsStock.forEach(r => { 
+                    stockMap[r.id_producto] = r.stock; 
+                    nombresMap[r.id_producto] = r.nombre;
+                });
+
+                // Verificar si hay suficiente stock
+                let errorStock = null;
+                for (let item of detalles) {
+                    if ((stockMap[item.id_producto] || 0) < item.cantidad) {
+                        errorStock = `El producto "${nombresMap[item.id_producto]}" no tiene stock suficiente (Stock disponible: ${stockMap[item.id_producto] || 0}).`;
+                        break;
+                    }
+                }
+
+                if (errorStock) {
+                    return connection.rollback(() => {
+                        connection.release();
+                        res.status(400).json({ exito: false, mensaje: errorStock });
+                    });
+                }
+
+                // PASO A: Insertar la cabecera en la tabla Pedido (Con hora exacta de Perú UTC-5)
+                const fechaPeru = new Date(Date.now() - 5 * 3600 * 1000).toISOString().slice(0, 19).replace('T', ' ');
+                const queryPedido = `INSERT INTO Pedido (id_cliente, id_usuario, total, estado, fecha_pedido) VALUES (?, ?, ?, 'Pendiente', ?)`;
+
+                connection.query(queryPedido, [id_cliente, id_usuario, total, fechaPeru], (err, resultPedido) => {
                 if (err) {
                     return connection.rollback(() => {
                         console.error('Error en Cabecera Pedido:', err);
@@ -446,7 +488,7 @@ app.get('/api/pedidos/:id', (req, res) => {
 
 // 13. PROCESAR PAGO (Genera comprobante y actualiza estado)
 app.post('/api/procesar-pago', (req, res) => {
-    const { id_pedido, metodo_pago, cuotas, referencia } = req.body;
+    const { id_pedido, metodo_pago, cuotas, referencia, tipo_documento } = req.body;
 
     db.getConnection((err, connection) => {
         if (err) return res.status(500).json({ exito: false, mensaje: 'Error de conexión' });
@@ -473,10 +515,11 @@ app.post('/api/procesar-pago', (req, res) => {
 
                     const correlativo = String(conteo[0].siguiente).padStart(8, '0');
 
-                    // Insertar comprobante (con igv calculado)
-                    const qComp = `INSERT INTO Comprobante_Pago (id_pedido, id_cajero, numero_correlativo, tipo_comprobante, monto_total, igv) VALUES (?, ?, ?, 'Boleta', ?, ?)`;
+                    // Insertar comprobante (con igv calculado y tipo dinámico)
+                    const tipoComprobante = (tipo_documento === 'RUC') ? 'Factura' : 'Boleta';
+                    const qComp = `INSERT INTO Comprobante_Pago (id_pedido, id_cajero, numero_correlativo, tipo_comprobante, monto_total, igv) VALUES (?, ?, ?, ?, ?, ?)`;
                     const idCajero = parseInt(req.body.id_cajero) || 1;
-                    connection.query(qComp, [id_pedido, idCajero, correlativo, total, igv], (err, result) => {
+                    connection.query(qComp, [id_pedido, idCajero, correlativo, tipoComprobante, total, igv], (err, result) => {
                         if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false, mensaje: err.message }); });
 
                         // Insertar registro de pago
@@ -489,10 +532,39 @@ app.post('/api/procesar-pago', (req, res) => {
                             connection.query('UPDATE Pedido SET estado = "Completado" WHERE id_pedido = ?', [id_pedido], err => {
                                 if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false }); });
 
-                                connection.commit(err => {
-                                    if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false }); });
-                                    connection.release();
-                                    res.json({ exito: true, numero_correlativo: correlativo, id_comprobante: result.insertId });
+                                // DESCONTAR STOCK REAL
+                                connection.query('SELECT id_producto, cantidad FROM Detalle_Pedido WHERE id_pedido = ?', [id_pedido], (err, detalles) => {
+                                    if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false, mensaje: 'Error al consultar detalles para stock' }); });
+
+                                    if (detalles.length === 0) {
+                                        connection.commit(err => {
+                                            if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false }); });
+                                            connection.release();
+                                            res.json({ exito: true, numero_correlativo: correlativo, id_comprobante: result.insertId });
+                                        });
+                                        return;
+                                    }
+
+                                    let updatesPendientes = detalles.length;
+                                    let errorDescuento = false;
+                                    
+                                    detalles.forEach(item => {
+                                        connection.query('UPDATE Producto SET stock = stock - ? WHERE id_producto = ?', [item.cantidad, item.id_producto], (err) => {
+                                            if (errorDescuento) return;
+                                            if (err) {
+                                                errorDescuento = true;
+                                                return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false, mensaje: 'Error descontando stock' }); });
+                                            }
+                                            updatesPendientes--;
+                                            if (updatesPendientes === 0) {
+                                                connection.commit(err => {
+                                                    if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false }); });
+                                                    connection.release();
+                                                    res.json({ exito: true, numero_correlativo: correlativo, id_comprobante: result.insertId });
+                                                });
+                                            }
+                                        });
+                                    });
                                 });
                             });
                         });
