@@ -163,6 +163,7 @@ app.post('/api/registrar-cliente', (req, res) => {
             }
             return res.status(500).json({ exito: false, mensaje: 'Error interno al guardar en la base de datos' });
         }
+        registrarAuditoria(idCreador || null, 'AÑADIR', 'Cliente', `Cliente creado: ${nombres} ${apellidoPaterno} - Doc: ${numDoc}`);
         res.status(200).json({ exito: true, mensaje: 'Cliente registrado exitosamente' });
     });
 });
@@ -335,6 +336,7 @@ app.post('/api/guardar-pedido', (req, res) => {
 
                         // Liberamos la conexión y respondemos al frontend
                         connection.release();
+                        registrarAuditoria(id_usuario || null, 'AÑADIR', 'Pedido', `Pedido #${id_pedido} creado - Total: S/${total}`);
                         res.status(200).json({
                             exito: true,
                             id_pedido: id_pedido,
@@ -371,7 +373,7 @@ app.get('/api/admin/resumen', async (req, res) => {
 // 8. CRUD PRODUCTOS
 app.post('/api/productos', async (req, res) => {
     try {
-        const { nombre, descripcion, precio_venta, stock_actual, stock_minimo, id_categoria, url_imagen } = req.body;
+        const { nombre, descripcion, precio_venta, stock_actual, stock_minimo, id_categoria, url_imagen, id_usuario } = req.body;
         const p = db.promise();
 
         // 1. Obtener la categoría para generar el prefijo
@@ -396,6 +398,7 @@ app.post('/api/productos', async (req, res) => {
         const query = 'INSERT INTO Producto (codigo, nombre, descripcion, precio_venta, stock_actual, stock_minimo, id_categoria, url_imagen, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)';
         await p.query(query, [nuevoCodigo, nombre, descripcion, precio_venta, stock_actual, stock_minimo, id_categoria, url_imagen || null]);
 
+        registrarAuditoria(id_usuario || null, 'AÑADIR', 'Producto', `Producto creado: ${nuevoCodigo} - ${nombre}`);
         res.json({ exito: true, codigo_generado: nuevoCodigo });
     } catch (err) {
         console.error('Error generando producto:', err);
@@ -403,10 +406,11 @@ app.post('/api/productos', async (req, res) => {
     }
 });
 app.put('/api/productos/:id', (req, res) => {
-    const { nombre, descripcion, precio_venta, stock_actual, stock_minimo, id_categoria, url_imagen } = req.body;
+    const { nombre, descripcion, precio_venta, stock_actual, stock_minimo, id_categoria, url_imagen, id_usuario } = req.body;
     const query = 'UPDATE Producto SET nombre=?, descripcion=?, precio_venta=?, stock_actual=?, stock_minimo=?, id_categoria=?, url_imagen=? WHERE id_producto=?';
     db.query(query, [nombre, descripcion, precio_venta, stock_actual, stock_minimo, id_categoria, url_imagen || null, req.params.id], (err) => {
         if (err) return res.status(500).json({ error: err.message });
+        registrarAuditoria(id_usuario || null, 'MODIFICAR', 'Producto', `Producto actualizado: id ${req.params.id} - ${nombre}`);
         res.json({ exito: true });
     });
 });
@@ -435,22 +439,25 @@ app.post('/api/upload-imagen', upload.single('imagen'), (req, res) => {
 app.delete('/api/productos/:id', (req, res) => {
     db.query('UPDATE Producto SET is_active = 0 WHERE id_producto = ?', [req.params.id], (err) => {
         if (err) return res.status(500).json({ error: err.message });
+        registrarAuditoria(req.query.id_usuario || null, 'ELIMINAR', 'Producto', `Producto eliminado (baja lógica): id ${req.params.id}`);
         res.json({ exito: true });
     });
 });
 
 // 9. CLIENTES (Actualizar y Eliminar Lógico)
 app.put('/api/clientes/:id', (req, res) => {
-    const { tipo_documento, numero_documento, nombres, apellido_paterno, apellido_materno, telefono, correo } = req.body;
+    const { tipo_documento, numero_documento, nombres, apellido_paterno, apellido_materno, telefono, correo, id_usuario } = req.body;
     const query = 'UPDATE Cliente SET tipo_documento=?, numero_documento=?, nombres=?, apellido_paterno=?, apellido_materno=?, telefono=?, correo=? WHERE id_cliente=?';
     db.query(query, [tipo_documento, numero_documento, nombres, apellido_paterno, apellido_materno, telefono, correo, req.params.id], (err) => {
         if (err) return res.status(500).json({ error: err.message });
+        registrarAuditoria(id_usuario || null, 'MODIFICAR', 'Cliente', `Cliente actualizado: id ${req.params.id} - ${nombres} ${apellido_paterno}`);
         res.json({ exito: true });
     });
 });
 app.delete('/api/clientes/:id', (req, res) => {
     db.query('UPDATE Cliente SET is_active = 0 WHERE id_cliente = ?', [req.params.id], (err) => {
         if (err) return res.status(500).json({ error: err.message });
+        registrarAuditoria(req.query.id_usuario || null, 'ELIMINAR', 'Cliente', `Cliente eliminado (baja lógica): id ${req.params.id}`);
         res.json({ exito: true });
     });
 });
@@ -489,7 +496,7 @@ app.get('/api/admin/pedidos/:id/detalles', (req, res) => {
 
 // Mantenimiento de Pedidos (CU-08): editar estado del pedido
 app.put('/api/admin/pedidos/:id', (req, res) => {
-    const { estado } = req.body;
+    const { estado, id_usuario } = req.body;
     const estadosValidos = ['Pendiente', 'Completado', 'Anulado'];
     if (!estadosValidos.includes(estado)) {
         return res.status(400).json({ exito: false, mensaje: 'Estado no válido' });
@@ -498,6 +505,7 @@ app.put('/api/admin/pedidos/:id', (req, res) => {
     db.query('UPDATE Pedido SET estado = ? WHERE id_pedido = ?', [estado, req.params.id], (err, result) => {
         if (err) return res.status(500).json({ exito: false, mensaje: err.message });
         if (result.affectedRows === 0) return res.status(404).json({ exito: false, mensaje: 'Pedido no encontrado' });
+        registrarAuditoria(id_usuario || null, 'MODIFICAR', 'Pedido', `Pedido #${req.params.id} actualizado a estado: ${estado}`);
         res.json({ exito: true });
     });
 });
@@ -526,6 +534,7 @@ app.delete('/api/admin/pedidos/:id', (req, res) => {
                         connection.commit(err => {
                             if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false, mensaje: 'Error al confirmar la transacción' }); });
                             connection.release();
+                            registrarAuditoria(req.query.id_usuario || null, 'ELIMINAR', 'Pedido', `Pedido #${req.params.id} eliminado`);
                             res.json({ exito: true });
                         });
                     });
@@ -558,7 +567,7 @@ app.get('/api/admin/comprobantes', (req, res) => {
 
 // Anular comprobante (CU-07): guarda el motivo, regresa el pedido a "Pendiente" y devuelve el stock
 app.put('/api/admin/comprobantes/:id/anular', (req, res) => {
-    const { motivo } = req.body;
+    const { motivo, id_usuario } = req.body;
     if (!motivo || !motivo.trim()) {
         return res.status(400).json({ exito: false, mensaje: 'Debes indicar el motivo de la anulación' });
     }
@@ -597,6 +606,7 @@ app.put('/api/admin/comprobantes/:id/anular', (req, res) => {
                                         connection.commit(err => {
                                             if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false, mensaje: 'Error al confirmar la transacción' }); });
                                             connection.release();
+                                            registrarAuditoria(id_usuario || null, 'MODIFICAR', 'Comprobante_Pago', `Comprobante #${req.params.id} anulado - Motivo: ${motivo.trim()}`);
                                             res.json({ exito: true });
                                         });
                                     };
@@ -706,6 +716,8 @@ app.post('/api/procesar-pago', (req, res) => {
                                         connection.commit(err => {
                                             if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false, mensaje: err ? err.message : 'Error desconocido' }); });
                                             connection.release();
+                                            registrarAuditoria(idCajero, 'AÑADIR', 'Comprobante_Pago', `Comprobante ${correlativo} (${tipoComprobante}) generado para pedido #${id_pedido}`);
+                                            registrarAuditoria(idCajero, 'REGISTRO_PAGO', 'Pago', `Pago registrado - Método: ${metodoDB} - Monto: S/${total}`);
                                             res.json({ exito: true, numero_correlativo: correlativo, id_comprobante: result.insertId });
                                         });
                                         return;
@@ -726,6 +738,8 @@ app.post('/api/procesar-pago', (req, res) => {
                                                 connection.commit(err => {
                                                     if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false, mensaje: err ? err.message : 'Error desconocido' }); });
                                                     connection.release();
+                                                    registrarAuditoria(idCajero, 'AÑADIR', 'Comprobante_Pago', `Comprobante ${correlativo} (${tipoComprobante}) generado para pedido #${id_pedido}`);
+                                                    registrarAuditoria(idCajero, 'REGISTRO_PAGO', 'Pago', `Pago registrado - Método: ${metodoDB} - Monto: S/${total}`);
                                                     res.json({ exito: true, numero_correlativo: correlativo, id_comprobante: result.insertId });
                                                 });
                                             }

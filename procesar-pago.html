@@ -1906,7 +1906,8 @@
                 metodo_pago: metodoPago,
                 cuotas: cuotas,
                 referencia: metodoPago === 'billetera' ? document.getElementById('numOperacion').value : null,
-                tipo_documento: pedidoActual.tipo_documento
+                tipo_documento: pedidoActual.tipo_documento,
+                id_cajero: localStorage.getItem('idUsuario')
             };
 
             try {

@@ -450,7 +450,7 @@ async function guardarProducto() {
     }
   }
 
-  const payload = { nombre, descripcion, id_categoria, precio_venta, stock_actual, stock_minimo, url_imagen };
+  const payload = { nombre, descripcion, id_categoria, precio_venta, stock_actual, stock_minimo, url_imagen, id_usuario: localStorage.getItem('idUsuario') };
   const method = productoEditar ? 'PUT' : 'POST';
   const url = URL_BACKEND + '/api/productos' + (productoEditar ? '/' + productoEditar.id_producto : '');
 
@@ -507,7 +507,7 @@ async function guardarCliente() {
   // Vamos a alinear ambos. Si es crear, usamos /api/registrar-cliente. Si es editar, usamos el nuevo /api/clientes/:id con snake_case
   
   if (clienteEditar) {
-    const payloadUpdate = { tipo_documento: tipoDoc, numero_documento: numDoc, nombres, apellido_paterno: apP, apellido_materno: apM, telefono: tel, correo };
+    const payloadUpdate = { tipo_documento: tipoDoc, numero_documento: numDoc, nombres, apellido_paterno: apP, apellido_materno: apM, telefono: tel, correo, id_usuario: localStorage.getItem('idUsuario') };
     await fetch(URL_BACKEND + '/api/clientes/' + clienteEditar.id_cliente, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payloadUpdate) });
   } else {
     await fetch(URL_BACKEND + '/api/registrar-cliente', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
@@ -527,7 +527,8 @@ function confirmarEliminar(tipo, id, nombre) {
 }
 
 async function ejecutarEliminar(tipo, id) {
-  const url = URL_BACKEND + (tipo === 'producto' ? '/api/productos/' : tipo === 'cliente' ? '/api/clientes/' : '/api/admin/pedidos/') + id;
+  const base = URL_BACKEND + (tipo === 'producto' ? '/api/productos/' : tipo === 'cliente' ? '/api/clientes/' : '/api/admin/pedidos/') + id;
+  const url = base + '?id_usuario=' + encodeURIComponent(localStorage.getItem('idUsuario') || '');
   const res = await fetch(url, { method: 'DELETE' });
   const data = await res.json().catch(() => ({}));
   cerrarModal('modal-confirmar');
@@ -551,7 +552,7 @@ async function ejecutarAnular(idPedido, idComprobante) {
   const res = await fetch(URL_BACKEND + '/api/admin/comprobantes/' + idComprobante + '/anular', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ motivo })
+    body: JSON.stringify({ motivo, id_usuario: localStorage.getItem('idUsuario') })
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) { alert('❌ ' + (data.mensaje || 'No se pudo anular el comprobante.')); return; }
@@ -573,7 +574,7 @@ async function guardarEstadoPedido() {
   const res = await fetch(URL_BACKEND + '/api/admin/pedidos/' + id, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ estado })
+    body: JSON.stringify({ estado, id_usuario: localStorage.getItem('idUsuario') })
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) { alert('❌ ' + (data.mensaje || 'No se pudo actualizar el pedido.')); return; }
