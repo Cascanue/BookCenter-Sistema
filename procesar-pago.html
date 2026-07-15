@@ -1473,7 +1473,7 @@
     </div>
 
     <script src="js/config.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
     <script>
         // =============================================
@@ -2049,6 +2049,10 @@
         function construirPDFComprobante() {
             if (!pedidoActual || !ultimoComprobante) return null;
 
+            if (!window.jspdf || !window.jspdf.jsPDF) {
+                throw new Error('La librería jsPDF no se cargó correctamente. Verifica tu conexión a internet.');
+            }
+
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF({ unit: 'mm', format: 'a4' });
             const anchoPag = doc.internal.pageSize.getWidth();
@@ -2254,7 +2258,7 @@
                 }
             } catch (err) {
                 console.error(err);
-                alert('❌ Ocurrió un error al generar el comprobante en PDF.');
+                alert('❌ Ocurrió un error al generar el comprobante en PDF: ' + (err.message || err));
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = textoOriginal;
