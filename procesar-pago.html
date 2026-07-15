@@ -1455,6 +1455,10 @@
             <div class="modal-titulo">¡Pago procesado con éxito!</div>
             <p class="modal-texto" id="textoExitoPago">El comprobante ha sido generado correctamente.</p>
             <p class="modal-correlativo" id="nroComprobante"></p>
+            <button type="button" class="btn-principal" id="btnDescargarComprobante"
+                style="background:#22c55e;margin-bottom:0.65rem;" onclick="descargarComprobantePDF()">
+                <i class='bx bx-download'></i> Descargar Comprobante (PDF)
+            </button>
             <button type="button" class="btn-principal" onclick="volverAlMenu()">Volver al Menú</button>
         </div>
     </div>
@@ -1469,6 +1473,8 @@
     </div>
 
     <script src="js/config.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
     <script>
         // =============================================
         // PROTECCIÓN DE RUTA
@@ -1488,6 +1494,15 @@
         let pedidoActual = null;        // Datos completos del pedido buscado
         let metodoPago = null;          // 'efectivo' | 'tarjeta' | 'billetera'
         let billeteraElegida = null;    // 'yape' | 'plin' | 'lukita'
+        let ultimoComprobante = null;   // Snapshot del comprobante emitido, para generar el PDF
+
+        // Datos fijos de la empresa emisora (BookCenter no tiene tabla de datos de empresa)
+        const EMPRESA = {
+            razonSocial: 'BOOK CENTER S.A.C.',
+            ruc: '20609874563',
+            direccion: 'Av. Los Libros 456, San Isidro, Lima - Perú',
+            telefono: '(01) 555-1234'
+        };
 
         // =============================================
         // SECCIÓN 1 — BUSCAR PEDIDO
@@ -1938,10 +1953,25 @@
                 const data = await res.json();
 
                 if (data.exito) {
+                    const esFactura = pedidoActual.tipo_documento === 'RUC';
+                    ultimoComprobante = {
+                        correlativo: data.numero_correlativo,
+                        idComprobante: data.id_comprobante,
+                        tipoComprobante: esFactura ? 'Factura' : 'Boleta',
+                        serie: esFactura ? 'F001' : 'B001',
+                        fechaEmision: new Date(),
+                        metodoPago: metodoPago,
+                        billetera: billeteraElegida,
+                        montoRecibido: metodoPago === 'efectivo' ? (parseFloat(document.getElementById('montoRecibido').value) || 0) : null,
+                        cuotas: metodoPago === 'tarjeta' ? document.getElementById('cuotasTarjeta').value : null,
+                        ultimosDigitosTarjeta: metodoPago === 'tarjeta' ? document.getElementById('numTarjeta').value.replace(/\s/g, '').slice(-4) : null,
+                        numOperacion: metodoPago === 'billetera' ? document.getElementById('numOperacion').value : null
+                    };
+
                     document.getElementById('textoExitoPago').textContent =
                         `El comprobante del pedido #${pedidoActual.id_pedido} ha sido generado.`;
                     document.getElementById('nroComprobante').textContent =
-                        `Comprobante N°: ${data.numero_correlativo}`;
+                        `Comprobante N°: ${ultimoComprobante.serie}-${data.numero_correlativo}`;
                     document.getElementById('modalExito').classList.remove('oculto');
                 } else {
                     alert('❌ ' + (data.mensaje || 'Error al procesar el pago.'));
@@ -1960,9 +1990,280 @@
         }
 
         // =============================================
+        // COMPROBANTE EN PDF (Boleta / Factura electrónica)
+        // =============================================
+        function numeroALetras(numero) {
+            const UNIDADES = ['', 'UNO', 'DOS', 'TRES', 'CUATRO', 'CINCO', 'SEIS', 'SIETE', 'OCHO', 'NUEVE'];
+            const DIECIS = ['DIEZ', 'ONCE', 'DOCE', 'TRECE', 'CATORCE', 'QUINCE', 'DIECISEIS', 'DIECISIETE', 'DIECIOCHO', 'DIECINUEVE'];
+            const VEINTIS = ['VEINTE', 'VEINTIUNO', 'VEINTIDOS', 'VEINTITRES', 'VEINTICUATRO', 'VEINTICINCO', 'VEINTISEIS', 'VEINTISIETE', 'VEINTIOCHO', 'VEINTINUEVE'];
+            const DECENAS = ['', 'DIEZ', 'VEINTE', 'TREINTA', 'CUARENTA', 'CINCUENTA', 'SESENTA', 'SETENTA', 'OCHENTA', 'NOVENTA'];
+            const CENTENAS = ['', 'CIENTO', 'DOSCIENTOS', 'TRESCIENTOS', 'CUATROCIENTOS', 'QUINIENTOS', 'SEISCIENTOS', 'SETECIENTOS', 'OCHOCIENTOS', 'NOVECIENTOS'];
+
+            function letrasDecenas(n) {
+                if (n < 10) return UNIDADES[n];
+                if (n < 20) return DIECIS[n - 10];
+                if (n < 30) return VEINTIS[n - 20];
+                const d = Math.floor(n / 10);
+                const u = n % 10;
+                return u === 0 ? DECENAS[d] : `${DECENAS[d]} Y ${UNIDADES[u]}`;
+            }
+
+            function letrasCentenas(n) {
+                if (n === 0) return '';
+                if (n === 100) return 'CIEN';
+                const c = Math.floor(n / 100);
+                const resto = n % 100;
+                const prefijo = CENTENAS[c];
+                if (resto === 0) return prefijo;
+                return prefijo ? `${prefijo} ${letrasDecenas(resto)}` : letrasDecenas(resto);
+            }
+
+            function letrasMiles(n) {
+                if (n === 0) return '';
+                const miles = Math.floor(n / 1000);
+                const resto = n % 1000;
+                let texto = '';
+                if (miles === 1) texto = 'MIL';
+                else if (miles > 1) texto = `${letrasCentenas(miles)} MIL`;
+                if (resto > 0) texto += (texto ? ' ' : '') + letrasCentenas(resto);
+                return texto;
+            }
+
+            function letrasMillones(n) {
+                if (n === 0) return 'CERO';
+                const millones = Math.floor(n / 1000000);
+                const resto = n % 1000000;
+                let texto = '';
+                if (millones === 1) texto = 'UN MILLON';
+                else if (millones > 1) texto = `${letrasMiles(millones)} MILLONES`;
+                if (resto > 0) texto += (texto ? ' ' : '') + letrasMiles(resto);
+                return texto.trim();
+            }
+
+            const entero = Math.floor(numero);
+            const centavos = Math.round((numero - entero) * 100);
+            const parteEntera = letrasMillones(entero) || 'CERO';
+            return `${parteEntera} CON ${String(centavos).padStart(2, '0')}/100 SOLES`;
+        }
+
+        function construirPDFComprobante() {
+            if (!pedidoActual || !ultimoComprobante) return null;
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+            const anchoPag = doc.internal.pageSize.getWidth();
+            const margen = 14;
+
+            const esFactura = ultimoComprobante.tipoComprobante === 'Factura';
+            const numeroDoc = `${ultimoComprobante.serie}-${ultimoComprobante.correlativo}`;
+            const total = parseFloat(pedidoActual.total);
+            const opGravada = total / 1.18;
+            const igv = total - opGravada;
+
+            // --- Encabezado de la empresa (izquierda) ---
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(13);
+            doc.setTextColor(15, 23, 42);
+            doc.text(EMPRESA.razonSocial, margen, 18);
+
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(9);
+            doc.setTextColor(71, 85, 105);
+            doc.text(EMPRESA.direccion, margen, 24);
+            doc.text(`Teléfono: ${EMPRESA.telefono}`, margen, 29);
+
+            // --- Caja de tipo/número de comprobante (derecha) ---
+            const cajaAncho = 62;
+            const cajaX = anchoPag - margen - cajaAncho;
+            doc.setDrawColor(37, 99, 235);
+            doc.setLineWidth(0.5);
+            doc.rect(cajaX, 10, cajaAncho, 28);
+
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(9);
+            doc.setTextColor(37, 99, 235);
+            doc.text(`R.U.C. ${EMPRESA.ruc}`, cajaX + cajaAncho / 2, 17, { align: 'center' });
+
+            doc.setFontSize(10);
+            doc.text(esFactura ? 'FACTURA ELECTRÓNICA' : 'BOLETA DE VENTA ELECTRÓNICA', cajaX + cajaAncho / 2, 24,
+                { align: 'center', maxWidth: cajaAncho - 4 });
+
+            doc.setFontSize(11);
+            doc.text(numeroDoc, cajaX + cajaAncho / 2, 34, { align: 'center' });
+
+            // --- Línea divisoria ---
+            doc.setDrawColor(203, 213, 225);
+            doc.line(margen, 43, anchoPag - margen, 43);
+
+            // --- Datos del cliente ---
+            const nombreCliente = `${pedidoActual.nombres || ''} ${pedidoActual.apellido_paterno || ''}`.trim();
+            let y = 50;
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(9);
+            doc.setTextColor(15, 23, 42);
+            doc.text(esFactura ? 'CLIENTE / RAZÓN SOCIAL:' : 'SEÑOR(ES):', margen, y);
+            doc.setFont('helvetica', 'normal');
+            doc.text(nombreCliente || '—', margen + 48, y);
+
+            doc.setFont('helvetica', 'bold');
+            doc.text(esFactura ? 'RUC:' : `${pedidoActual.tipo_documento || 'DNI'}:`, anchoPag - margen - 55, y);
+            doc.setFont('helvetica', 'normal');
+            doc.text(pedidoActual.numero_documento || '—', anchoPag - margen - 30, y);
+
+            y += 7;
+            doc.setFont('helvetica', 'bold');
+            doc.text('FECHA DE EMISIÓN:', margen, y);
+            doc.setFont('helvetica', 'normal');
+            doc.text(ultimoComprobante.fechaEmision.toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' }), margen + 48, y);
+
+            doc.setFont('helvetica', 'bold');
+            doc.text('N° DE PEDIDO:', anchoPag - margen - 55, y);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`#${pedidoActual.id_pedido}`, anchoPag - margen - 30, y);
+
+            y += 7;
+            doc.setFont('helvetica', 'bold');
+            doc.text('MONEDA:', margen, y);
+            doc.setFont('helvetica', 'normal');
+            doc.text('SOLES (PEN)', margen + 48, y);
+
+            // --- Tabla de productos ---
+            const filas = (pedidoActual.detalles || []).map(item => [
+                String(item.cantidad),
+                item.nombre,
+                `S/ ${parseFloat(item.precio_unitario).toFixed(2)}`,
+                `S/ ${parseFloat(item.subtotal).toFixed(2)}`
+            ]);
+
+            doc.autoTable({
+                startY: y + 6,
+                head: [['CANT.', 'DESCRIPCIÓN', 'P. UNITARIO', 'IMPORTE']],
+                body: filas,
+                margin: { left: margen, right: margen },
+                styles: { fontSize: 8.5, cellPadding: 2.2 },
+                headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold' },
+                columnStyles: {
+                    0: { halign: 'center', cellWidth: 18 },
+                    2: { halign: 'right', cellWidth: 32 },
+                    3: { halign: 'right', cellWidth: 32 }
+                }
+            });
+
+            let yFinal = doc.lastAutoTable.finalY + 8;
+
+            // --- Totales ---
+            const xEtiqueta = anchoPag - margen - 70;
+            const xValor = anchoPag - margen;
+
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(9);
+            doc.setTextColor(15, 23, 42);
+            doc.text('OP. GRAVADA:', xEtiqueta, yFinal);
+            doc.text(`S/ ${opGravada.toFixed(2)}`, xValor, yFinal, { align: 'right' });
+
+            yFinal += 6;
+            doc.text('IGV (18%):', xEtiqueta, yFinal);
+            doc.text(`S/ ${igv.toFixed(2)}`, xValor, yFinal, { align: 'right' });
+
+            yFinal += 7;
+            doc.setDrawColor(203, 213, 225);
+            doc.line(xEtiqueta, yFinal - 4, xValor, yFinal - 4);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(11);
+            doc.text('IMPORTE TOTAL:', xEtiqueta, yFinal);
+            doc.text(`S/ ${total.toFixed(2)}`, xValor, yFinal, { align: 'right' });
+
+            yFinal += 9;
+            doc.setFont('helvetica', 'italic');
+            doc.setFontSize(8.5);
+            doc.setTextColor(71, 85, 105);
+            doc.text(`SON: ${numeroALetras(total)}`, margen, yFinal, { maxWidth: anchoPag - margen * 2 });
+
+            // --- Forma de pago ---
+            yFinal += 10;
+            doc.setDrawColor(226, 232, 240);
+            doc.line(margen, yFinal, anchoPag - margen, yFinal);
+            yFinal += 6;
+
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(9);
+            doc.setTextColor(15, 23, 42);
+            doc.text('FORMA DE PAGO', margen, yFinal);
+            yFinal += 6;
+
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8.5);
+            doc.setTextColor(51, 65, 85);
+
+            if (ultimoComprobante.metodoPago === 'efectivo') {
+                const recibido = ultimoComprobante.montoRecibido || 0;
+                const vuelto = Math.max(0, recibido - total);
+                doc.text(`Método: Efectivo   |   Monto recibido: S/ ${recibido.toFixed(2)}   |   Vuelto: S/ ${vuelto.toFixed(2)}`, margen, yFinal);
+            } else if (ultimoComprobante.metodoPago === 'tarjeta') {
+                const cuotasTxt = ultimoComprobante.cuotas === '1' ? 'Pago único' : `${ultimoComprobante.cuotas} cuotas`;
+                doc.text(`Método: Tarjeta •••• ${ultimoComprobante.ultimosDigitosTarjeta || '----'}   |   ${cuotasTxt}`, margen, yFinal);
+            } else if (ultimoComprobante.metodoPago === 'billetera') {
+                const nombreBilletera = ultimoComprobante.billetera === 'yape' ? 'Yape' : (ultimoComprobante.billetera === 'plin' ? 'Plin' : '—');
+                doc.text(`Método: Billetera Digital (${nombreBilletera})   |   N° operación: ${ultimoComprobante.numOperacion || '—'}`, margen, yFinal);
+            }
+
+            // --- Pie de página ---
+            const alturaPagina = doc.internal.pageSize.getHeight();
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(7.5);
+            doc.setTextColor(148, 163, 184);
+            doc.text(`Atendido por: ${localStorage.getItem('nombreUsuario') || '—'}`, margen, alturaPagina - 18);
+            doc.text('Representación de comprobante electrónico generada por el sistema Book Center.', margen, alturaPagina - 13);
+            doc.text('Documento de uso interno para el control de ventas de la librería.', margen, alturaPagina - 9);
+
+            return doc;
+        }
+
+        async function descargarComprobantePDF() {
+            const btn = document.getElementById('btnDescargarComprobante');
+            const textoOriginal = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<i class='bx bx-loader-alt bx-spin'></i> Generando...`;
+
+            try {
+                const doc = construirPDFComprobante();
+                if (!doc) {
+                    alert('❌ No se pudo generar el comprobante.');
+                    return;
+                }
+
+                const nombreArchivo = `${ultimoComprobante.tipoComprobante}_${ultimoComprobante.serie}-${ultimoComprobante.correlativo}.pdf`;
+                const blob = doc.output('blob');
+
+                if (window.showSaveFilePicker) {
+                    try {
+                        const handle = await window.showSaveFilePicker({
+                            suggestedName: nombreArchivo,
+                            types: [{ description: 'Documento PDF', accept: { 'application/pdf': ['.pdf'] } }]
+                        });
+                        const writable = await handle.createWritable();
+                        await writable.write(blob);
+                        await writable.close();
+                    } catch (err) {
+                        if (err.name !== 'AbortError') throw err;
+                    }
+                } else {
+                    // Navegadores sin File System Access API: descarga estándar
+                    // (la ubicación depende de la configuración de descargas del navegador)
+                    doc.save(nombreArchivo);
+                }
+            } catch (err) {
+                console.error(err);
+                alert('❌ Ocurrió un error al generar el comprobante en PDF.');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = textoOriginal;
+            }
+        }
+
+        // =============================================
         // INICIALIZACIÓN
         // =============================================
-        //hola
         actualizarFooter();
     </script>
 </body>
