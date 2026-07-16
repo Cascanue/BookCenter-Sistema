@@ -1456,7 +1456,7 @@
             <div style="font-size:3rem;text-align:center;margin-bottom:.75rem;">✅</div>
             <div class="modal-titulo" style="text-align:center;color:#065f46">Pedido ya Completado</div>
             <p class="modal-texto" style="text-align:center;color:#6b7280">Este pedido ya fue procesado y tiene un comprobante emitido. No puede volver a cobrarse.</p>
-            <button type="button" class="btn-principal" style="margin-top:.5rem" onclick="document.getElementById('modalYaCompletado').classList.add('oculto')">Entendido</button>
+            <button type="button" class="btn-principal" style="margin-top:.5rem" onclick="cerrarModalYaCompletado()">Entendido</button>
         </div>
     </div>
 
@@ -1609,6 +1609,14 @@
             document.getElementById('placeholderBusqueda').style.display = '';
             document.getElementById('contenidoResultado').style.display = 'none';
             actualizarBotonSiguiente();
+        }
+
+        // Al cerrar el aviso de pedido ya pagado, se descarta el pedido:
+        // se vacía el cuadro de búsqueda y se limpia el resumen mostrado.
+        function cerrarModalYaCompletado() {
+            document.getElementById('modalYaCompletado').classList.add('oculto');
+            document.getElementById('inputCodigoPedido').value = '';
+            limpiarResultado();
         }
 
         function renderizarResultado(data) {
