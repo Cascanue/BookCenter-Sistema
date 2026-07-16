@@ -119,7 +119,7 @@ select.input-moderno{cursor:pointer}
       <div class="vista-header"><h2 class="vista-titulo">Gestion de Productos</h2><button class="btn-principal" onclick="abrirModalProducto()"><i class="bx bx-plus"></i> Nuevo Producto</button></div>
       <div class="tabla-wrapper">
         <div class="tabla-header"><div class="buscador-tabla"><i class="bx bx-search"></i><input type="text" id="buscador-productos" placeholder="Buscar por nombre o codigo..." oninput="filtrarProductos()"></div></div>
-        <table><thead><tr><th>Imagen</th><th>Codigo</th><th>Nombre</th><th>Categoria</th><th>Precio</th><th>Stock Actual</th><th>Stock Mínimo</th><th>Estado</th><th>Acciones</th></tr></thead>
+        <table><thead><tr><th>Imagen</th><th>Codigo</th><th>Nombre</th><th>Categoria</th><th>Precio</th><th>Stock Actual</th><th>Estado</th><th>Acciones</th></tr></thead>
         <tbody id="body-productos"><tr><td colspan="8" class="estado-vacio">Cargando...</td></tr></tbody></table>
       </div>
     </div>
@@ -320,7 +320,7 @@ function renderProductos(lista) {
     const bsActual = bajo ? '<span class="badge badge-rojo">'+p.stock_actual+'</span>' : '<span class="badge badge-verde">'+p.stock_actual+'</span>';
     const bsMin = '<span class="badge '+(bajo ? 'badge-amarillo' : 'badge-gris')+'">'+p.stock_minimo+'</span>';
     const nm = p.nombre.replace(/'/g, "\\'");
-    return '<tr class="'+(bajo?'fila-alerta':'')+'"><td><img src="'+(p.url_imagen||'')+'" class="img-miniatura" onerror="this.src=\'https://placehold.co/40x40\'"></td><td><code>'+p.codigo+'</code></td><td><b>'+p.nombre+'</b></td><td>'+(cat?cat.nombre:'-')+'</td><td><b>S/ '+parseFloat(p.precio_venta).toFixed(2)+'</b></td><td>'+bsActual+'</td><td>'+bsMin+'</td><td><span class="badge badge-verde">Activo</span></td><td><div class="acciones-fila"><button class="btn-accion editar" title="Editar" onclick="abrirModalProducto('+p.id_producto+')"><i class="bx bx-edit"></i></button><button class="btn-accion eliminar" title="Eliminar" onclick="confirmarEliminar(\'producto\','+p.id_producto+',\''+nm+'\')"><i class="bx bx-trash"></i></button></div></td></tr>';
+    return '<tr class="'+(bajo?'fila-alerta':'')+'"><td><img src="'+(p.url_imagen||'')+'" class="img-miniatura" onerror="this.src=\'https://placehold.co/40x40\'"></td><td><code>'+p.codigo+'</code></td><td><b>'+p.nombre+'</b></td><td>'+(cat?cat.nombre:'-')+'</td><td><b>S/ '+parseFloat(p.precio_venta).toFixed(2)+'</b></td><td>'+bsActual+'</td><td><span class="badge badge-verde">Activo</span></td><td><div class="acciones-fila"><button class="btn-accion editar" title="Editar" onclick="abrirModalProducto('+p.id_producto+')"><i class="bx bx-edit"></i></button><button class="btn-accion eliminar" title="Eliminar" onclick="confirmarEliminar(\'producto\','+p.id_producto+',\''+nm+'\')"><i class="bx bx-trash"></i></button></div></td></tr>';
   }).join('');
 }
 

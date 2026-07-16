@@ -208,7 +208,7 @@ app.get('/api/categorias', (req, res) => {
 // 4. OBTENER PRODUCTOS
 app.get('/api/productos', (req, res) => {
     const query = `
-        SELECT id_producto, codigo, nombre, descripcion, id_categoria, url_imagen, precio_venta, stock_actual 
+        SELECT id_producto, codigo, nombre, descripcion, id_categoria, url_imagen, precio_venta, stock_actual, stock_minimo 
         FROM Producto 
         WHERE is_active = 1
     `;
