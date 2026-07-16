@@ -365,7 +365,7 @@
         <!-- ============ ENCABEZADO ============ -->
         <header class="encabezado">
             <div class="zona-izquierda">
-                <a href="menu.html" class="btn-salir">
+                <a href="menu.html" class="btn-salir" onclick="sessionStorage.removeItem('pedidoActual')">
                     <i class='bx bx-arrow-back'></i> Menú
                 </a>
             </div>
@@ -433,7 +433,8 @@
         <div class="modal-contenido">
             <div class="icono-check">✓</div>
             <h2 style="margin-bottom: 0.6rem;">¡Pedido generado con éxito!</h2>
-            <p class="modal-confirmacion-texto" id="textoExito">El pedido ha sido registrado en el sistema.</p>
+            <p class="modal-confirmacion-texto" id="textoExito" style="margin-bottom: 0.8rem;">El pedido ha sido registrado en el sistema.</p>
+            <p id="codigoExito" style="font-size: 1rem; color: var(--azul-oscuro); margin-bottom: 1.6rem;"></p>
             <button type="button" class="btn-principal" onclick="volverAlMenu()">Volver al Menú</button>
         </div>
     </div>
@@ -549,11 +550,16 @@
         // =============================================
         // MODAL ÉXITO / FINALIZAR
         // =============================================
-        function abrirModalExito() {
+        function abrirModalExito(idPedido) {
             if (pedido.items.length === 0) return;
             const nombreCliente = (pedido.cliente && pedido.cliente.nombre) || 'el cliente';
             document.getElementById('textoExito').textContent =
                 `El pedido para el cliente ${nombreCliente} ha sido registrado en el sistema.`;
+
+            // Mostramos el código para que el cajero pueda buscarlo en Procesar Pago
+            document.getElementById('codigoExito').innerHTML =
+                idPedido != null ? `Código de pedido: <strong>${idPedido}</strong>` : '';
+
             document.getElementById('modalExito').classList.remove('oculto');
         }
 
@@ -608,7 +614,7 @@
 
                 if (data.exito) {
                     // Si la BD confirmó el guardado exitoso, recién abrimos tu modal
-                    abrirModalExito();
+                    abrirModalExito(data.id_pedido);
                 } else {
                     alert("Error al guardar: " + data.mensaje);
                     // Restauramos el botón si hubo error

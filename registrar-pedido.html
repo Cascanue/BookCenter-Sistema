@@ -656,7 +656,7 @@
         <!-- ============ ENCABEZADO ============ -->
         <header class="encabezado">
             <div class="zona-izquierda">
-                <a href="menu.html" class="btn-salir">
+                <a href="menu.html" class="btn-salir" onclick="salirDelPedido()">
                     <i class='bx bx-arrow-back'></i> Menú
                 </a>
             </div>
@@ -726,7 +726,7 @@
 
         <!-- ============ FOOTER ============ -->
         <footer class="footer-pedido">
-            <a href="menu.html" class="btn-footer btn-atras">
+            <a href="menu.html" class="btn-footer btn-atras" onclick="salirDelPedido()">
                 <i class='bx bx-arrow-back'></i> ATRÁS
             </a>
             <button class="btn-footer btn-siguiente" id="btnSiguiente" disabled onclick="irASiguiente()">
@@ -1039,15 +1039,21 @@
             const cliente = CLIENTES.find(c => c.id_cliente === id);
             if (!cliente) return;
 
+            aplicarClienteSeleccionado(cliente);
+            cerrarModalCliente();
+            validarBotonSiguiente();
+        }
+
+        // Pinta el cliente en el panel lateral y lo deja como seleccionado.
+        // Recibe el objeto completo, por lo que también sirve para restaurar
+        // el cliente guardado en sessionStorage sin esperar la carga de la BD.
+        function aplicarClienteSeleccionado(cliente) {
             clienteSeleccionado = cliente;
 
             document.getElementById('btnIngresarCliente').classList.add('oculto');
             document.getElementById('clienteNombre').textContent = cliente.nombre;
             document.getElementById('clienteDoc').textContent = `${cliente.tipo_documento}: ${cliente.num_documento}`;
             document.getElementById('panelCliente').classList.remove('oculto');
-
-            cerrarModalCliente();
-            validarBotonSiguiente();
         }
 
         function irARegistrarCliente() {
@@ -1088,11 +1094,22 @@
         const pedidoGuardado = JSON.parse(sessionStorage.getItem('pedidoActual') || 'null');
         if (pedidoGuardado) {
             if (pedidoGuardado.cliente) {
-                seleccionarCliente(pedidoGuardado.cliente.id);
+                // Se guardó el objeto completo del cliente, así que lo restauramos
+                // directamente (buscarlo en CLIENTES fallaba: aún no había cargado).
+                aplicarClienteSeleccionado(pedidoGuardado.cliente);
             }
             (pedidoGuardado.items || []).forEach(item => {
                 cantidades[item.id] = item.cantidad;
             });
+        }
+
+        // =============================================
+        // SALIR DEL FLUJO DE PEDIDO (Menú / Atrás)
+        // El pedido en curso solo se descarta al abandonar
+        // por completo el registro de pedido.
+        // =============================================
+        function salirDelPedido() {
+            sessionStorage.removeItem('pedidoActual');
         }
 
         /// =============================================
