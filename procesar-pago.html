@@ -1264,7 +1264,7 @@
                             </div>
                         </div>
 
-                        <!-- TARJETA (POS Semi-integrado) -->
+                        <!-- TARJETA -->
                         <div class="metodo-card" id="cardTarjeta">
                             <div class="metodo-cabecera" onclick="seleccionarMetodo('tarjeta')">
                                 <div class="radio-circulo"><div class="radio-punto"></div></div>
@@ -1272,25 +1272,6 @@
                                 <div class="metodo-info-texto">
                                     <div class="metodo-nombre">Tarjeta de Débito / Crédito</div>
                                     <div class="metodo-desc">Visa, Mastercard — cobro via POS físico</div>
-                                </div>
-                            </div>
-                            <div class="metodo-formulario" id="formTarjeta">
-                                <div class="pos-terminal">
-                                    <div class="pos-screen">
-                                        <div class="pos-screen-label">TOTAL A COBRAR</div>
-                                        <div class="pos-screen-monto" id="posMonto">S/0.00</div>
-                                        <div class="pos-screen-status">⬡ Listo para cobrar ⬡</div>
-                                    </div>
-                                    <div class="pos-anim">
-                                        <span class="pos-card-icon">💳</span>
-                                        <span>Pida al cliente que acerque o inserte su tarjeta en el POS</span>
-                                    </div>
-                                    <div class="pos-voucher-section">
-                                        <div class="pos-voucher-label">N° de operación (voucher impreso por el POS)</div>
-                                        <input type="text" class="pos-voucher-input" id="numVoucherTarjeta"
-                                            placeholder="Ej: 84729" maxlength="10"
-                                            oninput="this.value=this.value.replace(/[^0-9]/g,''); actualizarBotonSiguiente()">
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1309,7 +1290,7 @@
                                 <p style="font-size:0.82rem;font-weight:700;color:var(--azul-oscuro);margin-bottom:0.7rem;">
                                     Selecciona la billetera del cliente:
                                 </p>
-                                <div class="grid-billeteras">
+                                <div class="grid-billeteras" style="margin-bottom:0;">
                                     <button class="billetera-btn" id="btnYape" onclick="seleccionarBilletera('yape')">
                                         <div class="logo-billetera logo-yape">YAPE</div>
                                         <span>Yape</span>
@@ -1318,30 +1299,6 @@
                                         <div class="logo-billetera logo-plin">PLIN</div>
                                         <span>Plin</span>
                                     </button>
-                                </div>
-                                <!-- Panel QR Mercado Pago -->
-                                <div class="panel-qr" id="panelQR">
-                                    <div class="qr-badge"><i class='bx bx-wifi'></i> Mercado Pago — QR Dinámico</div>
-                                    <div class="cuadro-qr" id="cuadroQR">
-                                        <div class="qr-placeholder"><i class='bx bx-qr-scan'></i></div>
-                                        <div class="qr-loader" id="qrLoader" style="display:none">
-                                            <i class='bx bx-loader-alt bx-spin'></i>
-                                        </div>
-                                        <img id="qrImagen" src="" alt="QR" style="display:none">
-                                    </div>
-                                    <p style="font-size:0.8rem;font-weight:700;color:#92400e;" id="textoQR">Generando QR...</p>
-                                    <p style="font-size:0.78rem;color:#b45309;margin-top:0.15rem;" id="montoQR"></p>
-                                    <p style="font-size:0.72rem;color:#64748b;margin-top:0.4rem;">
-                                        <span class="qr-status-dot"></span>
-                                        Esperando confirmación de pago del cliente...
-                                    </p>
-                                </div>
-                                <!-- N° de operación (lo completa el cajero con el código del pago) -->
-                                <div class="campo-grupo" style="margin-top:0.75rem;">
-                                    <span class="campo-label">N° de operación (confirmado por Mercado Pago)</span>
-                                    <input type="text" class="campo-input" id="numOperacion"
-                                        placeholder="Se llenará automáticamente o ingrésalo manualmente"
-                                        oninput="this.value=this.value.replace(/[^0-9A-Za-z-]/g,''); actualizarBotonSiguiente()">
                                 </div>
                             </div>
                         </div>
@@ -1507,13 +1464,58 @@
         <div class="modal-contenido" style="max-width:380px;text-align:center;">
             <div style="font-size:2.5rem;margin-bottom:0.5rem;">📲</div>
             <div class="modal-titulo" style="color:#92400e;">Esperando pago por QR</div>
-            <p class="modal-texto" style="color:#6b7280;margin-bottom:1.2rem;">El cliente debe escanear el QR y confirmar el pago en su app. Cuando aparezca el N° de operación en la pantalla, haz clic en <strong>"Ya pagó"</strong>.</p>
+            
+            <div class="panel-qr" id="panelQR" style="display:block; margin: 1rem 0;">
+                <div class="qr-badge"><i class='bx bx-wifi'></i> Mercado Pago — QR Dinámico</div>
+                <div class="cuadro-qr" id="cuadroQR">
+                    <div class="qr-placeholder"><i class='bx bx-qr-scan'></i></div>
+                    <div class="qr-loader" id="qrLoader" style="display:none">
+                        <i class='bx bx-loader-alt bx-spin'></i>
+                    </div>
+                    <img id="qrImagen" src="" alt="QR" style="display:none">
+                </div>
+                <p style="font-size:0.8rem;font-weight:700;color:#92400e;" id="textoQR">Generando QR...</p>
+                <p style="font-size:0.78rem;color:#b45309;margin-top:0.15rem;" id="montoQR"></p>
+                <p style="font-size:0.72rem;color:#64748b;margin-top:0.4rem;">
+                    <span class="qr-status-dot"></span>
+                    Esperando confirmación de pago del cliente...
+                </p>
+            </div>
+
             <input type="text" id="numOperacionModal" placeholder="N° de operación (opcional)"
                 style="width:100%;padding:0.6rem;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.9rem;box-sizing:border-box;margin-bottom:1rem;text-align:center;font-family:monospace;font-weight:700;"
-                oninput="document.getElementById('numOperacion').value=this.value">
+                oninput="this.value=this.value.replace(/[^0-9A-Za-z-]/g,'')">
             <div style="display:flex;gap:0.75rem;justify-content:center;">
                 <button onclick="document.getElementById('modalQREspera').classList.add('oculto')" style="padding:0.6rem 1.2rem;border:1.5px solid #e2e8f0;border-radius:8px;background:white;cursor:pointer;font-size:0.85rem;">Cancelar</button>
-                <button onclick="confirmarPagoQR()" style="padding:0.6rem 1.4rem;background:#16a34a;color:white;border:none;border-radius:8px;cursor:pointer;font-size:0.85rem;font-weight:700;">✓ Ya pagó — Continuar</button>
+                <button id="btnConfirmarQR" onclick="procesarPagoBackend()" style="padding:0.6rem 1.4rem;background:#16a34a;color:white;border:none;border-radius:8px;cursor:pointer;font-size:0.85rem;font-weight:700;">✓ Ya pagó — Continuar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL POS FISICO -->
+    <div class="modal-overlay oculto" id="modalPOS" style="z-index:2000;">
+        <div class="modal-contenido" style="max-width:400px;text-align:center;background:linear-gradient(135deg, #1e293b 0%, #0f172a 100%);color:white;border:1px solid #334155;">
+            <div style="font-size:2.5rem;margin-bottom:0.5rem;">💳</div>
+            <div class="modal-titulo" style="color:#e2e8f0;">Cobro con POS Físico</div>
+            
+            <div class="pos-screen" style="margin: 1.5rem 0;">
+                <div class="pos-screen-label">TOTAL A COBRAR</div>
+                <div class="pos-screen-monto" id="posMonto">S/0.00</div>
+                <div class="pos-screen-status">⬡ Listo para cobrar ⬡</div>
+            </div>
+
+            <p style="font-size:0.85rem;color:#94a3b8;margin-bottom:1rem;">Pida al cliente que acerque o inserte su tarjeta en el POS.</p>
+            
+            <div class="pos-voucher-section" style="margin-bottom:1.5rem;">
+                <div class="pos-voucher-label">N° de operación (voucher impreso)</div>
+                <input type="text" class="pos-voucher-input" id="numVoucherTarjetaModal"
+                    placeholder="Ej: 84729" maxlength="10"
+                    oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+            </div>
+
+            <div style="display:flex;gap:0.75rem;justify-content:center;">
+                <button onclick="document.getElementById('modalPOS').classList.add('oculto')" style="padding:0.6rem 1.2rem;border:1px solid #475569;border-radius:8px;background:transparent;color:#94a3b8;cursor:pointer;font-size:0.85rem;">Cancelar</button>
+                <button id="btnConfirmarPOS" onclick="procesarPagoBackend()" style="padding:0.6rem 1.4rem;background:#3b82f6;color:white;border:none;border-radius:8px;cursor:pointer;font-size:0.85rem;font-weight:700;">Confirmar Voucher</button>
             </div>
         </div>
     </div>
@@ -1671,7 +1673,10 @@
             const mapForm = { efectivo: 'formEfectivo', tarjeta: 'formTarjeta', billetera: 'formBilletera' };
 
             document.getElementById(mapCard[tipo]).classList.add('seleccionado');
-            document.getElementById(mapForm[tipo]).classList.add('abierto');
+            if (mapForm[tipo]) {
+                const formEl = document.getElementById(mapForm[tipo]);
+                if (formEl) formEl.classList.add('abierto');
+            }
 
             if (tipo === 'efectivo' && pedidoActual) {
                 document.getElementById('displayTotalEfectivo').value = `S/${parseFloat(pedidoActual.total).toFixed(2)}`;
@@ -1680,12 +1685,7 @@
                 document.getElementById('placeholderVuelto').style.display = '';
             }
 
-            if (tipo === 'tarjeta' && pedidoActual) {
-                document.getElementById('posMonto').textContent = `S/${parseFloat(pedidoActual.total).toFixed(2)}`;
-            }
-
             if (tipo === 'billetera') {
-                document.getElementById('panelQR').classList.remove('visible');
                 mpQrId = null;
                 ['btnYape', 'btnPlin'].forEach(id =>
                     document.getElementById(id).classList.remove('seleccionada')
@@ -1716,59 +1716,15 @@
             actualizarBotonSiguiente();
         }
 
-        let mpQrId = null; // ID del QR generado por Mercado Pago
-        let qrPollingInterval = null;
+        let mpQrId = null; 
 
-        async function seleccionarBilletera(tipo) {
+        function seleccionarBilletera(tipo) {
             billeteraElegida = tipo;
             const mapBtn = { yape: 'btnYape', plin: 'btnPlin' };
-            const mapNombre = { yape: 'Yape', plin: 'Plin' };
-
             ['btnYape', 'btnPlin'].forEach(id =>
                 document.getElementById(id).classList.remove('seleccionada')
             );
             document.getElementById(mapBtn[tipo]).classList.add('seleccionada');
-
-            // Mostrar panel QR y empezar a generar
-            const panelQR = document.getElementById('panelQR');
-            panelQR.classList.add('visible');
-            document.getElementById('qrImagen').style.display = 'none';
-            document.getElementById('qrLoader').style.display = 'flex';
-            document.getElementById('textoQR').textContent = 'Generando QR de pago...';
-            document.getElementById('montoQR').textContent = `Monto: S/${parseFloat(pedidoActual.total).toFixed(2)}`;
-
-            // Generar QR en Mercado Pago
-            try {
-                const res = await fetch(`${URL_BACKEND}/api/generar-qr`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        id_pedido: pedidoActual.id_pedido,
-                        total: pedidoActual.total,
-                        descripcion: `Book Center — Pedido #${pedidoActual.id_pedido}`,
-                        billetera: tipo
-                    })
-                });
-                const data = await res.json();
-
-                if (data.exito && data.qr_image_base64) {
-                    mpQrId = data.qr_id;
-                    document.getElementById('qrLoader').style.display = 'none';
-                    const img = document.getElementById('qrImagen');
-                    img.src = `data:image/png;base64,${data.qr_image_base64}`;
-                    img.style.display = 'block';
-                    document.getElementById('textoQR').textContent = `Escanea con ${mapNombre[tipo]} y confirma el pago`;
-                    // Abrir modal de espera
-                    document.getElementById('modalQREspera').classList.remove('oculto');
-                } else {
-                    document.getElementById('qrLoader').style.display = 'none';
-                    document.getElementById('textoQR').textContent = data.mensaje || 'Error al generar QR';
-                }
-            } catch(err) {
-                document.getElementById('qrLoader').style.display = 'none';
-                document.getElementById('textoQR').textContent = 'Error de red al generar QR';
-            }
-
             actualizarBotonSiguiente();
         }
 
@@ -1862,19 +1818,17 @@
                 document.getElementById('r_montoRecibido').textContent = `S/${recibido.toFixed(2)}`;
                 document.getElementById('r_vuelto').textContent = `S/${vuelto.toFixed(2)}`;
             } else if (metodoPago === 'tarjeta') {
-                const voucher = document.getElementById('numVoucherTarjeta').value;
                 divMetodo.innerHTML = `
                 <div class="fila-dato"><span class="etiqueta">Método</span><span class="valor">Tarjeta — POS Físico</span></div>
-                <div class="fila-dato"><span class="etiqueta">N° de operación (voucher)</span><span class="valor" style="font-family:monospace;font-weight:700;">${voucher}</span></div>
+                <div class="fila-dato"><span class="etiqueta">Estado</span><span class="valor" style="color:#eab308;font-weight:600;">Pendiente de cobro</span></div>
             `;
                 document.getElementById('r_filaVuelto').style.display = 'none';
                 document.getElementById('r_filaVueltoValor').style.display = 'none';
             } else if (metodoPago === 'billetera') {
-                const mapNombre = { yape: 'Yape', plin: 'Plin', lukita: 'Lukita' };
-                const numOp = document.getElementById('numOperacion').value;
+                const mapNombre = { yape: 'Yape', plin: 'Plin' };
                 divMetodo.innerHTML = `
                 <div class="fila-dato"><span class="etiqueta">Método</span><span class="valor">Billetera Digital — ${mapNombre[billeteraElegida] || '—'}</span></div>
-                <div class="fila-dato"><span class="etiqueta">N° de operación</span><span class="valor">${numOp || '—'}</span></div>
+                <div class="fila-dato"><span class="etiqueta">Estado</span><span class="valor" style="color:#eab308;font-weight:600;">Pendiente de QR</span></div>
             `;
                 document.getElementById('r_filaVuelto').style.display = 'none';
                 document.getElementById('r_filaVueltoValor').style.display = 'none';
@@ -1921,22 +1875,9 @@
                 }
             }
 
-            if (metodoPago === 'tarjeta') {
-                const voucher = document.getElementById('numVoucherTarjeta').value.trim();
-                if (!voucher) {
-                    alert('Ingresa el N° de operación que imprimió el POS.');
-                    return false;
-                }
-            }
-
             if (metodoPago === 'billetera') {
                 if (!billeteraElegida) {
-                    alert('Selecciona la billetera digital.');
-                    return false;
-                }
-                const numOp = document.getElementById('numOperacion').value.trim();
-                if (!numOp) {
-                    alert('Ingresa el N° de operación de Mercado Pago o haz clic en "Ya pagó".');
+                    alert('Selecciona la billetera digital (Yape o Plin).');
                     return false;
                 }
             }
@@ -2006,6 +1947,12 @@
             if (tabActual === 3) {
                 btnSiguiente.style.display = 'none';
                 btnConfirmar.style.display = 'flex';
+                
+                if (metodoPago === 'efectivo') {
+                    btnConfirmar.innerHTML = `CONFIRMAR PAGO <i class='bx bx-check-circle'></i>`;
+                } else {
+                    btnConfirmar.innerHTML = `REALIZAR PAGO <i class='bx bx-right-arrow-alt'></i>`;
+                }
             } else {
                 btnSiguiente.style.display = 'flex';
                 btnConfirmar.style.display = 'none';
@@ -2015,22 +1962,84 @@
         }
 
         // =============================================
-        // CONFIRMAR PAGO → BACKEND
+        // CONFIRMAR PAGO (Botón Final - Abre modal o procesa)
         // =============================================
         async function confirmarPago() {
-            const btn = document.getElementById('btnConfirmar');
-            btn.innerHTML = `PROCESANDO... <i class='bx bx-loader-alt bx-spin'></i>`;
-            btn.disabled = true;
+            if (metodoPago === 'efectivo') {
+                await procesarPagoBackend();
+            } else if (metodoPago === 'tarjeta') {
+                document.getElementById('posMonto').textContent = `S/${parseFloat(pedidoActual.total).toFixed(2)}`;
+                document.getElementById('numVoucherTarjetaModal').value = '';
+                document.getElementById('modalPOS').classList.remove('oculto');
+            } else if (metodoPago === 'billetera') {
+                abrirModalBilletera();
+            }
+        }
+
+        async function abrirModalBilletera() {
+            const mapNombre = { yape: 'Yape', plin: 'Plin' };
+            document.getElementById('qrImagen').style.display = 'none';
+            document.getElementById('qrLoader').style.display = 'flex';
+            document.getElementById('textoQR').textContent = 'Generando QR de pago...';
+            document.getElementById('montoQR').textContent = `Monto: S/${parseFloat(pedidoActual.total).toFixed(2)}`;
+            document.getElementById('numOperacionModal').value = '';
+            document.getElementById('modalQREspera').classList.remove('oculto');
+
+            try {
+                const res = await fetch(`${URL_BACKEND}/api/generar-qr`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id_pedido: pedidoActual.id_pedido,
+                        total: pedidoActual.total,
+                        descripcion: `Book Center — Pedido #${pedidoActual.id_pedido}`,
+                        billetera: billeteraElegida
+                    })
+                });
+                const data = await res.json();
+
+                if (data.exito && data.qr_image_base64) {
+                    mpQrId = data.qr_id;
+                    document.getElementById('qrLoader').style.display = 'none';
+                    const img = document.getElementById('qrImagen');
+                    img.src = `data:image/png;base64,${data.qr_image_base64}`;
+                    img.style.display = 'block';
+                    document.getElementById('textoQR').textContent = `Escanea con ${mapNombre[billeteraElegida]} y confirma el pago`;
+                } else {
+                    document.getElementById('qrLoader').style.display = 'none';
+                    document.getElementById('textoQR').textContent = data.mensaje || 'Error al generar QR';
+                }
+            } catch(err) {
+                document.getElementById('qrLoader').style.display = 'none';
+                document.getElementById('textoQR').textContent = 'Error de red al generar QR';
+            }
+        }
+
+        // =============================================
+        // PROCESAR PAGO → BACKEND
+        // =============================================
+        async function procesarPagoBackend() {
+            // Validaciones de modales antes de cerrar
+            let referenciaFinal = null;
+            if (metodoPago === 'tarjeta') {
+                referenciaFinal = document.getElementById('numVoucherTarjetaModal').value.trim();
+                if (!referenciaFinal) { alert('Ingresa el N° de voucher impreso.'); return; }
+                const btn = document.getElementById('btnConfirmarPOS');
+                btn.innerHTML = `PROCESANDO...`; btn.disabled = true;
+            } else if (metodoPago === 'billetera') {
+                referenciaFinal = document.getElementById('numOperacionModal').value.trim() || (mpQrId || Date.now().toString().slice(-8));
+                const btn = document.getElementById('btnConfirmarQR');
+                btn.innerHTML = `PROCESANDO...`; btn.disabled = true;
+            } else {
+                const btn = document.getElementById('btnConfirmar');
+                btn.innerHTML = `PROCESANDO... <i class='bx bx-loader-alt bx-spin'></i>`; btn.disabled = true;
+            }
 
             const payload = {
                 id_pedido: pedidoActual.id_pedido,
                 metodo_pago: metodoPago,
                 cuotas: 1,
-                referencia: metodoPago === 'billetera'
-                    ? document.getElementById('numOperacion').value
-                    : metodoPago === 'tarjeta'
-                        ? document.getElementById('numVoucherTarjeta').value
-                        : null,
+                referencia: referenciaFinal,
                 tipo_documento: pedidoActual.tipo_documento,
                 id_cajero: localStorage.getItem('idUsuario')
             };
@@ -2044,6 +2053,9 @@
                 const data = await res.json();
 
                 if (data.exito) {
+                    document.getElementById('modalPOS').classList.add('oculto');
+                    document.getElementById('modalQREspera').classList.add('oculto');
+                    
                     const esFactura = pedidoActual.tipo_documento === 'RUC';
                     ultimoComprobante = {
                         correlativo: data.numero_correlativo,
@@ -2054,8 +2066,8 @@
                         metodoPago: metodoPago,
                         billetera: billeteraElegida,
                         montoRecibido: metodoPago === 'efectivo' ? (parseFloat(document.getElementById('montoRecibido').value) || 0) : null,
-                        numVoucher: metodoPago === 'tarjeta' ? document.getElementById('numVoucherTarjeta').value : null,
-                        numOperacion: metodoPago === 'billetera' ? document.getElementById('numOperacion').value : null
+                        numVoucher: metodoPago === 'tarjeta' ? referenciaFinal : null,
+                        numOperacion: metodoPago === 'billetera' ? referenciaFinal : null
                     };
 
                     document.getElementById('textoExitoPago').textContent =
@@ -2065,13 +2077,24 @@
                     document.getElementById('modalExito').classList.remove('oculto');
                 } else {
                     alert('❌ ' + (data.mensaje || 'Error al procesar el pago.'));
-                    btn.innerHTML = `CONFIRMAR PAGO <i class='bx bx-check-circle'></i>`;
-                    btn.disabled = false;
+                    restaurarBotonesModal();
                 }
             } catch (err) {
                 alert('❌ Error de conexión con el servidor.');
-                btn.innerHTML = `CONFIRMAR PAGO <i class='bx bx-check-circle'></i>`;
-                btn.disabled = false;
+                restaurarBotonesModal();
+            }
+        }
+
+        function restaurarBotonesModal() {
+            if (metodoPago === 'efectivo') {
+                const btn = document.getElementById('btnConfirmar');
+                btn.innerHTML = `CONFIRMAR PAGO <i class='bx bx-check-circle'></i>`; btn.disabled = false;
+            } else if (metodoPago === 'tarjeta') {
+                const btn = document.getElementById('btnConfirmarPOS');
+                btn.innerHTML = `Confirmar Voucher`; btn.disabled = false;
+            } else {
+                const btn = document.getElementById('btnConfirmarQR');
+                btn.innerHTML = `✓ Ya pagó — Continuar`; btn.disabled = false;
             }
         }
 
