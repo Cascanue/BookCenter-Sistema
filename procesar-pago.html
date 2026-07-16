@@ -723,15 +723,16 @@
             text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.65rem;
         }
         .cuadro-qr {
-            width: 130px; height: 130px;
+            width: 180px; height: 180px;
             border: 3px solid #1a56db;
-            border-radius: 10px;
-            margin: 0 auto 0.5rem;
+            border-radius: 12px;
+            margin: 0 auto 0.75rem;
             display: flex; align-items: center; justify-content: center;
-            background: white; overflow: hidden; position: relative;
+            background: white; position: relative;
+            padding: 0.5rem;
         }
-        .cuadro-qr img { width: 100%; height: 100%; object-fit: contain; }
-        .cuadro-qr .qr-placeholder { font-size: 3rem; color: #94a3b8; }
+        .cuadro-qr img { width: 100%; height: 100%; object-fit: contain; display: block; }
+        .cuadro-qr .qr-placeholder { font-size: 4rem; color: #94a3b8; }
         .qr-loader {
             position: absolute; inset: 0; background: rgba(255,255,255,0.9);
             display: flex; align-items: center; justify-content: center;
