@@ -97,6 +97,71 @@ function registrarAuditoria(idUsuario, accion, tablaAfectada, detalle) {
     );
 }
 
+// ==========================================
+// MP. MERCADO PAGO — Generar QR Dinámico
+// ==========================================
+app.post('/api/generar-qr', async (req, res) => {
+    try {
+        const { id_pedido, total, descripcion } = req.body;
+        const accessToken = process.env.MP_ACCESS_TOKEN;
+
+        if (!accessToken) {
+            return res.status(500).json({ exito: false, mensaje: 'MP_ACCESS_TOKEN no configurado en el servidor.' });
+        }
+
+        // Crear preferencia de pago en Mercado Pago
+        const preferenceRes = await fetch('https://api.mercadopago.com/checkout/preferences', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                items: [{
+                    title: descripcion || `Book Center — Pedido #${id_pedido}`,
+                    quantity: 1,
+                    unit_price: parseFloat(total),
+                    currency_id: 'PEN'
+                }],
+                external_reference: `PEDIDO-${id_pedido}`,
+                notification_url: 'https://bookcenter-backend.onrender.com/api/webhook-mp'
+            })
+        });
+
+        const preference = await preferenceRes.json();
+
+        if (!preference.id) {
+            console.error('MP Error:', preference);
+            return res.status(500).json({ exito: false, mensaje: 'No se pudo crear la preferencia en MP: ' + (preference.message || JSON.stringify(preference)) });
+        }
+
+        // Generar imagen QR del link de pago usando servicio público
+        const qrData = preference.sandbox_init_point || preference.init_point;
+        const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&format=png&data=${encodeURIComponent(qrData)}`;
+
+        const qrRes = await fetch(qrApiUrl);
+        const qrBuffer = await qrRes.arrayBuffer();
+        const qrBase64 = Buffer.from(qrBuffer).toString('base64');
+
+        res.json({
+            exito: true,
+            qr_id: preference.id,
+            qr_image_base64: qrBase64,
+            init_point: qrData
+        });
+
+    } catch (err) {
+        console.error('❌ Error generando QR MP:', err);
+        res.status(500).json({ exito: false, mensaje: 'Error interno: ' + err.message });
+    }
+});
+
+// MP Webhook — recibe notificaciones de pago de Mercado Pago
+app.post('/api/webhook-mp', (req, res) => {
+    console.log('📩 Webhook MP recibido:', JSON.stringify(req.body));
+    res.sendStatus(200);
+});
+
 // 1. RUTA DE LOGIN (Verifica credenciales y rol, con hash bcrypt y auditoría)
 app.post('/api/login', (req, res) => {
     const { username, password } = req.body;
