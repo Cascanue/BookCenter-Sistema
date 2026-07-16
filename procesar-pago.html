@@ -1658,12 +1658,14 @@
         // =============================================
         function seleccionarMetodo(tipo) {
             // Deseleccionar todos
-            ['cardEfectivo', 'cardTarjeta', 'cardBilletera'].forEach(id =>
-                document.getElementById(id).classList.remove('seleccionado')
-            );
-            ['formEfectivo', 'formTarjeta', 'formBilletera'].forEach(id =>
-                document.getElementById(id).classList.remove('abierto')
-            );
+            ['cardEfectivo', 'cardTarjeta', 'cardBilletera'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.remove('seleccionado');
+            });
+            ['formEfectivo', 'formTarjeta', 'formBilletera'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.remove('abierto');
+            });
 
             // Seleccionar el elegido
             metodoPago = tipo;
