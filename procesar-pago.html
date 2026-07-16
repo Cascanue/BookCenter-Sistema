@@ -1481,6 +1481,9 @@
                     <span class="qr-status-dot"></span>
                     Esperando confirmación de pago del cliente...
                 </p>
+                <a id="linkTestPago" href="#" target="_blank" style="display:none; margin-top:0.8rem; font-size:0.75rem; color:#2563eb; text-decoration:underline; font-weight:600;">
+                    <i class='bx bx-link-external'></i> [Solo Pruebas] Abrir link de pago en PC
+                </a>
             </div>
 
             <input type="text" id="numOperacionModal" placeholder="N° de operación (opcional)"
@@ -2020,6 +2023,12 @@
                     img.src = `data:image/png;base64,${data.qr_image_base64}`;
                     img.style.display = 'block';
                     document.getElementById('textoQR').textContent = `Escanea con ${mapNombre[billeteraElegida]} y confirma el pago`;
+                    
+                    const linkTest = document.getElementById('linkTestPago');
+                    if (linkTest && data.init_point) {
+                        linkTest.href = data.init_point;
+                        linkTest.style.display = 'inline-block';
+                    }
                     
                     // Iniciar polling
                     iniciarPollingMP(pedidoActual.id_pedido);
