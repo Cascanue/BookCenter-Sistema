@@ -5,6 +5,7 @@ const cors = require('cors');
 const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
 const bcrypt = require('bcrypt');
+const nodemailer = require('nodemailer');
 
 const app = express();
 app.use(cors());
@@ -61,6 +62,20 @@ db.getConnection((err, connection) => {
         });
     }
 });
+
+// ==========================================
+// CONFIGURACIÓN DE NODEMAILER (Gmail)
+// ==========================================
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+    }
+});
+
+// Almacén temporal de códigos (en memoria — válidos por 15 minutos)
+const codigosRecuperacion = new Map(); // { correo: { codigo, expira, id_usuario } }
 
 // ==========================================
 // C. RUTAS DEL SISTEMA (Endpoints)
@@ -773,6 +788,113 @@ app.get('/registrar-pedido', (req, res) => res.sendFile(__dirname + '/registrar-
 app.get('/confirmar-pedido', (req, res) => res.sendFile(__dirname + '/confirmar-pedido.html'));
 app.get('/procesar-pago', (req, res) => res.sendFile(__dirname + '/procesar-pago.html'));
 app.get('/menu-admin', (req, res) => res.sendFile(__dirname + '/menu-admin.html'));
+app.get('/recuperar-contrasena', (req, res) => res.sendFile(__dirname + '/recuperar-contrasena.html'));
+
+// ==========================================
+// ENDPOINTS DE RECUPERACIÓN DE CONTRASEÑA
+// ==========================================
+
+// PASO 1: Verificar correo y enviar código
+app.post('/api/solicitar-codigo', async (req, res) => {
+    const { correo } = req.body;
+    if (!correo) return res.status(400).json({ exito: false, mensaje: 'Correo requerido.' });
+
+    db.query('SELECT id_usuario, nombre_completo FROM Usuario WHERE correo = ? AND is_active = 1', [correo], async (err, rows) => {
+        if (err) return res.status(500).json({ exito: false, mensaje: 'Error interno.' });
+        if (rows.length === 0) {
+            return res.status(404).json({ exito: false, mensaje: 'No existe ningún usuario con ese correo registrado.' });
+        }
+
+        const usuario = rows[0];
+        const codigo = String(Math.floor(100000 + Math.random() * 900000)); // 6 dígitos
+        const expira = Date.now() + 15 * 60 * 1000; // 15 minutos
+
+        codigosRecuperacion.set(correo, { codigo, expira, id_usuario: usuario.id_usuario });
+
+        const mailOptions = {
+            from: `"Book Center" <${process.env.EMAIL_USER}>`,
+            to: correo,
+            subject: '🔑 Código de verificación — Book Center',
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+                    <div style="background: #1e40af; padding: 24px; text-align: center;">
+                        <h2 style="color: white; margin: 0; font-size: 20px;">📚 Book Center</h2>
+                        <p style="color: #bfdbfe; margin: 4px 0 0 0; font-size: 13px;">Sistema de Librería</p>
+                    </div>
+                    <div style="padding: 32px 24px;">
+                        <p style="color: #1e293b; font-size: 15px;">Hola, <strong>${usuario.nombre_completo}</strong>.</p>
+                        <p style="color: #475569; font-size: 14px;">Recibimos una solicitud para restablecer tu contraseña. Usa el siguiente código de verificación:</p>
+                        <div style="background: #f1f5f9; border-radius: 10px; padding: 24px; text-align: center; margin: 24px 0;">
+                            <span style="font-size: 42px; font-weight: 900; letter-spacing: 8px; color: #1e40af; font-family: monospace;">${codigo}</span>
+                        </div>
+                        <p style="color: #64748b; font-size: 13px;">⏱️ Este código expira en <strong>15 minutos</strong>.</p>
+                        <p style="color: #94a3b8; font-size: 12px;">Si no solicitaste restablecer tu contraseña, ignora este correo.</p>
+                    </div>
+                    <div style="background: #f8fafc; padding: 16px; text-align: center; border-top: 1px solid #e2e8f0;">
+                        <p style="color: #94a3b8; font-size: 11px; margin: 0;">Book Center © 2026 — No responder este correo</p>
+                    </div>
+                </div>
+            `
+        };
+
+        try {
+            await transporter.sendMail(mailOptions);
+            res.json({ exito: true, mensaje: 'Código enviado al correo.' });
+        } catch (emailErr) {
+            console.error('❌ Error enviando email:', emailErr);
+            res.status(500).json({ exito: false, mensaje: 'No se pudo enviar el correo. Intente más tarde.' });
+        }
+    });
+});
+
+// PASO 2: Verificar código ingresado
+app.post('/api/verificar-codigo', (req, res) => {
+    const { correo, codigo } = req.body;
+    if (!correo || !codigo) return res.status(400).json({ exito: false, mensaje: 'Datos incompletos.' });
+
+    const registro = codigosRecuperacion.get(correo);
+    if (!registro) return res.status(400).json({ exito: false, mensaje: 'No hay ninguna solicitud activa para ese correo.' });
+    if (Date.now() > registro.expira) {
+        codigosRecuperacion.delete(correo);
+        return res.status(400).json({ exito: false, mensaje: 'El código ha expirado. Solicita uno nuevo.' });
+    }
+    if (registro.codigo !== String(codigo).trim()) {
+        return res.status(400).json({ exito: false, mensaje: 'Código incorrecto. Verifica e intenta de nuevo.' });
+    }
+
+    res.json({ exito: true, mensaje: 'Código verificado correctamente.' });
+});
+
+// PASO 3: Cambiar la contraseña
+app.post('/api/cambiar-contrasena', async (req, res) => {
+    const { correo, codigo, nuevaContrasena } = req.body;
+    if (!correo || !codigo || !nuevaContrasena) return res.status(400).json({ exito: false, mensaje: 'Datos incompletos.' });
+
+    const registro = codigosRecuperacion.get(correo);
+    if (!registro) return res.status(400).json({ exito: false, mensaje: 'Sesión expirada. Inicia el proceso nuevamente.' });
+    if (Date.now() > registro.expira || registro.codigo !== String(codigo).trim()) {
+        codigosRecuperacion.delete(correo);
+        return res.status(400).json({ exito: false, mensaje: 'Código inválido o expirado.' });
+    }
+
+    // Política: mín 8 chars, 1 mayúscula, 1 número, 1 especial
+    const politica = /^(?=.*[A-Z])(?=.*\d)(?=.*[#@!$%^&*()_+\-=\[\]{};':"|,.<>\/?]).{8,}$/;
+    if (!politica.test(nuevaContrasena)) {
+        return res.status(400).json({ exito: false, mensaje: 'La contraseña no cumple los requisitos de seguridad.' });
+    }
+
+    try {
+        const hash = await bcrypt.hash(nuevaContrasena, 10);
+        db.query('UPDATE Usuario SET password_hash = ? WHERE id_usuario = ?', [hash, registro.id_usuario], (err) => {
+            if (err) return res.status(500).json({ exito: false, mensaje: 'Error al actualizar la contraseña.' });
+            codigosRecuperacion.delete(correo); // Limpiar el código una vez usado
+            registrarAuditoria(registro.id_usuario, 'CAMBIO_CONTRASENA', 'Usuario', 'Contraseña restablecida vía correo electrónico');
+            res.json({ exito: true, mensaje: '¡Contraseña actualizada correctamente!' });
+        });
+    } catch (e) {
+        res.status(500).json({ exito: false, mensaje: 'Error procesando la contraseña.' });
+    }
+});
 
 // ==========================================
 // F. ENCENDIDO DEL SERVIDOR
