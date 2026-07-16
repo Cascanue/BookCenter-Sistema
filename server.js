@@ -845,7 +845,7 @@ app.post('/api/solicitar-codigo', async (req, res) => {
             res.json({ exito: true, mensaje: 'Código enviado al correo.' });
         } catch (emailErr) {
             console.error('❌ Error enviando email:', emailErr);
-            res.status(500).json({ exito: false, mensaje: 'No se pudo enviar el correo. Intente más tarde.' });
+            res.status(500).json({ exito: false, mensaje: 'Error interno SMTP: ' + emailErr.message });
         }
     });
 });
