@@ -162,6 +162,35 @@ app.post('/api/webhook-mp', (req, res) => {
     res.sendStatus(200);
 });
 
+// Polling MP — verifica si un pedido específico ya fue pagado
+app.get('/api/verificar-pago-mp/:id_pedido', async (req, res) => {
+    try {
+        const { id_pedido } = req.params;
+        const accessToken = process.env.MP_ACCESS_TOKEN;
+        
+        if (!accessToken) return res.json({ pagado: false });
+
+        const searchRes = await fetch(`https://api.mercadopago.com/v1/payments/search?external_reference=PEDIDO-${id_pedido}`, {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+        });
+        
+        const data = await searchRes.json();
+        
+        if (data.results && data.results.length > 0) {
+            // Buscar si hay algún pago aprobado para esta referencia
+            const pagoAprobado = data.results.find(p => p.status === 'approved');
+            if (pagoAprobado) {
+                return res.json({ pagado: true, numOperacion: pagoAprobado.id });
+            }
+        }
+        
+        res.json({ pagado: false });
+    } catch (err) {
+        console.error('❌ Error en polling MP:', err);
+        res.json({ pagado: false });
+    }
+});
+
 // 1. RUTA DE LOGIN (Verifica credenciales y rol, con hash bcrypt y auditoría)
 app.post('/api/login', (req, res) => {
     const { username, password } = req.body;

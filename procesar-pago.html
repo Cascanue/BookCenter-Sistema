@@ -1487,7 +1487,7 @@
                 style="width:100%;padding:0.6rem;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.9rem;box-sizing:border-box;margin-bottom:1rem;text-align:center;font-family:monospace;font-weight:700;"
                 oninput="this.value=this.value.replace(/[^0-9A-Za-z-]/g,'')">
             <div style="display:flex;gap:0.75rem;justify-content:center;">
-                <button onclick="document.getElementById('modalQREspera').classList.add('oculto')" style="padding:0.6rem 1.2rem;border:1.5px solid #e2e8f0;border-radius:8px;background:white;cursor:pointer;font-size:0.85rem;">Cancelar</button>
+                <button onclick="cerrarModalQREspera()" style="padding:0.6rem 1.2rem;border:1.5px solid #e2e8f0;border-radius:8px;background:white;cursor:pointer;font-size:0.85rem;">Cancelar</button>
                 <button id="btnConfirmarQR" onclick="procesarPagoBackend()" style="padding:0.6rem 1.4rem;background:#16a34a;color:white;border:none;border-radius:8px;cursor:pointer;font-size:0.85rem;font-weight:700;">✓ Ya pagó — Continuar</button>
             </div>
         </div>
@@ -1987,6 +1987,8 @@
             }
         }
 
+        let qrPollingInterval = null;
+
         async function abrirModalBilletera() {
             const mapNombre = { yape: 'Yape', plin: 'Plin' };
             document.getElementById('qrImagen').style.display = 'none';
@@ -1995,6 +1997,8 @@
             document.getElementById('montoQR').textContent = `Monto: S/${parseFloat(pedidoActual.total).toFixed(2)}`;
             document.getElementById('numOperacionModal').value = '';
             document.getElementById('modalQREspera').classList.remove('oculto');
+
+            if (qrPollingInterval) clearInterval(qrPollingInterval);
 
             try {
                 const res = await fetch(`${URL_BACKEND}/api/generar-qr`, {
@@ -2016,6 +2020,9 @@
                     img.src = `data:image/png;base64,${data.qr_image_base64}`;
                     img.style.display = 'block';
                     document.getElementById('textoQR').textContent = `Escanea con ${mapNombre[billeteraElegida]} y confirma el pago`;
+                    
+                    // Iniciar polling
+                    iniciarPollingMP(pedidoActual.id_pedido);
                 } else {
                     document.getElementById('qrLoader').style.display = 'none';
                     document.getElementById('textoQR').textContent = data.mensaje || 'Error al generar QR';
@@ -2024,6 +2031,28 @@
                 document.getElementById('qrLoader').style.display = 'none';
                 document.getElementById('textoQR').textContent = 'Error de red al generar QR';
             }
+        }
+
+        function iniciarPollingMP(idPedido) {
+            qrPollingInterval = setInterval(async () => {
+                try {
+                    const res = await fetch(`${URL_BACKEND}/api/verificar-pago-mp/${idPedido}`);
+                    const data = await res.json();
+                    if (data.pagado) {
+                        clearInterval(qrPollingInterval);
+                        document.getElementById('numOperacionModal').value = data.numOperacion || 'PAGO-AUTO';
+                        // Llamar a procesar automáticamente
+                        procesarPagoBackend();
+                    }
+                } catch (e) {
+                    console.warn("Error consultando estado de MP", e);
+                }
+            }, 4000); // Consulta cada 4 segundos
+        }
+
+        function cerrarModalQREspera() {
+            if (qrPollingInterval) clearInterval(qrPollingInterval);
+            document.getElementById('modalQREspera').classList.add('oculto');
         }
 
         // =============================================
