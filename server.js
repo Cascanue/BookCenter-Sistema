@@ -71,7 +71,10 @@ const transporter = nodemailer.createTransport({
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
-    }
+    },
+    connectionTimeout: 10000, // 10s
+    greetingTimeout: 10000,
+    socketTimeout: 10000
 });
 
 // Almacén temporal de códigos (en memoria — válidos por 15 minutos)

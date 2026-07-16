@@ -1,268 +1,440 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Book Center — Recuperar Contraseña</title>
+    <title>Book Center - Recuperar Contraseña</title>
     <link rel="stylesheet" href="css/style.css">
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
     <style>
-        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-        body{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 50%,#0f172a 100%);font-family:'Segoe UI',system-ui,sans-serif;padding:2rem 1rem}
-        .recovery-wrapper{width:100%;max-width:440px}
-        .brand-header{text-align:center;margin-bottom:2rem}
-        .brand-header img{max-width:160px;height:auto;filter:drop-shadow(0 4px 12px rgba(255,255,255,.15))}
-        .progress-bar{display:flex;align-items:center;justify-content:center;margin-bottom:2rem}
-        .step-dot{width:36px;height:36px;border-radius:50%;border:2px solid #334155;background:#1e293b;color:#64748b;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;transition:all .4s ease;flex-shrink:0}
-        .step-dot.activo{background:#2563eb;border-color:#2563eb;color:white;box-shadow:0 0 0 4px rgba(37,99,235,.25)}
-        .step-dot.completado{background:#16a34a;border-color:#16a34a;color:white}
-        .step-linea{flex:1;height:2px;background:#334155;max-width:60px;transition:background .4s ease}
-        .step-linea.completada{background:#16a34a}
-        .recovery-card{background:white;border-radius:20px;padding:2.25rem 2rem;box-shadow:0 24px 64px rgba(0,0,0,.4)}
-        .card-icon{width:62px;height:62px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:1.75rem;margin:0 auto 1.25rem auto}
-        .icon-blue{background:#dbeafe;color:#1d4ed8}
-        .icon-amber{background:#fef3c7;color:#b45309}
-        .icon-green{background:#dcfce7;color:#15803d}
-        .card-titulo{text-align:center;font-size:1.25rem;font-weight:800;color:#0f172a;margin-bottom:.4rem}
-        .card-subtitulo{text-align:center;color:#64748b;font-size:.875rem;margin-bottom:1.75rem;line-height:1.5}
-        .correo-resaltado{font-weight:700;color:#1d4ed8}
-        .campo-grupo{margin-bottom:1.1rem}
-        .campo-grupo label{display:block;font-size:.8rem;font-weight:700;color:#475569;margin-bottom:.4rem;text-transform:uppercase;letter-spacing:.5px}
-        .campo-input{width:100%;padding:.75rem 1rem;border:1.5px solid #e2e8f0;border-radius:10px;font-size:.95rem;font-family:inherit;color:#0f172a;transition:border-color .2s,box-shadow .2s;background:#f8fafc;outline:none}
-        .campo-input:focus{border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.12);background:white}
-        .campo-input.error{border-color:#ef4444}
-        .campo-input.ok{border-color:#22c55e}
-        .codigo-grid{display:flex;gap:.6rem;justify-content:center;margin-bottom:1.5rem}
-        .codigo-digit{width:52px;height:62px;border:2px solid #e2e8f0;border-radius:12px;font-size:1.6rem;font-weight:800;text-align:center;color:#1e40af;background:#f8fafc;outline:none;transition:border-color .2s,box-shadow .2s;caret-color:transparent}
-        .codigo-digit:focus{border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.15);background:white}
-        .codigo-digit.lleno{border-color:#22c55e;background:#f0fdf4}
-        .requisitos{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:.85rem 1rem;margin-bottom:1.25rem;font-size:.8rem}
-        .requisito{display:flex;align-items:center;gap:.5rem;color:#94a3b8;padding:.2rem 0;transition:color .2s}
-        .requisito.ok{color:#16a34a}
-        .requisito.fail{color:#ef4444}
-        .requisito i{font-size:.85rem;flex-shrink:0}
-        .pass-wrapper{position:relative}
-        .pass-wrapper .campo-input{padding-right:2.8rem}
-        .btn-ojo{position:absolute;right:.75rem;top:50%;transform:translateY(-50%);background:none;border:none;color:#94a3b8;cursor:pointer;font-size:1.1rem;padding:0;display:flex}
-        .btn-ojo:hover{color:#475569}
-        .btn-submit{width:100%;padding:.85rem;background:linear-gradient(135deg,#1d4ed8,#2563eb);color:white;border:none;border-radius:10px;font-size:.95rem;font-weight:700;cursor:pointer;transition:all .25s;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:.5rem;margin-top:.5rem}
-        .btn-submit:hover:not(:disabled){background:linear-gradient(135deg,#1e40af,#1d4ed8);transform:translateY(-1px);box-shadow:0 6px 20px rgba(37,99,235,.35)}
-        .btn-submit:disabled{opacity:.65;cursor:not-allowed;transform:none}
-        .link-secundario{display:block;text-align:center;margin-top:1.25rem;color:#64748b;font-size:.85rem;text-decoration:none}
-        .link-secundario a,.link-secundario span{color:#2563eb;font-weight:600;cursor:pointer;text-decoration:none}
-        .link-secundario a:hover,.link-secundario span:hover{text-decoration:underline}
-        .mensaje-box{border-radius:10px;padding:.75rem 1rem;font-size:.85rem;font-weight:500;margin-bottom:1rem;display:none;align-items:center;gap:.5rem}
-        .mensaje-box.error{background:#fef2f2;border:1px solid #fecaca;color:#dc2626;display:flex}
-        .mensaje-box.success{background:#f0fdf4;border:1px solid #bbf7d0;color:#15803d;display:flex}
-        .timer-row{display:flex;justify-content:space-between;align-items:center;font-size:.8rem;color:#64748b;margin-bottom:1.25rem}
-        .timer-badge{background:#fef3c7;color:#92400e;border-radius:6px;padding:.2rem .6rem;font-weight:700}
-        .btn-reenviar{background:none;border:none;color:#2563eb;font-weight:600;font-size:.8rem;cursor:pointer;font-family:inherit}
-        .btn-reenviar:disabled{color:#94a3b8;cursor:default}
-        .exito-container{text-align:center}
-        .exito-circulo{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#16a34a,#22c55e);display:flex;align-items:center;justify-content:center;font-size:2.2rem;color:white;margin:0 auto 1.5rem auto;box-shadow:0 8px 24px rgba(22,163,74,.35);animation:popIn .5s cubic-bezier(.175,.885,.32,1.275)}
-        @keyframes popIn{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
-        @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
-        .paso{display:none}
-        .paso.activo{display:block}
+        .pantalla-login {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .login-contenedor {
+            max-width: 400px;
+            text-align: center;
+            overflow: hidden;
+            transition: all 0.5s ease;
+        }
+        .barra-inferior {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 30px;
+            background-color: var(--azul-primario);
+        }
+        .link-recuperar {
+            color: var(--azul-primario);
+            font-size: 0.9rem;
+            text-decoration: none;
+            margin-top: 1rem;
+            display: inline-block;
+        }
+        .link-recuperar:hover { text-decoration: underline; }
+
+        /* ===== MENSAJES ===== */
+        .mensaje-box {
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 1rem;
+            display: none;
+            align-items: center;
+            gap: 0.5rem;
+            text-align: left;
+        }
+        .mensaje-box.error { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; display: flex; }
+        .mensaje-box.success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; display: flex; }
+
+        /* ===== CÓDIGO 6 DÍGITOS ===== */
+        .codigo-grid {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+        .codigo-digit {
+            width: 45px;
+            height: 55px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-align: center;
+            color: var(--azul-primario);
+            background: white;
+            outline: none;
+            transition: all 0.2s;
+        }
+        .codigo-digit:focus { border-color: var(--azul-primario); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+        .codigo-digit.lleno { border-color: #22c55e; background: #f0fdf4; }
+
+        /* ===== REQUISITOS DE CONTRASEÑA ===== */
+        .requisitos {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+            font-size: 0.8rem;
+            text-align: left;
+        }
+        .requisito { display: flex; align-items: center; gap: 0.5rem; color: #94a3b8; padding: 0.2rem 0; }
+        .requisito.ok { color: #16a34a; }
+        .requisito.fail { color: #ef4444; }
+
+        .paso { display: none; }
+        .paso.activo { display: block; }
+
+        .btn-submit-loading {
+            opacity: 0.7;
+            cursor: not-allowed !important;
+        }
     </style>
 </head>
 <body>
-<div class="recovery-wrapper">
-    <div class="brand-header">
-        <img src="https://res.cloudinary.com/dwk77ddoq/image/upload/v1781397979/imagen_2026-06-13_194618193_hkz2d2.png" alt="Book Center">
-    </div>
-    <div class="progress-bar" id="barraProgreso">
-        <div class="step-dot activo" id="dot1">1</div>
-        <div class="step-linea" id="linea1"></div>
-        <div class="step-dot" id="dot2">2</div>
-        <div class="step-linea" id="linea2"></div>
-        <div class="step-dot" id="dot3">3</div>
-    </div>
-    <div class="recovery-card">
-        <!-- PASO 1 -->
-        <div class="paso activo" id="paso1">
-            <div class="card-icon icon-blue"><i class='bx bx-envelope'></i></div>
-            <div class="card-titulo">Recuperar contraseña</div>
-            <p class="card-subtitulo">Ingresa el correo electrónico registrado en tu cuenta de Book Center.</p>
-            <div id="msg1" class="mensaje-box"></div>
-            <div class="campo-grupo">
-                <label>Correo electrónico</label>
-                <input type="email" id="inputCorreo" class="campo-input" placeholder="tu.correo@gmail.com" onkeydown="if(event.key==='Enter')enviarCodigo()">
+    <div class="pantalla-login">
+        <div class="tarjeta login-contenedor" id="cajaRecuperar">
+            <h2 style="margin-bottom: 1rem; color: var(--azul-primario); font-size: 2rem;">Recuperar Contraseña</h2>
+            <img src="https://res.cloudinary.com/dwk77ddoq/image/upload/v1781397979/imagen_2026-06-13_194618193_hkz2d2.png" alt="Logo Book Center" style="max-width: 80%; height: auto; margin: 0 auto 2rem auto; display: block;">
+
+            <!-- ===== PASO 1: Ingresar correo ===== -->
+            <div class="paso activo" id="paso1">
+                <p style="color: var(--gris); font-size: 0.9rem; margin-bottom: 1rem;">Ingresa el correo electrónico registrado en tu cuenta.</p>
+                <div id="msg1" class="mensaje-box"></div>
+                <form id="formCorreo" style="text-align: left;" onsubmit="event.preventDefault(); enviarCodigo();">
+                    <div class="input-grupo">
+                        <label>Correo electrónico</label>
+                        <input type="email" id="inputCorreo" class="input-moderno" placeholder="tu.correo@gmail.com" required>
+                    </div>
+                    <button type="submit" class="btn-principal" id="btnEnviar">Enviar código de verificación</button>
+                    <div style="text-align: center;">
+                        <a href="/" class="link-recuperar">← Volver al inicio de sesión</a>
+                    </div>
+                </form>
             </div>
-            <button class="btn-submit" id="btnEnviar" onclick="enviarCodigo()">
-                <i class='bx bx-send'></i> Enviar código de verificación
-            </button>
-            <p class="link-secundario"><a href="/">← Volver al inicio de sesión</a></p>
-        </div>
-        <!-- PASO 2 -->
-        <div class="paso" id="paso2">
-            <div class="card-icon icon-amber"><i class='bx bx-shield-quarter'></i></div>
-            <div class="card-titulo">Código de verificación</div>
-            <p class="card-subtitulo">Ingresa el código de 6 dígitos enviado a <span class="correo-resaltado" id="correoMostrado"></span></p>
-            <div id="msg2" class="mensaje-box"></div>
-            <div class="codigo-grid">
-                <input type="text" class="codigo-digit" maxlength="1" inputmode="numeric" id="d0">
-                <input type="text" class="codigo-digit" maxlength="1" inputmode="numeric" id="d1">
-                <input type="text" class="codigo-digit" maxlength="1" inputmode="numeric" id="d2">
-                <input type="text" class="codigo-digit" maxlength="1" inputmode="numeric" id="d3">
-                <input type="text" class="codigo-digit" maxlength="1" inputmode="numeric" id="d4">
-                <input type="text" class="codigo-digit" maxlength="1" inputmode="numeric" id="d5">
+
+            <!-- ===== PASO 2: Código de verificación ===== -->
+            <div class="paso" id="paso2">
+                <p style="color: var(--gris); font-size: 0.9rem; margin-bottom: 1rem;">Ingresa el código de 6 dígitos enviado a <strong id="correoMostrado" style="color: var(--azul-primario);"></strong></p>
+                <div id="msg2" class="mensaje-box"></div>
+                <form id="formCodigo" style="text-align: left;" onsubmit="event.preventDefault(); verificarCodigo();">
+                    <div class="codigo-grid">
+                        <input type="text" class="codigo-digit" maxlength="1" inputmode="numeric" id="d0" required>
+                        <input type="text" class="codigo-digit" maxlength="1" inputmode="numeric" id="d1" required>
+                        <input type="text" class="codigo-digit" maxlength="1" inputmode="numeric" id="d2" required>
+                        <input type="text" class="codigo-digit" maxlength="1" inputmode="numeric" id="d3" required>
+                        <input type="text" class="codigo-digit" maxlength="1" inputmode="numeric" id="d4" required>
+                        <input type="text" class="codigo-digit" maxlength="1" inputmode="numeric" id="d5" required>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 1rem;">
+                        <span style="color: var(--gris);">Expira en: <strong id="timerDisplay">15:00</strong></span>
+                        <button type="button" style="background: none; border: none; color: var(--azul-primario); cursor: pointer; font-weight: bold;" id="btnReenviar" onclick="reenviarCodigo()" disabled>Reenviar código</button>
+                    </div>
+                    <button type="submit" class="btn-principal" id="btnVerificar">Verificar código</button>
+                    <div style="text-align: center; margin-top: 1rem;">
+                        <a href="javascript:void(0)" class="link-recuperar" onclick="volverAPaso1()">← Cambiar correo</a>
+                    </div>
+                </form>
             </div>
-            <div class="timer-row">
-                <span>Expira en: <span class="timer-badge" id="timerDisplay">15:00</span></span>
-                <button class="btn-reenviar" id="btnReenviar" onclick="reenviarCodigo()" disabled>Reenviar código</button>
-            </div>
-            <button class="btn-submit" id="btnVerificar" onclick="verificarCodigo()">
-                <i class='bx bx-check-shield'></i> Verificar código
-            </button>
-            <p class="link-secundario"><span onclick="volverAPaso1()">← Cambiar correo</span></p>
-        </div>
-        <!-- PASO 3 -->
-        <div class="paso" id="paso3">
-            <div class="card-icon icon-green"><i class='bx bx-lock-open-alt'></i></div>
-            <div class="card-titulo">Nueva contraseña</div>
-            <p class="card-subtitulo">Crea una contraseña segura para tu cuenta.</p>
-            <div id="msg3" class="mensaje-box"></div>
-            <div class="requisitos">
-                <div class="requisito" id="req-len"><i class='bx bx-x'></i> Mínimo 8 caracteres</div>
-                <div class="requisito" id="req-may"><i class='bx bx-x'></i> Al menos 1 letra mayúscula</div>
-                <div class="requisito" id="req-num"><i class='bx bx-x'></i> Al menos 1 número</div>
-                <div class="requisito" id="req-esp"><i class='bx bx-x'></i> Al menos 1 carácter especial (#@!$%...)</div>
-            </div>
-            <div class="campo-grupo">
-                <label>Nueva contraseña</label>
-                <div class="pass-wrapper">
-                    <input type="password" id="nuevaPass" class="campo-input" placeholder="••••••••" oninput="validarRequisitos()" onkeydown="if(event.key==='Enter')cambiarContrasena()">
-                    <button class="btn-ojo" type="button" onclick="toggleOjo('nuevaPass',this)"><i class='bx bx-hide'></i></button>
+
+            <!-- ===== PASO 3: Nueva contraseña ===== -->
+            <div class="paso" id="paso3">
+                <p style="color: var(--gris); font-size: 0.9rem; margin-bottom: 1rem;">Crea una contraseña segura para tu cuenta.</p>
+                <div id="msg3" class="mensaje-box"></div>
+                <div class="requisitos">
+                    <div class="requisito" id="req-len"><i class='bx bx-x'></i> Mínimo 8 caracteres</div>
+                    <div class="requisito" id="req-may"><i class='bx bx-x'></i> Al menos 1 letra mayúscula</div>
+                    <div class="requisito" id="req-num"><i class='bx bx-x'></i> Al menos 1 número</div>
+                    <div class="requisito" id="req-esp"><i class='bx bx-x'></i> Al menos 1 carácter especial (#@!$...)</div>
                 </div>
+                <form id="formPass" style="text-align: left;" onsubmit="event.preventDefault(); cambiarContrasena();">
+                    <div class="input-grupo">
+                        <label>Nueva contraseña</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="password" id="nuevaPass" class="input-moderno" placeholder="••••••••" required oninput="validarRequisitos()">
+                            <button type="button" style="padding: 0 10px; cursor: pointer; border-radius: 8px; border: 1px solid #ccc;" onclick="toggleOjo('nuevaPass')">👁️</button>
+                        </div>
+                    </div>
+                    <div class="input-grupo">
+                        <label>Confirmar contraseña</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="password" id="confirmarPass" class="input-moderno" placeholder="••••••••" required oninput="validarCoincidencia()">
+                            <button type="button" style="padding: 0 10px; cursor: pointer; border-radius: 8px; border: 1px solid #ccc;" onclick="toggleOjo('confirmarPass')">👁️</button>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-principal" id="btnCambiar">Guardar nueva contraseña</button>
+                </form>
             </div>
-            <div class="campo-grupo">
-                <label>Confirmar contraseña</label>
-                <div class="pass-wrapper">
-                    <input type="password" id="confirmarPass" class="campo-input" placeholder="••••••••" oninput="validarCoincidencia()" onkeydown="if(event.key==='Enter')cambiarContrasena()">
-                    <button class="btn-ojo" type="button" onclick="toggleOjo('confirmarPass',this)"><i class='bx bx-hide'></i></button>
-                </div>
+
+            <!-- ===== PASO 4: ÉXITO ===== -->
+            <div class="paso" id="paso4">
+                <div style="font-size: 4rem; color: #16a34a; margin-bottom: 1rem;"><i class='bx bxs-check-circle'></i></div>
+                <h3 style="color: var(--azul-oscuro); margin-bottom: 1rem;">¡Contraseña actualizada!</h3>
+                <p style="color: var(--gris); font-size: 0.9rem; margin-bottom: 1.5rem;">Tu contraseña ha sido cambiada correctamente. Ya puedes iniciar sesión.</p>
+                <button type="button" class="btn-principal" onclick="window.location.href='/'">Ir al inicio de sesión</button>
             </div>
-            <button class="btn-submit" id="btnCambiar" onclick="cambiarContrasena()">
-                <i class='bx bx-save'></i> Guardar nueva contraseña
-            </button>
-        </div>
-        <!-- PASO 4: ÉXITO -->
-        <div class="paso" id="paso4">
-            <div class="exito-container">
-                <div class="exito-circulo">&#10003;</div>
-                <div class="card-titulo" style="font-size:1.4rem">¡Contraseña actualizada!</div>
-                <p class="card-subtitulo" style="margin-top:.5rem">Tu contraseña fue cambiada correctamente. Ya puedes iniciar sesión.</p>
-                <button class="btn-submit" style="margin-top:1.5rem" onclick="window.location.href='/'">
-                    <i class='bx bx-log-in'></i> Ir al inicio de sesión
-                </button>
-            </div>
+
         </div>
     </div>
-</div>
+    <div class="barra-inferior"></div>
+
 <script src="js/config.js"></script>
 <script>
-    let correoActivo='',timerInterval=null,segundosRestantes=900;
+    let correoActivo='', timerInterval=null, segundosRestantes=900;
 
-    async function enviarCodigo(){
-        const correo=document.getElementById('inputCorreo').value.trim();
-        const msgEl=document.getElementById('msg1');
+    async function enviarCodigo() {
+        const correo = document.getElementById('inputCorreo').value.trim();
+        const msgEl = document.getElementById('msg1');
         ocultarMsg(msgEl);
-        if(!correo||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)){mostrarMsg(msgEl,'error','Por favor ingresa un correo válido.');return;}
-        const btn=document.getElementById('btnEnviar');
-        btn.disabled=true;
-        btn.innerHTML="<i class='bx bx-loader-alt bx-spin'></i> Enviando...";
-        try{
-            const res=await fetch(`${URL_BACKEND}/api/solicitar-codigo`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({correo})});
-            const data=await res.json();
-            if(data.exito){correoActivo=correo;irAPaso(2);document.getElementById('correoMostrado').textContent=correo;iniciarTimer();setTimeout(()=>document.getElementById('d0').focus(),100);}
-            else{mostrarMsg(msgEl,'error',data.mensaje||'No se pudo enviar el código.');btn.disabled=false;btn.innerHTML="<i class='bx bx-send'></i> Enviar código de verificación";}
-        }catch{mostrarMsg(msgEl,'error','Error de conexión con el servidor.');btn.disabled=false;btn.innerHTML="<i class='bx bx-send'></i> Enviar código de verificación";}
+
+        const btn = document.getElementById('btnEnviar');
+        btn.disabled = true;
+        btn.classList.add('btn-submit-loading');
+        btn.textContent = "Enviando...";
+
+        try {
+            const res = await fetch(`${URL_BACKEND}/api/solicitar-codigo`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ correo })
+            });
+            const data = await res.json();
+
+            if (data.exito) {
+                correoActivo = correo;
+                document.getElementById('correoMostrado').textContent = correo;
+                irAPaso(2);
+                iniciarTimer();
+                setTimeout(() => document.getElementById('d0').focus(), 100);
+            } else {
+                mostrarMsg(msgEl, 'error', data.mensaje || 'No se pudo enviar el código.');
+                btn.disabled = false;
+                btn.classList.remove('btn-submit-loading');
+                btn.textContent = "Enviar código de verificación";
+            }
+        } catch (e) {
+            mostrarMsg(msgEl, 'error', 'El servidor tardó demasiado en responder (timeout). Esto puede pasar si es la primera vez que se activa o si hay un problema de red. Intenta nuevamente.');
+            btn.disabled = false;
+            btn.classList.remove('btn-submit-loading');
+            btn.textContent = "Enviar código de verificación";
+        }
     }
 
-    async function verificarCodigo(){
-        const codigo=obtenerCodigo(),msgEl=document.getElementById('msg2');
+    async function verificarCodigo() {
+        const codigo = obtenerCodigo();
+        const msgEl = document.getElementById('msg2');
         ocultarMsg(msgEl);
-        if(codigo.length<6){mostrarMsg(msgEl,'error','Ingresa los 6 dígitos del código.');return;}
-        const btn=document.getElementById('btnVerificar');
-        btn.disabled=true;
-        btn.innerHTML="<i class='bx bx-loader-alt bx-spin'></i> Verificando...";
-        try{
-            const res=await fetch(`${URL_BACKEND}/api/verificar-codigo`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({correo:correoActivo,codigo})});
-            const data=await res.json();
-            if(data.exito){clearInterval(timerInterval);irAPaso(3);setTimeout(()=>document.getElementById('nuevaPass').focus(),100);}
-            else{mostrarMsg(msgEl,'error',data.mensaje||'Código incorrecto.');sacudirDigits();btn.disabled=false;btn.innerHTML="<i class='bx bx-check-shield'></i> Verificar código";}
-        }catch{mostrarMsg(msgEl,'error','Error de conexión.');btn.disabled=false;btn.innerHTML="<i class='bx bx-check-shield'></i> Verificar código";}
+
+        if (codigo.length < 6) {
+            mostrarMsg(msgEl, 'error', 'Ingresa los 6 dígitos.');
+            return;
+        }
+
+        const btn = document.getElementById('btnVerificar');
+        btn.disabled = true;
+        btn.classList.add('btn-submit-loading');
+        btn.textContent = "Verificando...";
+
+        try {
+            const res = await fetch(`${URL_BACKEND}/api/verificar-codigo`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ correo: correoActivo, codigo })
+            });
+            const data = await res.json();
+
+            if (data.exito) {
+                clearInterval(timerInterval);
+                irAPaso(3);
+                setTimeout(() => document.getElementById('nuevaPass').focus(), 100);
+            } else {
+                mostrarMsg(msgEl, 'error', data.mensaje || 'Código incorrecto.');
+                btn.disabled = false;
+                btn.classList.remove('btn-submit-loading');
+                btn.textContent = "Verificar código";
+            }
+        } catch {
+            mostrarMsg(msgEl, 'error', 'Error de conexión.');
+            btn.disabled = false;
+            btn.classList.remove('btn-submit-loading');
+            btn.textContent = "Verificar código";
+        }
     }
 
-    async function reenviarCodigo(){
-        const msgEl=document.getElementById('msg2');
-        ocultarMsg(msgEl);limpiarDigits();
-        const btn=document.getElementById('btnReenviar');
-        btn.disabled=true;btn.textContent='Enviando...';
-        try{
-            const res=await fetch(`${URL_BACKEND}/api/solicitar-codigo`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({correo:correoActivo})});
-            const data=await res.json();
-            if(data.exito){mostrarMsg(msgEl,'success','¡Código reenviado! Revisa tu bandeja de entrada.');clearInterval(timerInterval);segundosRestantes=900;iniciarTimer();}
-            else{mostrarMsg(msgEl,'error',data.mensaje||'No se pudo reenviar.');btn.disabled=false;btn.textContent='Reenviar código';}
-        }catch{mostrarMsg(msgEl,'error','Error de conexión.');btn.disabled=false;btn.textContent='Reenviar código';}
-    }
-
-    function volverAPaso1(){clearInterval(timerInterval);limpiarDigits();irAPaso(1);setTimeout(()=>document.getElementById('inputCorreo').focus(),100);document.getElementById('btnEnviar').disabled=false;document.getElementById('btnEnviar').innerHTML="<i class='bx bx-send'></i> Enviar código de verificación";}
-
-    async function cambiarContrasena(){
-        const nueva=document.getElementById('nuevaPass').value,confirmar=document.getElementById('confirmarPass').value,msgEl=document.getElementById('msg3'),codigo=obtenerCodigo();
+    async function reenviarCodigo() {
+        const msgEl = document.getElementById('msg2');
         ocultarMsg(msgEl);
-        const politica=/^(?=.*[A-Z])(?=.*\d)(?=.*[#@!$%^&*()\-_+=\[\]{};':"\\|,.<>/?]).{8,}$/;
-        if(!politica.test(nueva)){mostrarMsg(msgEl,'error','La contraseña no cumple los requisitos de seguridad.');return;}
-        if(nueva!==confirmar){mostrarMsg(msgEl,'error','Las contraseñas no coinciden.');document.getElementById('confirmarPass').classList.add('error');return;}
-        const btn=document.getElementById('btnCambiar');
-        btn.disabled=true;btn.innerHTML="<i class='bx bx-loader-alt bx-spin'></i> Guardando...";
-        try{
-            const res=await fetch(`${URL_BACKEND}/api/cambiar-contrasena`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({correo:correoActivo,codigo,nuevaContrasena:nueva})});
-            const data=await res.json();
-            if(data.exito){irAPaso(4);actualizarBarraProgreso(4);}
-            else{mostrarMsg(msgEl,'error',data.mensaje||'No se pudo actualizar la contraseña.');btn.disabled=false;btn.innerHTML="<i class='bx bx-save'></i> Guardar nueva contraseña";}
-        }catch{mostrarMsg(msgEl,'error','Error de conexión.');btn.disabled=false;btn.innerHTML="<i class='bx bx-save'></i> Guardar nueva contraseña";}
+        limpiarDigits();
+
+        const btn = document.getElementById('btnReenviar');
+        btn.disabled = true;
+        btn.textContent = 'Enviando...';
+
+        try {
+            const res = await fetch(`${URL_BACKEND}/api/solicitar-codigo`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ correo: correoActivo })
+            });
+            const data = await res.json();
+
+            if (data.exito) {
+                mostrarMsg(msgEl, 'success', '¡Código reenviado!');
+                iniciarTimer();
+            } else {
+                mostrarMsg(msgEl, 'error', data.mensaje || 'Error.');
+                btn.disabled = false;
+                btn.textContent = 'Reenviar código';
+            }
+        } catch {
+            mostrarMsg(msgEl, 'error', 'Error de conexión.');
+            btn.disabled = false;
+            btn.textContent = 'Reenviar código';
+        }
     }
 
-    function validarRequisitos(){
-        const val=document.getElementById('nuevaPass').value;
-        const checks={'req-len':val.length>=8,'req-may':/[A-Z]/.test(val),'req-num':/\d/.test(val),'req-esp':/[#@!$%^&*()\-_+=\[\]{};':"\\|,.<>/?]/.test(val)};
-        for(const[id,ok]of Object.entries(checks)){const el=document.getElementById(id);el.className='requisito '+(ok?'ok':(val.length>0?'fail':''));el.querySelector('i').className='bx '+(ok?'bx-check':'bx-x');}
-    }
-    function validarCoincidencia(){const nueva=document.getElementById('nuevaPass').value,conf=document.getElementById('confirmarPass');if(!conf.value.length){conf.className='campo-input';return;}conf.className='campo-input '+(conf.value===nueva?'ok':'error');}
-    function toggleOjo(id,btn){const input=document.getElementById(id),visible=input.type==='text';input.type=visible?'password':'text';btn.querySelector('i').className='bx '+(visible?'bx-hide':'bx-show');}
+    async function cambiarContrasena() {
+        const nueva = document.getElementById('nuevaPass').value;
+        const confirmar = document.getElementById('confirmarPass').value;
+        const msgEl = document.getElementById('msg3');
+        const codigo = obtenerCodigo();
+        ocultarMsg(msgEl);
 
-    document.querySelectorAll('.codigo-digit').forEach((input,idx)=>{
-        input.addEventListener('input',e=>{const val=e.target.value.replace(/\D/g,'');e.target.value=val.slice(-1);e.target.classList.toggle('lleno',val.length>0);if(val&&idx<5)document.getElementById('d'+(idx+1)).focus();});
-        input.addEventListener('keydown',e=>{if(e.key==='Backspace'&&!e.target.value&&idx>0)document.getElementById('d'+(idx-1)).focus();if(e.key==='Enter')verificarCodigo();});
-        input.addEventListener('paste',e=>{e.preventDefault();const paste=e.clipboardData.getData('text').replace(/\D/g,'').slice(0,6);paste.split('').forEach((char,i)=>{const el=document.getElementById('d'+i);if(el){el.value=char;el.classList.add('lleno');}});document.getElementById('d'+Math.min(paste.length,5)).focus();});
+        const politica = /^(?=.*[A-Z])(?=.*\d)(?=.*[#@!$%^&*()\-_+=\[\]{};':"\\|,.<>/?]).{8,}$/;
+        if (!politica.test(nueva)) {
+            mostrarMsg(msgEl, 'error', 'La contraseña no cumple los requisitos.');
+            return;
+        }
+        if (nueva !== confirmar) {
+            mostrarMsg(msgEl, 'error', 'Las contraseñas no coinciden.');
+            return;
+        }
+
+        const btn = document.getElementById('btnCambiar');
+        btn.disabled = true;
+        btn.classList.add('btn-submit-loading');
+        btn.textContent = "Guardando...";
+
+        try {
+            const res = await fetch(`${URL_BACKEND}/api/cambiar-contrasena`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ correo: correoActivo, codigo, nuevaContrasena: nueva })
+            });
+            const data = await res.json();
+
+            if (data.exito) {
+                irAPaso(4);
+            } else {
+                mostrarMsg(msgEl, 'error', data.mensaje || 'Error al actualizar.');
+                btn.disabled = false;
+                btn.classList.remove('btn-submit-loading');
+                btn.textContent = "Guardar nueva contraseña";
+            }
+        } catch {
+            mostrarMsg(msgEl, 'error', 'Error de conexión.');
+            btn.disabled = false;
+            btn.classList.remove('btn-submit-loading');
+            btn.textContent = "Guardar nueva contraseña";
+        }
+    }
+
+    function irAPaso(n) {
+        document.querySelectorAll('.paso').forEach(p => p.classList.remove('activo'));
+        document.getElementById('paso' + n).classList.add('activo');
+    }
+
+    function volverAPaso1() {
+        clearInterval(timerInterval);
+        limpiarDigits();
+        irAPaso(1);
+        const btn = document.getElementById('btnEnviar');
+        btn.disabled = false;
+        btn.classList.remove('btn-submit-loading');
+        btn.textContent = "Enviar código de verificación";
+    }
+
+    // Auto focus y navegación para el código de 6 dígitos
+    document.querySelectorAll('.codigo-digit').forEach((input, idx) => {
+        input.addEventListener('input', e => {
+            const val = e.target.value.replace(/\D/g, '');
+            e.target.value = val.slice(-1);
+            e.target.classList.toggle('lleno', val.length > 0);
+            if (val && idx < 5) document.getElementById('d' + (idx + 1)).focus();
+        });
+        input.addEventListener('keydown', e => {
+            if (e.key === 'Backspace' && !e.target.value && idx > 0) document.getElementById('d' + (idx - 1)).focus();
+        });
+        input.addEventListener('paste', e => {
+            e.preventDefault();
+            const paste = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+            paste.split('').forEach((char, i) => {
+                const el = document.getElementById('d' + i);
+                if (el) { el.value = char; el.classList.add('lleno'); }
+            });
+            document.getElementById('d' + Math.min(paste.length, 5)).focus();
+        });
     });
 
-    function obtenerCodigo(){return['d0','d1','d2','d3','d4','d5'].map(id=>document.getElementById(id).value).join('');}
-    function limpiarDigits(){['d0','d1','d2','d3','d4','d5'].forEach(id=>{const el=document.getElementById(id);el.value='';el.classList.remove('lleno');});}
-    function sacudirDigits(){const g=document.querySelector('.codigo-grid');g.style.animation='none';setTimeout(()=>{g.style.animation='shake .4s ease';},10);}
+    function obtenerCodigo() { return ['d0','d1','d2','d3','d4','d5'].map(id => document.getElementById(id).value).join(''); }
+    function limpiarDigits() { ['d0','d1','d2','d3','d4','d5'].forEach(id => { const el = document.getElementById(id); el.value = ''; el.classList.remove('lleno'); }); }
 
-    function iniciarTimer(){
-        segundosRestantes=900;clearInterval(timerInterval);
-        document.getElementById('btnReenviar').disabled=true;
-        timerInterval=setInterval(()=>{
+    function iniciarTimer() {
+        segundosRestantes = 900;
+        clearInterval(timerInterval);
+        document.getElementById('btnReenviar').disabled = true;
+        timerInterval = setInterval(() => {
             segundosRestantes--;
-            const m=Math.floor(segundosRestantes/60),s=segundosRestantes%60;
-            document.getElementById('timerDisplay').textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
-            if(segundosRestantes<=0){clearInterval(timerInterval);document.getElementById('btnReenviar').disabled=false;mostrarMsg(document.getElementById('msg2'),'error','El código expiró. Haz clic en "Reenviar código" para obtener uno nuevo.');}
-        },1000);
+            const m = Math.floor(segundosRestantes / 60), s = segundosRestantes % 60;
+            document.getElementById('timerDisplay').textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+            if (segundosRestantes <= 0) {
+                clearInterval(timerInterval);
+                document.getElementById('btnReenviar').disabled = false;
+            }
+        }, 1000);
     }
 
-    function irAPaso(n){document.querySelectorAll('.paso').forEach(p=>p.classList.remove('activo'));document.getElementById('paso'+n).classList.add('activo');actualizarBarraProgreso(n);}
-    function actualizarBarraProgreso(paso){
-        for(let i=1;i<=3;i++){const d=document.getElementById('dot'+i);d.classList.remove('activo','completado');if(i<paso)d.classList.add('completado');if(i===paso&&paso<=3)d.classList.add('activo');}
-        for(let i=1;i<=2;i++)document.getElementById('linea'+i).classList.toggle('completada',i<paso);
-        document.getElementById('barraProgreso').style.display=paso===4?'none':'flex';
+    function toggleOjo(id) {
+        const input = document.getElementById(id);
+        input.type = input.type === 'password' ? 'text' : 'password';
     }
-    function mostrarMsg(el,tipo,texto){el.className='mensaje-box '+tipo;el.innerHTML=`<i class='bx ${tipo==='error'?'bx-error-circle':'bx-check-circle'}'></i> ${texto}`;}
-    function ocultarMsg(el){el.className='mensaje-box';el.innerHTML='';}
+
+    function validarRequisitos() {
+        const val = document.getElementById('nuevaPass').value;
+        const checks = {
+            'req-len': val.length >= 8,
+            'req-may': /[A-Z]/.test(val),
+            'req-num': /\d/.test(val),
+            'req-esp': /[#@!$%^&*()\-_+=\[\]{};':"\\|,.<>/?]/.test(val)
+        };
+        for (const [id, ok] of Object.entries(checks)) {
+            const el = document.getElementById(id);
+            el.className = 'requisito ' + (ok ? 'ok' : (val.length > 0 ? 'fail' : ''));
+            el.querySelector('i').className = 'bx ' + (ok ? 'bx-check' : 'bx-x');
+        }
+    }
+
+    function validarCoincidencia() {
+        const nueva = document.getElementById('nuevaPass').value;
+        const conf = document.getElementById('confirmarPass');
+        if (conf.value) {
+            conf.style.borderColor = conf.value === nueva ? '#22c55e' : '#ef4444';
+        } else {
+            conf.style.borderColor = '#cbd5e1';
+        }
+    }
+
+    function mostrarMsg(el, tipo, texto) {
+        el.className = 'mensaje-box ' + tipo;
+        el.innerHTML = `<strong>${tipo === 'error' ? '❌' : '✅'}</strong> ${texto}`;
+        el.style.display = 'flex';
+    }
+    function ocultarMsg(el) { el.style.display = 'none'; }
 </script>
 </body>
 </html>
