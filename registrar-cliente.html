@@ -118,15 +118,13 @@
         const numDoc = document.getElementById('numDoc');
 
         function actualizarValidacionDoc() {
-            if (tipoDoc.value === 'DNI') {
-                numDoc.maxLength = 8;
-                numDoc.setAttribute('minlength', '8');
-                numDoc.placeholder = "8 dígitos";
-            } else {
-                numDoc.maxLength = 11;
-                numDoc.setAttribute('minlength', '11');
-                numDoc.placeholder = "11 dígitos";
-            }
+            // Usamos setAttribute para ambos límites: asignar numDoc.maxLength
+            // lanza una excepción si el nuevo máximo es menor que el minlength
+            // vigente (ej. volver de RUC a DNI), lo que dejaba el campo en modo RUC.
+            const longitud = tipoDoc.value === 'DNI' ? '8' : '11';
+            numDoc.setAttribute('minlength', longitud);
+            numDoc.setAttribute('maxlength', longitud);
+            numDoc.placeholder = `${longitud} dígitos`;
             numDoc.value = ""; // Limpiar al cambiar
         }
 
