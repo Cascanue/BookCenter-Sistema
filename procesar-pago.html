@@ -1210,6 +1210,7 @@
                                 <span class="dato-mini"><strong>Fecha:</strong><span id="infoFecha">—</span></span>
                                 <span class="dato-mini"><strong>Productos:</strong><span
                                         id="infoCantidad">—</span></span>
+                                <span class="dato-mini"><strong>Sede:</strong><span id="infoSede">—</span></span>
                             </div>
                             <div class="lista-items-pedido" id="listaItemsPedido"></div>
                             <div class="resultado-footer">
@@ -1345,6 +1346,10 @@
                                     <div class="fila-dato">
                                         <span class="etiqueta">Estado</span>
                                         <span class="valor" id="r_estado">—</span>
+                                    </div>
+                                    <div class="fila-dato">
+                                        <span class="etiqueta">Sede</span>
+                                        <span class="valor" id="r_sede">—</span>
                                     </div>
                                 </div>
                             </div>
@@ -1549,12 +1554,21 @@
         let ultimoComprobante = null;   // Snapshot del comprobante emitido, para generar el PDF
 
         // Datos fijos de la empresa emisora (BookCenter no tiene tabla de datos de empresa)
+        // La dirección que se muestra en el comprobante es la de la SEDE que
+        // emitió la venta (viene con el pedido); esta queda solo como respaldo.
         const EMPRESA = {
             razonSocial: 'BOOK CENTER S.A.C.',
             ruc: '20609874563',
             direccion: 'Av. Los Libros 456, San Isidro, Lima - Perú',
             telefono: '(01) 555-1234'
         };
+
+        // Sede del pedido en curso (para el detallado y el comprobante)
+        function sedeDelPedido() {
+            const nombre = (pedidoActual && pedidoActual.nombre_sede) || 'Sede Principal';
+            const direccion = (pedidoActual && pedidoActual.direccion_sede) || EMPRESA.direccion;
+            return { nombre, direccion };
+        }
 
         // =============================================
         // SECCIÓN 1 — BUSCAR PEDIDO
@@ -1638,6 +1652,7 @@
             document.getElementById('infoDoc').textContent = `${data.tipo_documento}: ${data.numero_documento}`;
             document.getElementById('infoFecha').textContent = ` ${formatearFecha(data.fecha_pedido)}`;
             document.getElementById('infoCantidad').textContent = ` ${(data.detalles || []).length} producto(s)`;
+            document.getElementById('infoSede').textContent = ` ${data.nombre_sede || 'Sede Principal'}`;
 
             const lista = document.getElementById('listaItemsPedido');
             lista.innerHTML = (data.detalles || []).map(item => `
@@ -1799,6 +1814,7 @@
             document.getElementById('r_cliente').textContent = `${pedidoActual.nombres || ''} ${pedidoActual.apellido_paterno || ''}`.trim() || '—';
             document.getElementById('r_fecha').textContent = formatearFecha(pedidoActual.fecha_pedido);
             document.getElementById('r_estado').textContent = pedidoActual.estado || '—';
+            document.getElementById('r_sede').textContent = sedeDelPedido().nombre;
 
             // Tabla de productos
             const tbody = document.getElementById('r_bodyProductos');
@@ -2108,11 +2124,15 @@
                     document.getElementById('modalQREspera').classList.add('oculto');
                     
                     const esFactura = pedidoActual.tipo_documento === 'RUC';
+                    const sedeEmision = sedeDelPedido();
                     ultimoComprobante = {
+                        // El correlativo del backend ya incluye el código de la
+                        // sede emisora (ej. "VH-00000012"), no se antepone serie.
                         correlativo: data.numero_correlativo,
                         idComprobante: data.id_comprobante,
                         tipoComprobante: esFactura ? 'Factura' : 'Boleta',
-                        serie: esFactura ? 'F001' : 'B001',
+                        nombreSede: sedeEmision.nombre,
+                        direccionSede: sedeEmision.direccion,
                         fechaEmision: new Date(),
                         metodoPago: metodoPago,
                         billetera: billeteraElegida,
@@ -2122,9 +2142,9 @@
                     };
 
                     document.getElementById('textoExitoPago').textContent =
-                        `El comprobante del pedido #${pedidoActual.id_pedido} ha sido generado.`;
+                        `El comprobante del pedido #${pedidoActual.id_pedido} ha sido generado en ${sedeEmision.nombre}.`;
                     document.getElementById('nroComprobante').textContent =
-                        `Comprobante N°: ${ultimoComprobante.serie}-${data.numero_correlativo}`;
+                        `Comprobante N°: ${data.numero_correlativo}`;
                     document.getElementById('modalExito').classList.remove('oculto');
                 } else {
                     alert('❌ ' + (data.mensaje || 'Error al procesar el pago.'));
@@ -2223,12 +2243,13 @@
             const margen = 14;
 
             const esFactura = ultimoComprobante.tipoComprobante === 'Factura';
-            const numeroDoc = `${ultimoComprobante.serie}-${ultimoComprobante.correlativo}`;
+            const numeroDoc = ultimoComprobante.correlativo;
             const total = parseFloat(pedidoActual.total);
             const opGravada = total / 1.18;
             const igv = total - opGravada;
 
-            // --- Encabezado de la empresa (izquierda) ---
+            // --- Encabezado de la empresa (izquierda): la dirección es la de
+            // la SEDE que emitió la venta ---
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(13);
             doc.setTextColor(15, 23, 42);
@@ -2237,8 +2258,9 @@
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(9);
             doc.setTextColor(71, 85, 105);
-            doc.text(EMPRESA.direccion, margen, 24);
-            doc.text(`Teléfono: ${EMPRESA.telefono}`, margen, 29);
+            doc.text(`Sede: ${ultimoComprobante.nombreSede}`, margen, 24);
+            doc.text(ultimoComprobante.direccionSede, margen, 29);
+            doc.text(`Teléfono: ${EMPRESA.telefono}`, margen, 34);
 
             // --- Caja de tipo/número de comprobante (derecha) ---
             const cajaAncho = 62;
@@ -2294,6 +2316,11 @@
             doc.text('MONEDA:', margen, y);
             doc.setFont('helvetica', 'normal');
             doc.text('SOLES (PEN)', margen + 48, y);
+
+            doc.setFont('helvetica', 'bold');
+            doc.text('SEDE:', anchoPag - margen - 55, y);
+            doc.setFont('helvetica', 'normal');
+            doc.text(ultimoComprobante.nombreSede || '—', anchoPag - margen - 30, y, { maxWidth: 30 });
 
             // --- Tabla de productos ---
             const filas = (pedidoActual.detalles || []).map(item => [
@@ -2400,7 +2427,7 @@
                     return;
                 }
 
-                const nombreArchivo = `${ultimoComprobante.tipoComprobante}_${ultimoComprobante.serie}-${ultimoComprobante.correlativo}.pdf`;
+                const nombreArchivo = `${ultimoComprobante.tipoComprobante}_${ultimoComprobante.correlativo}.pdf`;
                 const blob = doc.output('blob');
 
                 if (window.showSaveFilePicker) {

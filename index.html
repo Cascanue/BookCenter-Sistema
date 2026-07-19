@@ -69,7 +69,13 @@
     <script src="js/config.js"></script>
 
     <script>
-        
+
+        // Precalentamiento del backend: el servidor gratuito de Render se
+        // "duerme" tras unos minutos sin uso y tarda en despertar. Al abrir
+        // el login lanzamos un ping para que ya esté listo cuando el usuario
+        // termine de escribir sus credenciales.
+        fetch(`${URL_BACKEND}/api/ping`).catch(() => {});
+
         // Lógica del ojito
         const inputPass = document.getElementById('password');
         document.getElementById('btnOjito').addEventListener('click', () => {
@@ -112,6 +118,12 @@ document.getElementById('formularioLogin').addEventListener('submit', async (e) 
             window.location.href = '/menu';
         } else {
             alert("❌ " + resultado.mensaje);
+            // Credenciales incorrectas: limpiar ambos campos automáticamente
+            // antes del siguiente intento y devolver el foco al usuario.
+            document.getElementById('usuario').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('password').type = 'password';
+            document.getElementById('usuario').focus();
             btn.disabled = false;
             btn.textContent = 'Ingresar';
         }

@@ -373,7 +373,10 @@
             <img src="https://res.cloudinary.com/dwk77ddoq/image/upload/v1781397979/imagen_2026-06-13_194618193_hkz2d2.png"
                  alt="Logo Book Center" class="logo-header">
 
-            <div class="zona-derecha">
+            <div class="zona-derecha" style="gap: 0.75rem; align-items: center;">
+                <span style="background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.45); color: white; font-weight: 600; font-size: 0.78rem; padding: 0.25rem 0.7rem; border-radius: 20px; display: inline-flex; align-items: center; gap: 0.35rem;">
+                    <i class='bx bx-buildings'></i> <span id="nombreSedePedido">—</span>
+                </span>
                 <span style="color: white; font-weight: 600; font-size: 0.88rem; opacity: 0.95; display: flex; align-items: center;">
                     Confirmar Pedido
                 </span>
@@ -637,6 +640,12 @@
         // =============================================
         // INICIALIZACIÓN
         // =============================================
+        // Sede en la que quedará registrado el pedido (la del usuario logueado;
+        // el backend la toma del token JWT al guardar).
+        const infoUsuario = getUsuario();
+        document.getElementById('nombreSedePedido').textContent =
+            (infoUsuario && infoUsuario.nombre_sede) ? infoUsuario.nombre_sede : 'Sede Principal';
+
         renderizarCliente();
         renderizarItems();
     </script>

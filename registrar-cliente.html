@@ -59,17 +59,17 @@
                 <div class="fila-doble">
                     <div class="input-grupo">
                         <label>Nombres</label>
-                        <input type="text" id="nombres" class="input-moderno" placeholder="Ej. Yair Asael..." required
+                        <input type="text" id="nombres" class="input-moderno" placeholder="Ej. Yair Asael..." required maxlength="50"
                                oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '')">
                     </div>
                     <div class="input-grupo">
                         <label>Apellido Paterno</label>
-                        <input type="text" id="apellidoPaterno" class="input-moderno" placeholder="Ej. Vasquez" required
+                        <input type="text" id="apellidoPaterno" class="input-moderno" placeholder="Ej. Vasquez" required maxlength="50"
                                oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '')">
                     </div>
                     <div class="input-grupo">
                         <label>Apellido Materno</label>
-                        <input type="text" id="apellidoMaterno" class="input-moderno" placeholder="Ej. Marquina" required
+                        <input type="text" id="apellidoMaterno" class="input-moderno" placeholder="Ej. Marquina" required maxlength="50"
                                oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '')">
                     </div>
                 </div>
@@ -159,16 +159,17 @@
 document.getElementById('formRegistroCliente').addEventListener('submit', async (e) => {
     e.preventDefault();
     
-    // 1. Validar teléfono
-    const telefono = document.getElementById('telefono').value;
-    if(telefono.length !== 9) {
-        alert("El teléfono debe tener exactamente 9 dígitos.");
+    // 1. Validar teléfono (mismas reglas que el panel de administración:
+    // 9 dígitos y debe comenzar con 9, formato de celular peruano)
+    const telefono = document.getElementById('telefono').value.trim();
+    if (!/^9\d{8}$/.test(telefono)) {
+        alert("El teléfono debe tener exactamente 9 dígitos y comenzar con 9.");
         return;
     }
 
     // Validación estricta de longitud de documento
     const tipoDocSeleccionado = document.getElementById('tipoDoc').value;
-    const numDocValor = document.getElementById('numDoc').value;
+    const numDocValor = document.getElementById('numDoc').value.trim();
 
     if (tipoDocSeleccionado === 'DNI' && numDocValor.length !== 8) {
         alert("El DNI debe tener exactamente 8 dígitos.");
@@ -178,16 +179,32 @@ document.getElementById('formRegistroCliente').addEventListener('submit', async 
         alert("El RUC debe tener exactamente 11 dígitos.");
         return;
     }
-    
+
+    // Nombres y apellidos: solo letras y mínimo 2 caracteres
+    const nombres = document.getElementById('nombres').value.trim();
+    const apellidoPaterno = document.getElementById('apellidoPaterno').value.trim();
+    const apellidoMaterno = document.getElementById('apellidoMaterno').value.trim();
+    const soloLetras = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
+    if (nombres.length < 2 || !soloLetras.test(nombres)) { alert("Los nombres solo deben contener letras (mínimo 2 caracteres)."); return; }
+    if (apellidoPaterno.length < 2 || !soloLetras.test(apellidoPaterno)) { alert("El apellido paterno solo debe contener letras (mínimo 2 caracteres)."); return; }
+    if (apellidoMaterno.length < 2 || !soloLetras.test(apellidoMaterno)) { alert("El apellido materno solo debe contener letras (mínimo 2 caracteres)."); return; }
+
+    // Correo: mismo criterio que el panel de administración
+    const correo = document.getElementById('correo').value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.com$/i.test(correo)) {
+        alert("El correo debe ser válido y terminar en .com");
+        return;
+    }
+
     // 2. Armar el paquete de datos con las 3 casillas nuevas
     const datosCliente = {
-        tipoDoc: document.getElementById('tipoDoc').value,
-        numDoc: document.getElementById('numDoc').value,
-        nombres: document.getElementById('nombres').value,
-        apellidoPaterno: document.getElementById('apellidoPaterno').value,
-        apellidoMaterno: document.getElementById('apellidoMaterno').value,
+        tipoDoc: tipoDocSeleccionado,
+        numDoc: numDocValor,
+        nombres: nombres,
+        apellidoPaterno: apellidoPaterno,
+        apellidoMaterno: apellidoMaterno,
         telefono: telefono,
-        correo: document.getElementById('correo').value,
+        correo: correo,
         idCreador: getUsuario()?.id_usuario
     };
 

@@ -83,6 +83,30 @@ select.input-moderno{cursor:pointer}
 .btn-filtro-limpiar:hover{background:#dc2626;border-color:#dc2626;color:white}
 .badge-gris{background:#e2e8f0;color:#475569}
 .badge-amarillo{background:#fef3c7;color:#92400e}
+/* Contraste del selector global de sedes: el control vive sobre el header azul,
+   pero su lista desplegable debe leerse en oscuro sobre blanco. */
+#selectorSedeGlobal{background:rgba(255,255,255,.92)!important;color:var(--azul-oscuro)!important;border:1px solid rgba(255,255,255,.6)!important}
+#selectorSedeGlobal option{color:var(--azul-oscuro);background:var(--blanco);font-weight:600}
+/* Filtros de tabla (combos de orden / categoría / estado) */
+.select-filtro{width:auto;min-width:150px;background:var(--blanco);color:var(--azul-oscuro);font-weight:500}
+/* Selector de iconos de categoría */
+.grid-iconos{display:grid;grid-template-columns:repeat(auto-fill,minmax(48px,1fr));gap:.4rem;max-height:180px;overflow-y:auto;padding:.5rem;border:1px solid #e2e8f0;border-radius:8px;background:var(--fondo-area)}
+.btn-icono-cat{border:2px solid transparent;background:var(--blanco);border-radius:8px;font-size:1.4rem;color:var(--azul-oscuro);cursor:pointer;padding:.45rem 0;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.btn-icono-cat:hover{border-color:#93c5fd;background:var(--azul-claro)}
+.btn-icono-cat.seleccionado{border-color:var(--azul-primario);background:var(--azul-claro);color:var(--azul-primario)}
+/* Vista de comprobante (voucher) */
+.voucher{border:1px solid #e2e8f0;border-radius:12px;padding:1.5rem;background:var(--blanco);font-size:.875rem;color:var(--azul-oscuro)}
+.voucher-cabecera{display:flex;justify-content:space-between;gap:1rem;border-bottom:2px solid var(--azul-primario);padding-bottom:1rem;margin-bottom:1rem;flex-wrap:wrap}
+.voucher-empresa{font-weight:800;font-size:1.05rem;color:var(--azul-oscuro)}
+.voucher-sede{color:var(--gris);font-size:.82rem;margin-top:.2rem;line-height:1.4}
+.voucher-numero{border:1.5px solid var(--azul-primario);border-radius:10px;padding:.6rem 1rem;text-align:center;color:var(--azul-primario);font-weight:700;min-width:190px}
+.voucher-numero .tipo{font-size:.8rem;display:block;text-transform:uppercase}
+.voucher-numero .nro{font-size:1rem;letter-spacing:.03em}
+.voucher-datos{display:grid;grid-template-columns:1fr 1fr;gap:.35rem 1.5rem;margin-bottom:1rem}
+.voucher-datos .dato b{color:var(--gris);font-weight:600;font-size:.78rem;text-transform:uppercase;letter-spacing:.03em;margin-right:.35rem}
+.voucher-totales{display:flex;flex-direction:column;align-items:flex-end;gap:.25rem;margin-top:1rem;font-size:.875rem}
+.voucher-totales .total-final{font-size:1.05rem;font-weight:800;border-top:1px solid #e2e8f0;padding-top:.4rem;margin-top:.2rem}
+.voucher-anulado{margin-top:1rem;background:var(--rojo-claro);border:1px solid #fecaca;color:#b91c1c;border-radius:8px;padding:.6rem .9rem;font-size:.82rem}
 </style>
 </head>
 <body>
@@ -128,7 +152,26 @@ select.input-moderno{cursor:pointer}
     <div class="vista" id="vista-productos">
       <div class="vista-header"><h2 class="vista-titulo">Gestion de Productos</h2><button class="btn-principal" onclick="abrirModalProducto()"><i class="bx bx-plus"></i> Nuevo Producto</button></div>
       <div class="tabla-wrapper">
-        <div class="tabla-header"><div class="buscador-tabla"><i class="bx bx-search"></i><input type="text" id="buscador-productos" placeholder="Buscar por nombre o codigo..." oninput="filtrarProductos()"></div></div>
+        <div class="tabla-header">
+          <div class="buscador-tabla"><i class="bx bx-search"></i><input type="text" id="buscador-productos" placeholder="Buscar por codigo o nombre..." oninput="filtrarProductos()"></div>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+            <select id="orden-productos" class="input-moderno select-filtro" onchange="filtrarProductos()" title="Ordenar productos">
+              <option value="">Ordenar por...</option>
+              <option value="nombre-asc">Nombre (A-Z)</option>
+              <option value="nombre-desc">Nombre (Z-A)</option>
+              <option value="precio-asc">Precio: menor a mayor</option>
+              <option value="precio-desc">Precio: mayor a menor</option>
+            </select>
+            <select id="filtro-categoria-productos" class="input-moderno select-filtro" onchange="filtrarProductos()" title="Filtrar por categoría">
+              <option value="">Todas las categorias</option>
+            </select>
+            <select id="filtro-estado-productos" class="input-moderno select-filtro" onchange="filtrarProductos()" title="Filtrar por estado">
+              <option value="">Todos los estados</option>
+              <option value="disponible">Disponible</option>
+              <option value="bajo">Stock bajo</option>
+            </select>
+          </div>
+        </div>
         <table><thead><tr><th>Imagen</th><th>Codigo</th><th>Nombre</th><th>Categoria</th><th>Precio</th><th>Stock Actual</th><th>Estado</th><th>Acciones</th></tr></thead>
         <tbody id="body-productos"><tr><td colspan="8" class="estado-vacio">Cargando...</td></tr></tbody></table>
       </div>
@@ -153,15 +196,18 @@ select.input-moderno{cursor:pointer}
               <option value="Completado">Completado</option>
               <option value="Anulado">Anulado</option>
             </select>
-            <input type="date" id="filtro-fecha-pedidos" class="input-moderno" style="width:auto" onchange="cargarPedidos()">
-            <button class="btn-filtro-rapido" onclick="filtrarHoy()">Hoy</button>
-            <button class="btn-filtro-rapido" onclick="filtrarSemana()">Esta semana</button>
-            <button class="btn-filtro-rapido" onclick="filtrarMes()">Este mes</button>
+            <input type="date" id="filtro-fecha-pedidos" class="input-moderno" style="width:auto" min="2026-04-01" onchange="onCambioFechaPedidos()">
+            <select id="filtro-rango-pedidos" class="input-moderno select-filtro" onchange="aplicarRangoRapidoPedidos()" title="Rango rápido de fechas">
+              <option value="">Rango rapido...</option>
+              <option value="hoy">Hoy</option>
+              <option value="semana">Esta semana</option>
+              <option value="mes">Este mes</option>
+            </select>
             <button class="btn-filtro-rapido btn-filtro-limpiar" onclick="limpiarFiltrosFecha()">✕ Limpiar</button>
           </div>
         </div>
-        <table><thead><tr><th>ID Pedido</th><th>Cliente</th><th>Fecha</th><th>Total</th><th>Estado</th><th>Acciones</th></tr></thead>
-        <tbody id="body-pedidos"><tr><td colspan="6" class="estado-vacio">Cargando...</td></tr></tbody></table>
+        <table><thead><tr><th>ID Pedido</th><th>Cliente</th><th>Fecha</th><th>Total</th><th>Estado</th><th>Sede</th><th>Acciones</th></tr></thead>
+        <tbody id="body-pedidos"><tr><td colspan="7" class="estado-vacio">Cargando...</td></tr></tbody></table>
       </div>
     </div>
     <div class="vista" id="vista-comprobantes">
@@ -175,7 +221,7 @@ select.input-moderno{cursor:pointer}
               <option value="Vigente">Vigente</option>
               <option value="Anulado">Anulado</option>
             </select>
-            <input type="date" id="filtro-fecha-comprobantes" class="input-moderno" style="width:auto" onchange="cargarComprobantes()">
+            <input type="date" id="filtro-fecha-comprobantes" class="input-moderno" style="width:auto" min="2026-04-01" onchange="onCambioFechaComprobantes()">
           </div>
         </div>
         <table><thead><tr><th>N. Comprobante</th><th>Tipo</th><th>Cliente</th><th>Fecha</th><th>Total</th><th>Sede</th><th>Estado</th><th>Acciones</th></tr></thead>
@@ -226,11 +272,11 @@ select.input-moderno{cursor:pointer}
           </div>
           <div class="input-grupo" style="margin-bottom:0;">
             <label>Desde</label>
-            <input type="date" id="rep-desde" class="input-moderno" style="width:auto">
+            <input type="date" id="rep-desde" class="input-moderno" style="width:auto" min="2026-04-01">
           </div>
           <div class="input-grupo" style="margin-bottom:0;">
             <label>Hasta</label>
-            <input type="date" id="rep-hasta" class="input-moderno" style="width:auto">
+            <input type="date" id="rep-hasta" class="input-moderno" style="width:auto" min="2026-04-01">
           </div>
           <div class="input-grupo" style="margin-bottom:0;">
             <label>Sede</label>
@@ -263,8 +309,8 @@ select.input-moderno{cursor:pointer}
     <div class="modal-body">
       <form id="form-sede">
         <div class="input-grupo"><label>Código (2-5 letras, ej: VH, AY)</label><input type="text" id="sede-codigo" class="input-moderno" maxlength="5" placeholder="VH" required oninput="this.value=this.value.toUpperCase().replace(/[^A-Z]/g,'')"></div>
-        <div class="input-grupo"><label>Nombre de la Sede</label><input type="text" id="sede-nombre" class="input-moderno" placeholder="Sede Vista Hermosa" required></div>
-        <div class="input-grupo"><label>Dirección</label><input type="text" id="sede-direccion" class="input-moderno" placeholder="Av. Principal 123"></div>
+        <div class="input-grupo"><label>Nombre de la Sede</label><input type="text" id="sede-nombre" class="input-moderno" placeholder="Sede Vista Hermosa" required maxlength="60" oninput="this.value=this.value.replace(/[^A-Za-zÀ-ÿ0-9\s.\-]/g,'')"></div>
+        <div class="input-grupo"><label>Dirección</label><input type="text" id="sede-direccion" class="input-moderno" placeholder="Av. Principal 123" maxlength="120"></div>
       </form>
     </div>
     <div class="modal-footer"><button class="btn-secundario" onclick="cerrarModal('modal-sede')">Cancelar</button><button class="btn-principal" onclick="guardarSede()"><i class="bx bx-save"></i> Guardar</button></div>
@@ -278,8 +324,8 @@ select.input-moderno{cursor:pointer}
     <div class="modal-body">
       <form id="form-usuario"><input type="hidden" id="usuario-id">
         <div class="fila-doble">
-          <div class="input-grupo"><label>Usuario (username)</label><input type="text" id="usuario-username" class="input-moderno" placeholder="cajero01" required></div>
-          <div class="input-grupo"><label>Nombre Completo</label><input type="text" id="usuario-nombre" class="input-moderno" required></div>
+          <div class="input-grupo"><label>Usuario (username)</label><input type="text" id="usuario-username" class="input-moderno" placeholder="cajero01" required maxlength="20" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9._-]/g,'')"></div>
+          <div class="input-grupo"><label>Nombre Completo</label><input type="text" id="usuario-nombre" class="input-moderno" required maxlength="80" oninput="this.value=this.value.replace(/[^A-Za-zÀ-ÿ\s]/g,'')"></div>
         </div>
         <div class="fila-doble">
           <div class="input-grupo"><label>Rol</label><select id="usuario-rol" class="input-moderno"></select></div>
@@ -299,8 +345,12 @@ select.input-moderno{cursor:pointer}
     <div class="modal-header"><span class="modal-titulo" id="titulo-modal-categoria">Nueva Categoría</span><button class="btn-cerrar-modal" onclick="cerrarModal('modal-categoria')">&times;</button></div>
     <div class="modal-body">
       <form id="form-categoria">
-        <div class="input-grupo"><label>Icono (emoji)</label><input type="text" id="cat-icono" class="input-moderno" placeholder="📚" maxlength="4"></div>
-        <div class="input-grupo"><label>Nombre</label><input type="text" id="cat-nombre" class="input-moderno" required placeholder="Literatura"></div>
+        <div class="input-grupo">
+          <label>Icono <span id="cat-icono-preview" style="font-size:1.2rem;vertical-align:middle;margin-left:.4rem;color:var(--azul-primario)"></span></label>
+          <input type="hidden" id="cat-icono">
+          <div class="grid-iconos" id="grid-iconos-categoria"></div>
+        </div>
+        <div class="input-grupo"><label>Nombre</label><input type="text" id="cat-nombre" class="input-moderno" required placeholder="Literatura" maxlength="40" oninput="this.value=this.value.replace(/[^A-Za-zÀ-ÿ\s]/g,'')"></div>
       </form>
     </div>
     <div class="modal-footer"><button class="btn-secundario" onclick="cerrarModal('modal-categoria')">Cancelar</button><button class="btn-principal" onclick="guardarCategoria()"><i class="bx bx-save"></i> Guardar</button></div>
@@ -312,8 +362,8 @@ select.input-moderno{cursor:pointer}
     <div class="modal-header"><span class="modal-titulo" id="titulo-modal-producto">Nuevo Producto</span><button class="btn-cerrar-modal" onclick="cerrarModal('modal-producto')">&times;</button></div>
     <div class="modal-body">
       <form id="form-producto"><input type="hidden" id="producto-id">
-        <div class="fila-doble"><div class="input-grupo" style="flex:0.4"><label>Codigo</label><input type="text" id="producto-codigo" class="input-moderno" placeholder="Autogenerado" readonly></div><div class="input-grupo"><label>Nombre</label><input type="text" id="producto-nombre" class="input-moderno" maxlength="100" required oninput="this.value=this.value.replace(/[^A-Za-zÀ-ÿ\s]/g,'')"></div></div>
-        <div class="input-grupo"><label>Descripcion</label><input type="text" id="producto-descripcion" class="input-moderno" maxlength="255" oninput="this.value=this.value.replace(/[^A-Za-zÀ-ÿ\s]/g,'')"></div>
+        <div class="fila-doble"><div class="input-grupo" style="flex:0.4"><label>Codigo</label><input type="text" id="producto-codigo" class="input-moderno" placeholder="Autogenerado" readonly></div><div class="input-grupo"><label>Nombre</label><input type="text" id="producto-nombre" class="input-moderno" maxlength="100" required oninput="this.value=this.value.replace(/[^A-Za-zÀ-ÿ0-9\s.,\-()]/g,'')"></div></div>
+        <div class="input-grupo"><label>Descripcion</label><input type="text" id="producto-descripcion" class="input-moderno" maxlength="255" oninput="this.value=this.value.replace(/[^A-Za-zÀ-ÿ0-9\s.,\-()]/g,'')"></div>
         <div class="fila-doble"><div class="input-grupo"><label>Categoria</label><select id="producto-categoria" class="input-moderno" required><option value="">- Seleccionar -</option></select></div><div class="input-grupo"><label>Precio Venta (S/)</label><input type="number" id="producto-precio" class="input-moderno" min="0.01" step="0.01" placeholder="0.00" required></div></div>
         <div class="fila-doble"><div class="input-grupo"><label>Stock Actual</label><input type="number" id="producto-stock" class="input-moderno" min="0" step="1" required></div><div class="input-grupo"><label>Stock Minimo</label><input type="number" id="producto-stock-min" class="input-moderno" min="0" step="1" required></div></div>
         <div class="input-grupo"><label>Subir imagen (formato PNG, JPG, JPEG, WEBP)</label><input type="file" id="producto-imagen-file" class="input-moderno" accept="image/png,image/jpeg,image/jpg,image/webp" onchange="previsualizarImagenProducto(this)"><input type="hidden" id="producto-imagen"><img id="producto-imagen-preview" class="img-miniatura" style="margin-top:.6rem;display:none;width:70px;height:70px"></div>
@@ -375,10 +425,19 @@ select.input-moderno{cursor:pointer}
       <table class="tabla-detalles"><thead><tr><th>Producto</th><th>Cantidad</th><th>Precio Unit.</th><th>Subtotal</th></tr></thead><tbody id="body-detalle-pedido"></tbody></table>
       <div class="total-pedido"><span>Total:</span><span id="total-detalle">S/ 0.00</span></div>
     </div>
-    <div class="modal-footer"><button class="btn-secundario" onclick="cerrarModal('modal-detalle')">Cerrar</button></div>
+  </div>
+</div>
+<!-- MODAL: VISTA DE COMPROBANTE -->
+<div class="modal-overlay oculto" id="modal-comprobante">
+  <div class="modal-contenido modal-lg">
+    <div class="modal-header"><span class="modal-titulo" id="titulo-modal-comprobante">Comprobante</span><button class="btn-cerrar-modal" onclick="cerrarModal('modal-comprobante')">&times;</button></div>
+    <div class="modal-body">
+      <div class="voucher" id="contenido-voucher"></div>
+    </div>
   </div>
 </div>
 <script src="js/config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 const rolActual = localStorage.getItem('rolUsuario');
 if (!rolActual) { window.location.href = '/'; }
@@ -387,15 +446,40 @@ else if (rolActual !== 'administrador') { alert('Acceso denegado: Solo administr
 let categorias = [], productos = [], clientes = [], pedidos = [], comprobantes = [];
 let productoEditar = null, clienteEditar = null;
 
+// El sistema web entró en operación en abril de 2026: ninguna fecha
+// seleccionable (pedidos, comprobantes, reportes) puede ser anterior.
+const FECHA_MIN_SISTEMA = '2026-04-01';
+function fechaHoyISO() {
+  const d = new Date();
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+}
+// Valida un input de fecha contra el rango permitido; si está fuera, lo limpia.
+function validarFechaSistema(input) {
+  if (!input.value) return true;
+  if (input.value < FECHA_MIN_SISTEMA) {
+    alert(`La fecha no puede ser anterior al inicio de operaciones del sistema (${FECHA_MIN_SISTEMA}).`);
+    input.value = '';
+    return false;
+  }
+  if (input.value > fechaHoyISO()) {
+    alert('La fecha no puede ser posterior al día de hoy.');
+    input.value = '';
+    return false;
+  }
+  return true;
+}
+
 function cambiarVista(n) {
   document.querySelectorAll('.vista').forEach(v => v.classList.remove('activa'));
   document.querySelectorAll('.btn-sidebar').forEach(b => b.classList.remove('activo'));
   document.getElementById('vista-' + n).classList.add('activa');
   document.getElementById('nav-' + n).classList.add('activo');
-  // Resetear filtros al cambiar de sección
+  // Resetear filtros al cambiar de sección (al volver, los criterios
+  // de búsqueda deben estar limpios)
   if (n === 'pedidos') {
     document.getElementById('filtro-estado-pedidos').value = '';
     document.getElementById('filtro-fecha-pedidos').value = '';
+    document.getElementById('filtro-rango-pedidos').value = '';
     document.getElementById('buscador-pedidos').value = '';
     cargarPedidos();
   } else if (n === 'comprobantes') {
@@ -466,12 +550,17 @@ async function cargarResumen() {
   const resProd = await apiFetch(`/api/productos${params}`);
   if (!resProd) return;
   const prods = await resProd.json();
-  const cr = prods.filter(p => p.stock_actual <= p.stock_minimo);
+  // Criterio de stock crítico: el stock actual está EN o POR DEBAJO del
+  // mínimo definido para el producto. Number() evita la comparación de
+  // textos que hacía aparecer productos con stock de sobra.
+  const cr = prods.filter(p => Number(p.stock_actual) <= Number(p.stock_minimo));
   const tb = document.getElementById('body-stock-critico');
   if (!cr.length) { tb.innerHTML = '<tr><td colspan="6"><div class="estado-vacio"><i class="bx bx-check-circle"></i>Sin alertas de stock</div></td></tr>'; return; }
   tb.innerHTML = cr.map(p => {
     const c = categorias.find(x => x.id_categoria === p.id_categoria);
-    return '<tr class="fila-alerta"><td><b>'+p.codigo+'</b></td><td>'+p.nombre+'</td><td>'+(c ? c.nombre : '-')+'</td><td><b style="color:var(--rojo)">'+p.stock_actual+'</b></td><td>'+p.stock_minimo+'</td><td><span class="badge badge-rojo">Stock Bajo</span></td></tr>';
+    const agotado = Number(p.stock_actual) === 0;
+    const badge = agotado ? '<span class="badge badge-rojo">Agotado</span>' : '<span class="badge badge-amarillo">Stock Bajo</span>';
+    return '<tr class="fila-alerta"><td><b>'+p.codigo+'</b></td><td>'+p.nombre+'</td><td>'+(c ? c.nombre : '-')+'</td><td><b style="color:var(--rojo)">'+p.stock_actual+'</b></td><td>'+p.stock_minimo+'</td><td>'+badge+'</td></tr>';
   }).join('');
 }
 
@@ -480,24 +569,53 @@ async function cargarProductos() {
   const res = await apiFetch(`/api/productos${params}`);
   if (!res) return;
   productos = await res.json();
-  renderProductos();
+  filtrarProductos();
 }
 
 function renderProductos(lista) {
   const data = lista || productos;
   const tb = document.getElementById('body-productos');
-  if (!data.length) { tb.innerHTML = '<tr><td colspan="9"><div class="estado-vacio"><i class="bx bx-package"></i>Sin resultados</div></td></tr>'; return; }
+  if (!data.length) { tb.innerHTML = '<tr><td colspan="8"><div class="estado-vacio"><i class="bx bx-package"></i>Sin resultados</div></td></tr>'; return; }
   tb.innerHTML = data.map(p => {
     const cat = categorias.find(c => c.id_categoria === p.id_categoria);
-    const bajo = p.stock_actual <= p.stock_minimo;
+    const bajo = Number(p.stock_actual) <= Number(p.stock_minimo);
     const bsActual = bajo ? '<span class="badge badge-rojo">'+p.stock_actual+'</span>' : '<span class="badge badge-verde">'+p.stock_actual+'</span>';
-    const bsMin = '<span class="badge '+(bajo ? 'badge-amarillo' : 'badge-gris')+'">'+p.stock_minimo+'</span>';
+    const bsEstado = bajo ? '<span class="badge badge-rojo">Stock bajo</span>' : '<span class="badge badge-verde">Disponible</span>';
     const nm = p.nombre.replace(/'/g, "\\'");
-    return '<tr class="'+(bajo?'fila-alerta':'')+'"><td><img src="'+(p.url_imagen||'')+'" class="img-miniatura" onerror="this.src=\'https://placehold.co/40x40\'"></td><td><code>'+p.codigo+'</code></td><td><b>'+p.nombre+'</b></td><td>'+(cat?cat.nombre:'-')+'</td><td><b>S/ '+parseFloat(p.precio_venta).toFixed(2)+'</b></td><td>'+bsActual+'</td><td><span class="badge badge-verde">Activo</span></td><td><div class="acciones-fila"><button class="btn-accion editar" title="Editar" onclick="abrirModalProducto('+p.id_producto+')"><i class="bx bx-edit"></i></button><button class="btn-accion eliminar" title="Eliminar" onclick="confirmarEliminar(\'producto\','+p.id_producto+',\''+nm+'\')"><i class="bx bx-trash"></i></button></div></td></tr>';
+    return '<tr class="'+(bajo?'fila-alerta':'')+'"><td><img src="'+(p.url_imagen||'')+'" class="img-miniatura" onerror="this.src=\'https://placehold.co/40x40\'"></td><td><code>'+p.codigo+'</code></td><td><b>'+p.nombre+'</b></td><td>'+(cat?cat.nombre:'-')+'</td><td><b>S/ '+parseFloat(p.precio_venta).toFixed(2)+'</b></td><td>'+bsActual+'</td><td>'+bsEstado+'</td><td><div class="acciones-fila"><button class="btn-accion editar" title="Editar" onclick="abrirModalProducto('+p.id_producto+')"><i class="bx bx-edit"></i></button><button class="btn-accion eliminar" title="Eliminar" onclick="confirmarEliminar(\'producto\','+p.id_producto+',\''+nm+'\')"><i class="bx bx-trash"></i></button></div></td></tr>';
   }).join('');
 }
 
-function filtrarProductos() { const q = document.getElementById('buscador-productos').value.toLowerCase(); renderProductos(productos.filter(p => p.nombre.toLowerCase().includes(q) || p.codigo.toLowerCase().includes(q))); }
+// La búsqueda es por CÓDIGO o NOMBRE del producto (nunca por su ID interno)
+// y se combina con los filtros de orden, categoría y estado.
+function filtrarProductos() {
+  const q = document.getElementById('buscador-productos').value.toLowerCase().trim();
+  const orden = document.getElementById('orden-productos').value;
+  const catSel = document.getElementById('filtro-categoria-productos').value;
+  const estSel = document.getElementById('filtro-estado-productos').value;
+
+  let lista = productos.filter(p => {
+    const okBusqueda = !q || p.nombre.toLowerCase().includes(q) || p.codigo.toLowerCase().includes(q);
+    const okCategoria = !catSel || p.id_categoria === parseInt(catSel);
+    const bajo = Number(p.stock_actual) <= Number(p.stock_minimo);
+    const okEstado = !estSel || (estSel === 'bajo' ? bajo : !bajo);
+    return okBusqueda && okCategoria && okEstado;
+  });
+
+  switch (orden) {
+    case 'nombre-asc':  lista.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')); break;
+    case 'nombre-desc': lista.sort((a, b) => b.nombre.localeCompare(a.nombre, 'es')); break;
+    case 'precio-asc':  lista.sort((a, b) => parseFloat(a.precio_venta) - parseFloat(b.precio_venta)); break;
+    case 'precio-desc': lista.sort((a, b) => parseFloat(b.precio_venta) - parseFloat(a.precio_venta)); break;
+  }
+  renderProductos(lista);
+}
+
+function poblarFiltroCategoriasProductos() {
+  const sel = document.getElementById('filtro-categoria-productos');
+  sel.innerHTML = '<option value="">Todas las categorias</option>' +
+    categorias.map(c => `<option value="${c.id_categoria}">${c.nombre}</option>`).join('');
+}
 
 async function cargarClientes() {
   const res = await apiFetch('/api/clientes');
@@ -531,32 +649,52 @@ async function cargarPedidos() {
 function renderPedidos(lista) {
   const data = lista || pedidos;
   const tb = document.getElementById('body-pedidos');
-  if (!data.length) { tb.innerHTML = '<tr><td colspan="6"><div class="estado-vacio"><i class="bx bx-cart"></i>Sin resultados</div></td></tr>'; return; }
+  if (!data.length) { tb.innerHTML = '<tr><td colspan="7"><div class="estado-vacio"><i class="bx bx-cart"></i>Sin resultados</div></td></tr>'; return; }
   tb.innerHTML = data.map(p => {
     const bs = p.estado === 'Completado' ? '<span class="badge badge-verde">'+p.estado+'</span>' : (p.estado === 'Anulado' ? '<span class="badge badge-rojo">'+p.estado+'</span>' : '<span class="badge badge-amarillo">'+p.estado+'</span>');
     const d = p.fecha_pedido ? new Date(p.fecha_pedido).toLocaleDateString('es-PE') : '-';
     const nombreCompleto = (p.nombres+' '+p.apellido_paterno).trim();
     const sedeBadge = p.nombre_sede ? `<span class="badge badge-azul">${p.nombre_sede}</span>` : '-';
     const btnAnular = p.estado === 'Pendiente' ? `<button class="btn-accion anular" title="Anular pedido" onclick="confirmarAnularPedido(${p.id_pedido})"><i class="bx bx-block"></i></button>` : '';
-    return `<tr><td><b>#${p.id_pedido}</b></td><td>${nombreCompleto}</td><td>${d}</td><td><b>S/ ${parseFloat(p.total).toFixed(2)}</b></td><td>${bs}</td><td>${sedeBadge}</td><td><div class="acciones-fila"><button class="btn-accion ver" title="Ver detalle" onclick="verDetallePedido(${p.id_pedido},'${nombreCompleto}','${d}','${p.estado}',${p.total})"><i class="bx bx-show"></i></button><button class="btn-accion editar" title="Editar estado" onclick="abrirModalEditarPedido(${p.id_pedido},'${p.estado}')"><i class="bx bx-edit"></i></button>${btnAnular}</div></td></tr>`;
+    return `<tr><td><b>#${p.id_pedido}</b></td><td>${nombreCompleto}</td><td>${d}</td><td><b>S/ ${parseFloat(p.total).toFixed(2)}</b></td><td>${bs}</td><td>${sedeBadge}</td><td><div class="acciones-fila"><button class="btn-accion ver" title="Ver detalle" onclick="verDetallePedido(${p.id_pedido})"><i class="bx bx-show"></i></button><button class="btn-accion editar" title="Editar estado" onclick="abrirModalEditarPedido(${p.id_pedido},'${p.estado}')"><i class="bx bx-edit"></i></button>${btnAnular}</div></td></tr>`;
   }).join('');
 }
 
 function filtrarPedidos() { const q = document.getElementById('buscador-pedidos').value.toLowerCase(); renderPedidos(pedidos.filter(p => String(p.id_pedido).includes(q) || (p.nombres+' '+p.apellido_paterno).toLowerCase().includes(q))); }
 
-function filtrarHoy() {
-  const hoy = new Date().toISOString().slice(0,10);
-  document.getElementById('filtro-fecha-pedidos').value = hoy;
+// La fecha exacta y el rango rápido son excluyentes: elegir una limpia al otro.
+function onCambioFechaPedidos() {
+  const input = document.getElementById('filtro-fecha-pedidos');
+  validarFechaSistema(input); // si es inválida queda limpia y se recarga sin filtro
+  document.getElementById('filtro-rango-pedidos').value = '';
   cargarPedidos();
 }
-function filtrarSemana() {
+
+// Combo de rango rápido: Hoy / Esta semana / Este mes
+function aplicarRangoRapidoPedidos() {
+  const rango = document.getElementById('filtro-rango-pedidos').value;
+  const inputFecha = document.getElementById('filtro-fecha-pedidos');
+  inputFecha.value = '';
+  if (!rango) { cargarPedidos(); return; }
+
   const hoy = new Date();
-  const diaSemana = hoy.getDay() === 0 ? 6 : hoy.getDay() - 1;
-  const lunes = new Date(hoy); lunes.setDate(hoy.getDate() - diaSemana);
-  const domingo = new Date(lunes); domingo.setDate(lunes.getDate() + 6);
-  const desde = lunes.toISOString().slice(0,10);
-  const hasta = domingo.toISOString().slice(0,10);
-  document.getElementById('filtro-fecha-pedidos').value = '';
+  let desde, hasta;
+  if (rango === 'hoy') {
+    desde = hasta = fechaHoyISO();
+  } else if (rango === 'semana') {
+    const diaSemana = hoy.getDay() === 0 ? 6 : hoy.getDay() - 1;
+    const lunes = new Date(hoy); lunes.setDate(hoy.getDate() - diaSemana);
+    const domingo = new Date(lunes); domingo.setDate(lunes.getDate() + 6);
+    desde = new Date(lunes.getTime() - lunes.getTimezoneOffset() * 60000).toISOString().slice(0,10);
+    hasta = new Date(domingo.getTime() - domingo.getTimezoneOffset() * 60000).toISOString().slice(0,10);
+  } else { // mes
+    const anio = hoy.getFullYear(); const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+    desde = `${anio}-${mes}-01`;
+    hasta = fechaHoyISO();
+  }
+  // Nunca antes del inicio de operaciones del sistema
+  if (desde < FECHA_MIN_SISTEMA) desde = FECHA_MIN_SISTEMA;
+
   cargarPedidos().then(() => {
     renderPedidos(pedidos.filter(p => {
       if (!p.fecha_pedido) return false;
@@ -565,22 +703,12 @@ function filtrarSemana() {
     }));
   });
 }
-function filtrarMes() {
-  const hoy = new Date();
-  const mes = String(hoy.getMonth()+1).padStart(2,'0');
-  const anio = hoy.getFullYear();
-  document.getElementById('filtro-fecha-pedidos').value = '';
-  cargarPedidos().then(() => {
-    renderPedidos(pedidos.filter(p => {
-      if (!p.fecha_pedido) return false;
-      const f = new Date(p.fecha_pedido).toISOString().slice(0,7);
-      return f === anio+'-'+mes;
-    }));
-  });
-}
+
 function limpiarFiltrosFecha() {
   document.getElementById('filtro-fecha-pedidos').value = '';
   document.getElementById('filtro-estado-pedidos').value = '';
+  document.getElementById('filtro-rango-pedidos').value = '';
+  document.getElementById('buscador-pedidos').value = '';
   cargarPedidos();
 }
 
@@ -597,21 +725,90 @@ async function cargarComprobantes() {
   renderComprobantes();
 }
 
+function onCambioFechaComprobantes() {
+  const input = document.getElementById('filtro-fecha-comprobantes');
+  validarFechaSistema(input); // si es inválida queda limpia y se recarga sin filtro
+  cargarComprobantes();
+}
+
+function nombreClienteComprobante(c) {
+  const n = [c.nombres, c.apellido_paterno].filter(Boolean).join(' ').trim();
+  return n || ('Pedido #' + c.id_pedido);
+}
+
 function renderComprobantes(lista) {
   const data = lista || comprobantes;
   const tb = document.getElementById('body-comprobantes');
-  if (!data.length) { tb.innerHTML = '<tr><td colspan="7"><div class="estado-vacio"><i class="bx bx-receipt"></i>Sin resultados</div></td></tr>'; return; }
+  if (!data.length) { tb.innerHTML = '<tr><td colspan="8"><div class="estado-vacio"><i class="bx bx-receipt"></i>Sin resultados</div></td></tr>'; return; }
   tb.innerHTML = data.map(c => {
     const isAnulado = c.estado === 'Anulado';
     const bs = !isAnulado ? '<span class="badge badge-verde">Vigente</span>' : '<span class="badge badge-rojo">Anulado</span>';
     const btnA = !isAnulado ? `<button class="btn-accion anular" title="Anular" onclick="confirmarAnular(${c.id_pedido},${c.id_comprobante},'${c.numero_correlativo}')"><i class="bx bx-block"></i></button>` : '';
     const d = c.fecha_emision ? new Date(c.fecha_emision).toLocaleDateString('es-PE') : '-';
     const sedeBadge = c.nombre_sede ? `<span class="badge badge-azul">${c.nombre_sede}</span>` : '-';
-    return `<tr><td><b>${c.numero_correlativo}</b></td><td><span class="badge badge-azul">${c.tipo_comprobante}</span></td><td>Pedido #${c.id_pedido}</td><td>${d}</td><td><b>S/ ${parseFloat(c.monto_total).toFixed(2)}</b></td><td>${sedeBadge}</td><td>${bs}</td><td><div class="acciones-fila"><button class="btn-accion ver" title="Ver detalle" onclick="verDetallePedido(${c.id_pedido})"><i class="bx bx-show"></i></button>${btnA}</div></td></tr>`;
+    return `<tr><td><b>${c.numero_correlativo}</b></td><td><span class="badge badge-azul">${c.tipo_comprobante}</span></td><td>${nombreClienteComprobante(c)}</td><td>${d}</td><td><b>S/ ${parseFloat(c.monto_total).toFixed(2)}</b></td><td>${sedeBadge}</td><td>${bs}</td><td><div class="acciones-fila"><button class="btn-accion ver" title="Ver comprobante" onclick="verComprobante(${c.id_comprobante})"><i class="bx bx-show"></i></button>${btnA}</div></td></tr>`;
   }).join('');
 }
 
-function filtrarComprobantes() { const q = document.getElementById('buscador-comprobantes').value.toLowerCase(); renderComprobantes(comprobantes.filter(c => c.numero_correlativo.toLowerCase().includes(q) || String(c.id_pedido).includes(q))); }
+function filtrarComprobantes() {
+  const q = document.getElementById('buscador-comprobantes').value.toLowerCase();
+  renderComprobantes(comprobantes.filter(c =>
+    c.numero_correlativo.toLowerCase().includes(q) ||
+    String(c.id_pedido).includes(q) ||
+    nombreClienteComprobante(c).toLowerCase().includes(q)
+  ));
+}
+
+// Vista del COMPROBANTE (no del pedido): réplica del voucher emitido,
+// con los datos de la sede que lo generó.
+async function verComprobante(idComprobante) {
+  const c = comprobantes.find(x => x.id_comprobante === idComprobante);
+  if (!c) return;
+  const res = await apiFetch('/api/admin/pedidos/' + c.id_pedido + '/detalles');
+  if (!res) return;
+  const detalles = await res.json();
+
+  const total = parseFloat(c.monto_total);
+  const igv = c.igv != null ? parseFloat(c.igv) : parseFloat((total - total / 1.18).toFixed(2));
+  const opGravada = total - igv;
+  const fecha = c.fecha_emision ? new Date(c.fecha_emision).toLocaleDateString('es-PE') : '-';
+  const sede = sedes.find(s => s.id_sede === c.id_sede);
+  const nombreSede = c.nombre_sede || (sede ? sede.nombre : 'Sede Principal');
+  const direccionSede = c.direccion_sede || (sede ? sede.direccion : '') || 'Dirección no registrada';
+  const isAnulado = c.estado === 'Anulado';
+
+  document.getElementById('titulo-modal-comprobante').textContent = (c.tipo_comprobante || 'Comprobante') + ' ' + c.numero_correlativo;
+  document.getElementById('contenido-voucher').innerHTML = `
+    <div class="voucher-cabecera">
+      <div>
+        <div class="voucher-empresa">BOOK CENTER S.A.C.</div>
+        <div class="voucher-sede"><b>Sede:</b> ${nombreSede}<br><b>Dirección:</b> ${direccionSede}</div>
+      </div>
+      <div class="voucher-numero">
+        <span class="tipo">${c.tipo_comprobante === 'Factura' ? 'Factura Electrónica' : 'Boleta de Venta Electrónica'}</span>
+        <span class="nro">${c.numero_correlativo}</span>
+      </div>
+    </div>
+    <div class="voucher-datos">
+      <div class="dato"><b>Cliente:</b>${nombreClienteComprobante(c)}</div>
+      <div class="dato"><b>${c.tipo_documento || 'Doc.'}:</b>${c.numero_documento || '-'}</div>
+      <div class="dato"><b>Fecha emisión:</b>${fecha}</div>
+      <div class="dato"><b>Pedido:</b>#${c.id_pedido}</div>
+      <div class="dato"><b>Estado:</b> ${isAnulado ? '<span class="badge badge-rojo">Anulado</span>' : '<span class="badge badge-verde">Vigente</span>'}</div>
+      <div class="dato"><b>Moneda:</b>Soles (PEN)</div>
+    </div>
+    <table class="tabla-detalles"><thead><tr><th>Cant.</th><th>Descripción</th><th>P. Unitario</th><th>Importe</th></tr></thead>
+      <tbody>${detalles.map(d => `<tr><td>${d.cantidad}</td><td>${d.nombre}</td><td>S/ ${parseFloat(d.precio_unitario).toFixed(2)}</td><td><b>S/ ${parseFloat(d.subtotal).toFixed(2)}</b></td></tr>`).join('')}</tbody>
+    </table>
+    <div class="voucher-totales">
+      <span>Op. Gravada: S/ ${opGravada.toFixed(2)}</span>
+      <span>IGV (18%): S/ ${igv.toFixed(2)}</span>
+      <span class="total-final">Importe Total: S/ ${total.toFixed(2)}</span>
+    </div>
+    ${isAnulado && c.motivo_anulacion ? `<div class="voucher-anulado"><b>Motivo de anulación:</b> ${c.motivo_anulacion}</div>` : ''}
+  `;
+  document.getElementById('modal-comprobante').classList.remove('oculto');
+}
 
 // ===============================================
 // ACCIONES Y MODALES
@@ -675,15 +872,20 @@ async function guardarProducto() {
   const archivoImagen = document.getElementById('producto-imagen-file').files[0];
   let url_imagen = document.getElementById('producto-imagen').value.trim();
 
-  const soloLetras = /^[A-Za-zÀ-ÿ\s]+$/;
-  if (!nombre || !soloLetras.test(nombre)) { alert('El nombre es obligatorio y solo debe contener letras.'); return; }
+  // Misma regla que el oninput del formulario: letras, números, espacios
+  // y puntuación básica (permite nombres reales como "Cuaderno A4").
+  const textoValido = /^[A-Za-zÀ-ÿ0-9\s.,\-()]+$/;
+  if (!nombre) { alert('El nombre del producto es obligatorio.'); return; }
+  if (nombre.length < 3) { alert('El nombre debe tener al menos 3 caracteres.'); return; }
+  if (!textoValido.test(nombre)) { alert('El nombre solo admite letras, números, espacios y . , - ( ).'); return; }
   if (nombre.length > 100) { alert('El nombre no debe superar los 100 caracteres.'); return; }
-  if (descripcion && !soloLetras.test(descripcion)) { alert('La descripción solo debe contener letras.'); return; }
+  if (descripcion && !textoValido.test(descripcion)) { alert('La descripción solo admite letras, números, espacios y . , - ( ).'); return; }
   if (descripcion.length > 255) { alert('La descripción no debe superar los 255 caracteres.'); return; }
   if (!id_categoria) { alert('Debes seleccionar una categoría.'); return; }
-  if (!/^\d+(\.\d{1,2})?$/.test(precioStr) || parseFloat(precioStr) <= 0) { alert('El precio de venta debe tener un formato decimal válido (ej. 00.00) y ser mayor a 0.'); return; }
-  if (!/^\d+$/.test(stockStr)) { alert('El stock actual debe ser un número entero.'); return; }
-  if (!/^\d+$/.test(stockMinStr)) { alert('El stock mínimo debe ser un número entero.'); return; }
+  if (!/^\d+(\.\d{1,2})?$/.test(precioStr) || parseFloat(precioStr) <= 0) { alert('El precio de venta debe tener un formato decimal válido (ej. 15.50) y ser mayor a 0.'); return; }
+  if (parseFloat(precioStr) > 10000) { alert('El precio de venta no puede superar S/ 10,000.'); return; }
+  if (!/^\d+$/.test(stockStr)) { alert('El stock actual debe ser un número entero (sin decimales ni negativos).'); return; }
+  if (!/^\d+$/.test(stockMinStr)) { alert('El stock mínimo debe ser un número entero (sin decimales ni negativos).'); return; }
   const precio_venta = parseFloat(precioStr);
   const stock_actual = parseInt(stockStr, 10);
   const stock_minimo = parseInt(stockMinStr, 10);
@@ -755,22 +957,26 @@ async function guardarCliente() {
   if (!numDoc || !nombres || !apP || !apM) { alert('Completa los campos obligatorios.'); return; }
   if (tipoDoc === 'DNI' && !/^\d{8}$/.test(numDoc)) { alert('El DNI debe tener exactamente 8 números.'); return; }
   if (tipoDoc === 'RUC' && !/^\d{11}$/.test(numDoc)) { alert('El RUC debe tener exactamente 11 números.'); return; }
-  if (!soloLetras.test(nombres)) { alert('Los nombres solo deben contener letras.'); return; }
-  if (!soloLetras.test(apP)) { alert('El apellido paterno solo debe contener letras.'); return; }
-  if (!soloLetras.test(apM)) { alert('El apellido materno solo debe contener letras.'); return; }
+  if (nombres.length < 2 || !soloLetras.test(nombres)) { alert('Los nombres solo deben contener letras (mínimo 2 caracteres).'); return; }
+  if (apP.length < 2 || !soloLetras.test(apP)) { alert('El apellido paterno solo debe contener letras (mínimo 2 caracteres).'); return; }
+  if (apM.length < 2 || !soloLetras.test(apM)) { alert('El apellido materno solo debe contener letras (mínimo 2 caracteres).'); return; }
   if (tel && !/^9\d{8}$/.test(tel)) { alert('El teléfono debe tener 9 dígitos y comenzar con 9.'); return; }
   if (correo && !/^[^\s@]+@[^\s@]+\.com$/i.test(correo)) { alert('El correo debe ser válido y terminar en .com'); return; }
 
   const usuario = getUsuario();
   const payload = { tipoDoc, numDoc, nombres, apellidoPaterno: apP, apellidoMaterno: apM, telefono: tel, correo, idCreador: usuario?.id_usuario };
-  
+
+  let res;
   if (clienteEditar) {
     const payloadUpdate = { tipo_documento: tipoDoc, numero_documento: numDoc, nombres, apellido_paterno: apP, apellido_materno: apM, telefono: tel, correo, id_usuario: usuario?.id_usuario };
-    await apiFetch('/api/clientes/' + clienteEditar.id_cliente, { method: 'PUT', body: JSON.stringify(payloadUpdate) });
+    res = await apiFetch('/api/clientes/' + clienteEditar.id_cliente, { method: 'PUT', body: JSON.stringify(payloadUpdate) });
   } else {
-    await apiFetch('/api/registrar-cliente', { method: 'POST', body: JSON.stringify(payload) });
+    res = await apiFetch('/api/registrar-cliente', { method: 'POST', body: JSON.stringify(payload) });
   }
-  
+  if (!res) return;
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || data.exito === false) { alert('❌ ' + (data.mensaje || 'No se pudo guardar el cliente.')); return; }
+
   cerrarModal('modal-cliente');
   cargarClientes();
   cargarResumen();
@@ -871,22 +1077,19 @@ async function guardarEstadoPedido() {
   cargarResumen();
 }
 
-async function verDetallePedido(idPedido, cliente, fecha, estado, total) {
-  if (!cliente) {
-      const p = pedidos.find(x => x.id_pedido === idPedido);
-      if(p) {
-          cliente = (p.nombres + ' ' + p.apellido_paterno).trim();
-          fecha = p.fecha_pedido ? new Date(p.fecha_pedido).toLocaleDateString('es-PE') : '-';
-          estado = p.estado;
-          total = p.total;
-      }
-  }
+async function verDetallePedido(idPedido) {
+  const p = pedidos.find(x => x.id_pedido === idPedido);
+  const cliente = p ? (p.nombres + ' ' + p.apellido_paterno).trim() : '-';
+  const fecha = p && p.fecha_pedido ? new Date(p.fecha_pedido).toLocaleDateString('es-PE') : '-';
+  const estado = p ? p.estado : '-';
+  const total = p ? p.total : 0;
+  const sede = (p && p.nombre_sede) ? p.nombre_sede : '-';
   const res = await apiFetch('/api/admin/pedidos/' + idPedido + '/detalles');
   if (!res) return;
   const detalles = await res.json();
-  
+
   document.getElementById('titulo-modal-detalle').textContent = 'Detalle Pedido #' + idPedido;
-  document.getElementById('info-pedido-detalle').innerHTML = '<strong>Cliente:</strong> ' + cliente + ' &nbsp;|&nbsp; <strong>Fecha:</strong> ' + fecha + ' &nbsp;|&nbsp; <strong>Estado:</strong> ' + estado;
+  document.getElementById('info-pedido-detalle').innerHTML = '<strong>Cliente:</strong> ' + cliente + ' &nbsp;|&nbsp; <strong>Fecha:</strong> ' + fecha + ' &nbsp;|&nbsp; <strong>Estado:</strong> ' + estado + ' &nbsp;|&nbsp; <strong>Sede:</strong> ' + sede;
   document.getElementById('body-detalle-pedido').innerHTML = detalles.map(d => '<tr><td>'+d.nombre+'</td><td>'+d.cantidad+'</td><td>S/ '+parseFloat(d.precio_unitario).toFixed(2)+'</td><td><b>S/ '+parseFloat(d.subtotal).toFixed(2)+'</b></td></tr>').join('');
   document.getElementById('total-detalle').textContent = 'S/ ' + parseFloat(total).toFixed(2);
   document.getElementById('modal-detalle').classList.remove('oculto');
@@ -914,6 +1117,14 @@ async function guardarSede() {
   const direccion = document.getElementById('sede-direccion').value.trim();
   if (!codigo || !nombre) { alert('El código y nombre son obligatorios.'); return; }
   if (!/^[A-Z]{2,5}$/.test(codigo)) { alert('El código debe tener 2 a 5 letras mayúsculas. Ej: VH, AY'); return; }
+  if (nombre.length < 3) { alert('El nombre de la sede debe tener al menos 3 caracteres.'); return; }
+  if (!/^[A-Za-zÀ-ÿ0-9\s.\-]+$/.test(nombre)) { alert('El nombre de la sede solo admite letras, números, espacios, puntos y guiones.'); return; }
+  if (direccion && direccion.length < 5) { alert('Si registras una dirección, debe tener al menos 5 caracteres.'); return; }
+  // Evitar duplicados evidentes contra las sedes ya cargadas
+  const codigoDup = sedes.find(s => s.codigo_sede === codigo && (!sedeEditar || s.id_sede !== sedeEditar.id_sede));
+  if (codigoDup) { alert('Ya existe una sede con el código ' + codigo + '.'); return; }
+  const nombreDup = sedes.find(s => s.nombre.trim().toLowerCase() === nombre.toLowerCase() && (!sedeEditar || s.id_sede !== sedeEditar.id_sede));
+  if (nombreDup) { alert('Ya existe una sede con ese nombre.'); return; }
   const payload = { codigo_sede: codigo, nombre, direccion };
   const ruta = sedeEditar ? `/api/admin/sedes/${sedeEditar.id_sede}` : '/api/admin/sedes';
   const method = sedeEditar ? 'PUT' : 'POST';
@@ -1010,7 +1221,14 @@ async function guardarUsuario() {
   const id_sede = document.getElementById('usuario-sede').value || null;
   const password = document.getElementById('usuario-password')?.value || '';
   if (!username || !nombre || !id_rol) { alert('Usuario, nombre y rol son obligatorios.'); return; }
+  if (!/^[a-z0-9._-]{4,20}$/.test(username)) { alert('El username debe tener de 4 a 20 caracteres: solo minúsculas, números, punto, guion o guion bajo.'); return; }
+  if (nombre.length < 3 || !/^[A-Za-zÀ-ÿ\s]+$/.test(nombre)) { alert('El nombre completo solo debe contener letras y espacios (mínimo 3 caracteres).'); return; }
+  if (correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) { alert('El correo ingresado no es válido.'); return; }
   if (!usuarioEditar && !password) { alert('La contraseña es obligatoria al crear un usuario.'); return; }
+  // Misma política que la recuperación de contraseña del sistema:
+  // mínimo 8 caracteres, 1 mayúscula, 1 número y 1 carácter especial.
+  const politicaPass = /^(?=.*[A-Z])(?=.*\d)(?=.*[#@!$%^&*()_+\-=\[\]{};':"|,.<>\/?]).{8,}$/;
+  if (password && !politicaPass.test(password)) { alert('La contraseña debe tener mínimo 8 caracteres e incluir una mayúscula, un número y un carácter especial.'); return; }
   const payload = { username, nombre_completo: nombre, correo, id_rol, id_sede };
   if (password) payload.password = password;
   const ruta = usuarioEditar ? `/api/admin/usuarios/${usuarioEditar.id_usuario}` : '/api/admin/usuarios';
@@ -1027,14 +1245,44 @@ async function guardarUsuario() {
 // GESTIÓN DE CATEGORÍAS ADMIN (B12)
 // =============================================
 let categoriaEditar = null;
+
+// Catálogo de iconos disponibles (Boxicons, la librería que ya usa el sistema).
+// Se guarda el nombre de la clase (ej. "bx-book"); el render soporta además
+// los emojis que pudieran existir de registros antiguos.
+const ICONOS_CATEGORIA = ['bx-book','bx-book-open','bx-book-bookmark','bx-book-heart','bx-pencil','bx-pen','bx-edit','bx-paint','bx-palette','bx-brush','bx-calculator','bx-ruler','bx-notepad','bx-note','bx-paperclip','bx-package','bx-folder','bx-archive','bx-briefcase','bx-globe','bx-printer','bx-cut','bx-star','bx-category'];
+
+// Devuelve el HTML del icono de una categoría (clase Boxicons o emoji legado)
+function iconoCategoriaHTML(icono, tam) {
+  const t = tam || '1.5rem';
+  if (icono && /^bxs?-/.test(icono)) return `<i class="bx ${icono}" style="font-size:${t};color:var(--azul-primario)"></i>`;
+  if (icono) return `<span style="font-size:${t}">${icono}</span>`;
+  return `<i class="bx bx-category" style="font-size:${t};color:var(--gris)"></i>`;
+}
+
+function seleccionarIconoCategoria(icono) {
+  document.getElementById('cat-icono').value = icono;
+  document.querySelectorAll('#grid-iconos-categoria .btn-icono-cat').forEach(b => b.classList.toggle('seleccionado', b.dataset.icono === icono));
+  document.getElementById('cat-icono-preview').innerHTML = iconoCategoriaHTML(icono, '1.2rem');
+}
+
+function renderGridIconos(iconoActual) {
+  document.getElementById('grid-iconos-categoria').innerHTML = ICONOS_CATEGORIA.map(ic =>
+    `<button type="button" class="btn-icono-cat ${ic === iconoActual ? 'seleccionado' : ''}" data-icono="${ic}" title="${ic}" onclick="seleccionarIconoCategoria('${ic}')"><i class="bx ${ic}"></i></button>`
+  ).join('');
+  document.getElementById('cat-icono-preview').innerHTML = iconoActual ? iconoCategoriaHTML(iconoActual, '1.2rem') : '';
+}
+
 function abrirModalCategoria(id) {
   categoriaEditar = id ? categorias.find(c => c.id_categoria === id) : null;
   document.getElementById('titulo-modal-categoria').textContent = categoriaEditar ? 'Editar Categoría' : 'Nueva Categoría';
   if (categoriaEditar) {
     document.getElementById('cat-icono').value = categoriaEditar.icono || '';
     document.getElementById('cat-nombre').value = categoriaEditar.nombre;
+    renderGridIconos(categoriaEditar.icono || '');
   } else {
     document.getElementById('form-categoria').reset();
+    document.getElementById('cat-icono').value = '';
+    renderGridIconos('');
   }
   document.getElementById('modal-categoria').classList.remove('oculto');
 }
@@ -1042,6 +1290,10 @@ async function guardarCategoria() {
   const nombre = document.getElementById('cat-nombre').value.trim();
   const icono = document.getElementById('cat-icono').value.trim();
   if (!nombre) { alert('El nombre es obligatorio.'); return; }
+  if (nombre.length < 3 || !/^[A-Za-zÀ-ÿ\s]+$/.test(nombre)) { alert('El nombre de la categoría solo debe contener letras y espacios (mínimo 3 caracteres).'); return; }
+  if (!icono) { alert('Selecciona un icono para la categoría.'); return; }
+  const dup = categorias.find(c => c.nombre.trim().toLowerCase() === nombre.toLowerCase() && (!categoriaEditar || c.id_categoria !== categoriaEditar.id_categoria));
+  if (dup) { alert('Ya existe una categoría con ese nombre.'); return; }
   const payload = { nombre, icono };
   const ruta = categoriaEditar ? `/api/categorias/${categoriaEditar.id_categoria}` : '/api/categorias';
   const method = categoriaEditar ? 'PUT' : 'POST';
@@ -1065,7 +1317,7 @@ async function desactivarCategoria(id, nombre) {
 function cargarTabCategorias() {
   const tb = document.getElementById('body-categorias-admin');
   if (!categorias.length) { tb.innerHTML = '<tr><td colspan="4" class="estado-vacio"><i class="bx bx-category"></i>Sin categorías</td></tr>'; return; }
-  tb.innerHTML = categorias.map(c => `<tr><td style="font-size:1.5rem;">${c.icono||'📁'}</td><td><b>${c.nombre}</b></td><td>${c.is_active!==0 ? '<span class="badge badge-verde">Activa</span>' : '<span class="badge badge-rojo">Inactiva</span>'}</td><td><div class="acciones-fila"><button class="btn-accion editar" onclick="abrirModalCategoria(${c.id_categoria})"><i class="bx bx-edit"></i></button><button class="btn-accion eliminar" onclick="desactivarCategoria(${c.id_categoria},'${c.nombre}')"><i class="bx bx-power-off"></i></button></div></td></tr>`).join('');
+  tb.innerHTML = categorias.map(c => `<tr><td>${iconoCategoriaHTML(c.icono)}</td><td><b>${c.nombre}</b></td><td>${c.is_active!==0 ? '<span class="badge badge-verde">Activa</span>' : '<span class="badge badge-rojo">Inactiva</span>'}</td><td><div class="acciones-fila"><button class="btn-accion editar" onclick="abrirModalCategoria(${c.id_categoria})"><i class="bx bx-edit"></i></button><button class="btn-accion eliminar" onclick="desactivarCategoria(${c.id_categoria},'${c.nombre}')"><i class="bx bx-power-off"></i></button></div></td></tr>`).join('');
 }
 
 // =============================================
@@ -1073,8 +1325,12 @@ function cargarTabCategorias() {
 // =============================================
 async function cargarReportes() {
   const agrupacion = document.getElementById('rep-agrupacion').value;
-  const desde = document.getElementById('rep-desde').value;
-  const hasta = document.getElementById('rep-hasta').value;
+  const inputDesde = document.getElementById('rep-desde');
+  const inputHasta = document.getElementById('rep-hasta');
+  if (!validarFechaSistema(inputDesde) || !validarFechaSistema(inputHasta)) return;
+  const desde = inputDesde.value;
+  const hasta = inputHasta.value;
+  if (desde && hasta && desde > hasta) { alert('La fecha "Desde" no puede ser posterior a la fecha "Hasta".'); return; }
   const sede = document.getElementById('rep-sede').value;
   const params = new URLSearchParams({ agrupacion });
   if (desde) params.append('desde', desde);
@@ -1084,22 +1340,40 @@ async function cargarReportes() {
   if (!res) return;
   const data = await res.json();
   const tb = document.getElementById('body-reportes');
-  if (!data.length) { tb.innerHTML = '<tr><td colspan="4" class="estado-vacio">Sin datos para el período seleccionado.</td></tr>'; document.getElementById('rep-total-general').textContent = 'S/ 0.00'; return; }
+  if (!data.length) {
+    tb.innerHTML = '<tr><td colspan="4" class="estado-vacio">Sin datos para el período seleccionado.</td></tr>';
+    document.getElementById('rep-total-general').textContent = 'S/ 0.00';
+    // Limpiar también el gráfico anterior para no mostrar datos de otro período
+    if (repChart) { repChart.destroy(); repChart = null; }
+    return;
+  }
   let totalGeneral = 0;
   tb.innerHTML = data.map(r => { totalGeneral += parseFloat(r.total_vendido||0); return `<tr><td>${r.periodo||'-'}</td><td>${r.nombre_sede||'Todas'}</td><td>${r.num_pedidos}</td><td><b>S/ ${parseFloat(r.total_vendido).toFixed(2)}</b></td></tr>`; }).join('');
   document.getElementById('rep-total-general').textContent = `S/ ${totalGeneral.toFixed(2)}`;
   // Dibujar gráfico
   const labels = data.map(r => r.periodo || '-');
   const valores = data.map(r => parseFloat(r.total_vendido||0));
+  if (typeof Chart === 'undefined') { console.warn('Chart.js aún no está disponible.'); return; }
   if (repChart) repChart.destroy();
   const ctx = document.getElementById('rep-grafico').getContext('2d');
-  repChart = new Chart(ctx, { type: 'bar', data: { labels, datasets: [{ label: 'Ventas (S/)', data: valores, backgroundColor: 'rgba(37,99,235,0.7)', borderRadius: 6 }] }, options: { responsive: true, plugins: { legend: { display: false } } } });
+  repChart = new Chart(ctx, { type: 'bar', data: { labels, datasets: [{ label: 'Ventas (S/)', data: valores, backgroundColor: 'rgba(37,99,235,0.7)', borderRadius: 6 }] }, options: { responsive: true, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => ' S/ ' + Number(c.parsed.y).toFixed(2) } } }, scales: { y: { beginAtZero: true, ticks: { callback: (v) => 'S/ ' + v } } } } });
 }
 
 // Inicialización de la vista
 async function inicializarDashboard() {
+  // Rango de fechas permitido en todos los filtros: [inicio del sistema, hoy]
+  const hoy = fechaHoyISO();
+  ['filtro-fecha-pedidos', 'filtro-fecha-comprobantes', 'rep-desde', 'rep-hasta'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.min = FECHA_MIN_SISTEMA; el.max = hoy; }
+  });
+  // Valores por defecto del reporte: desde el inicio de operaciones hasta hoy
+  document.getElementById('rep-desde').value = FECHA_MIN_SISTEMA;
+  document.getElementById('rep-hasta').value = hoy;
+
   await cargarSedes();
   await cargarCategorias();
+  poblarFiltroCategoriasProductos();
   await cargarRoles();
   cargarResumen();
   cargarProductos();
@@ -1121,6 +1395,5 @@ cambiarVista = function(nombre) {
 inicializarDashboard();
 
 </script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </body>
 </html>

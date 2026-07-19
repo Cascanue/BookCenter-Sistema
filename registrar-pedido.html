@@ -664,7 +664,10 @@
             <img src="https://res.cloudinary.com/dwk77ddoq/image/upload/v1781397979/imagen_2026-06-13_194618193_hkz2d2.png"
                  alt="Logo Book Center" class="logo-header">
 
-            <div class="zona-derecha">
+            <div class="zona-derecha" style="gap: 0.75rem; align-items: center;">
+                <span id="badgeSede" style="background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.45); color: white; font-weight: 600; font-size: 0.78rem; padding: 0.25rem 0.7rem; border-radius: 20px; display: inline-flex; align-items: center; gap: 0.35rem;">
+                    <i class='bx bx-buildings'></i> <span id="nombreSedePedido">—</span>
+                </span>
                 <span style="color: white; font-weight: 600; font-size: 0.88rem; opacity: 0.95; display: flex; align-items: center;">
                     Nuevo Pedido
                     <span id="badgeCantidad" class="badge-pedido oculto">0</span>
@@ -788,6 +791,16 @@
         }
 
         // =============================================
+        // CONTEXTO MULTI-SEDE
+        // El pedido se registra en la sede del usuario logueado (el backend
+        // la toma del token JWT). Aquí solo se muestra para que el vendedor
+        // sepa en qué sede está trabajando. Un administrador sin sede
+        // asignada registra en la Sede Principal (sede 1 por defecto).
+        // =============================================
+        document.getElementById('nombreSedePedido').textContent =
+            (usuarioActual && usuarioActual.nombre_sede) ? usuarioActual.nombre_sede : 'Sede Principal';
+
+        // =============================================
         // CARGA DE DATOS DESDE LA API (FETCH)
         // =============================================
         async function cargarDatosIniciales() {
@@ -831,7 +844,11 @@
             CATEGORIAS.forEach(cat => {
                 const btn = document.createElement('button');
                 btn.className = 'btn-categoria' + (cat.id_categoria === categoriaActiva ? ' activo' : '');
-                btn.innerHTML = `<i class='bx ${cat.icono}'></i> ${cat.nombre}`;
+                // El icono puede ser una clase Boxicons (bx-...) o un emoji antiguo
+                const icono = (cat.icono && /^bxs?-/.test(cat.icono))
+                    ? `<i class='bx ${cat.icono}'></i>`
+                    : (cat.icono ? `<span>${cat.icono}</span>` : `<i class='bx bx-category'></i>`);
+                btn.innerHTML = `${icono} ${cat.nombre}`;
                 
                 btn.onclick = () => {
                     categoriaActiva = cat.id_categoria;

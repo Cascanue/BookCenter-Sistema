@@ -78,6 +78,7 @@ const codigosRecuperacion = new Map(); // { correo: { codigo, expira, id_usuario
 // Rutas de API que NO requieren token (login, recuperación de contraseña
 // y el webhook que Mercado Pago invoca desde sus servidores).
 const RUTAS_PUBLICAS = [
+    '/api/ping',
     '/api/login',
     '/api/solicitar-codigo',
     '/api/verificar-codigo',
@@ -137,6 +138,10 @@ function registrarAuditoria(idUsuario, accion, tablaAfectada, detalle) {
         (err) => { if (err) console.error('❌ Error registrando auditoría:', err); }
     );
 }
+
+// PING público: lo usa el login para despertar el servidor de Render
+// antes de que el usuario envíe sus credenciales (reduce la demora).
+app.get('/api/ping', (req, res) => res.json({ ok: true }));
 
 // ==========================================
 // MP. MERCADO PAGO — Generar QR Dinámico
@@ -384,10 +389,15 @@ app.get('/api/productos', (req, res) => {
         `;
         params = [sede];
     } else {
+        // Vista global: el stock es la suma de todas las sedes, pero el mínimo
+        // de referencia es el MAYOR mínimo por sede (sumarlos inflaba el umbral
+        // y marcaba como críticos productos con stock de sobra).
+        // CAST: SUM() devuelve DECIMAL y mysql2 lo entrega como texto, lo que
+        // rompía las comparaciones numéricas en el frontend.
         query = `
             SELECT p.id_producto, p.codigo, p.nombre, p.descripcion, p.id_categoria, p.url_imagen, p.precio_venta,
-                   COALESCE(SUM(i.stock_actual), 0) AS stock_actual,
-                   COALESCE(SUM(i.stock_minimo), 0) AS stock_minimo
+                   CAST(COALESCE(SUM(i.stock_actual), 0) AS SIGNED) AS stock_actual,
+                   CAST(COALESCE(MAX(i.stock_minimo), 0) AS SIGNED) AS stock_minimo
             FROM Producto p
             LEFT JOIN Inventario_Sede i ON i.id_producto = p.id_producto
             WHERE p.is_active = 1
@@ -580,9 +590,13 @@ app.get('/api/admin/resumen', async (req, res) => {
             : await p.query('SELECT COUNT(*) as totalPedidos FROM Pedido');
 
         // Mismo criterio que GET /api/productos: por sede compara la fila de esa
-        // sede; global compara la suma de stock contra la suma de mínimos.
+        // sede; global compara la suma de stock contra el MAYOR mínimo por sede
+        // (sumar los mínimos inflaba el umbral y disparaba falsas alertas).
         const filtroSede = sede !== null ? 'AND i.id_sede = ?' : '';
         const paramsCritico = sede !== null ? [sede] : [];
+        const criterio = sede !== null
+            ? 'HAVING SUM(i.stock_actual) <= SUM(i.stock_minimo)'
+            : 'HAVING SUM(i.stock_actual) <= MAX(i.stock_minimo)';
         const [[{ stockCritico }]] = await p.query(`
             SELECT COUNT(*) as stockCritico FROM (
                 SELECT i.id_producto
@@ -590,7 +604,7 @@ app.get('/api/admin/resumen', async (req, res) => {
                 JOIN Producto pr ON pr.id_producto = i.id_producto AND pr.is_active = 1
                 WHERE 1=1 ${filtroSede}
                 GROUP BY i.id_producto
-                HAVING SUM(i.stock_actual) <= SUM(i.stock_minimo)
+                ${criterio}
             ) t
         `, paramsCritico);
 
@@ -850,11 +864,14 @@ app.get('/api/admin/comprobantes', (req, res) => {
     const sede = sedeDeConsulta(req);
     let query = `
         SELECT cp.id_comprobante, cp.numero_correlativo, cp.tipo_comprobante, cp.fecha_emision, cp.monto_total,
+               cp.igv, cp.motivo_anulacion,
                p.id_pedido, p.estado AS estado_pedido,
                cp.estado_comprobante AS estado,
-               cp.id_sede, s.nombre AS nombre_sede
+               cp.id_sede, s.nombre AS nombre_sede, s.direccion AS direccion_sede,
+               c.nombres, c.apellido_paterno, c.apellido_materno, c.tipo_documento, c.numero_documento
         FROM Comprobante_Pago cp
         JOIN Pedido p ON cp.id_pedido = p.id_pedido
+        LEFT JOIN Cliente c ON p.id_cliente = c.id_cliente
         LEFT JOIN Sede s ON cp.id_sede = s.id_sede
         WHERE 1=1
     `;
@@ -955,9 +972,11 @@ app.put('/api/admin/comprobantes/:id/anular', (req, res) => {
 // 12. OBTENER PEDIDO POR ID (Para módulo de pago)
 app.get('/api/pedidos/:id', (req, res) => {
     const queryPedido = `
-        SELECT p.*, c.nombres, c.apellido_paterno, c.tipo_documento, c.numero_documento 
-            FROM Pedido p 
-            INNER JOIN Cliente c ON p.id_cliente = c.id_cliente 
+        SELECT p.*, c.nombres, c.apellido_paterno, c.tipo_documento, c.numero_documento,
+               s.nombre AS nombre_sede, s.direccion AS direccion_sede, s.codigo_sede
+            FROM Pedido p
+            INNER JOIN Cliente c ON p.id_cliente = c.id_cliente
+            LEFT JOIN Sede s ON p.id_sede = s.id_sede
             WHERE p.id_pedido = ?
     `;
     const queryDetalles = `
