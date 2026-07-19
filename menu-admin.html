@@ -699,7 +699,14 @@ async function guardarProducto() {
   }
 
   const usuario = getUsuario();
-  const payload = { nombre, descripcion, id_categoria, precio_venta, stock_actual, stock_minimo, url_imagen, id_usuario: usuario?.id_usuario };
+  // id_sede: sede seleccionada en el selector global. Con "Todas las Sedes" va null:
+  // al crear, el stock inicial cae en la sede 1; al editar, solo se actualiza el
+  // catálogo (el stock mostrado en "Todas" es la suma y no es editable).
+  const payload = {
+    nombre, descripcion, id_categoria, precio_venta, stock_actual, stock_minimo, url_imagen,
+    id_usuario: usuario?.id_usuario,
+    id_sede: sedeSeleccionada ? parseInt(sedeSeleccionada) : null
+  };
   const method = productoEditar ? 'PUT' : 'POST';
   const ruta = '/api/productos' + (productoEditar ? '/' + productoEditar.id_producto : '');
 

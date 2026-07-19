@@ -604,12 +604,13 @@
                 btn.innerHTML = `PROCESANDO... <i class='bx bx-loader-alt bx-spin'></i>`;
                 btn.disabled = true;
 
-                // 4. Enviar a Aiven MySQL a través del servidor
-                const respuesta = await fetch(`${URL_BACKEND}/api/guardar-pedido`, {
+                // 4. Enviar a Aiven MySQL a través del servidor (con token JWT:
+                // el backend toma la sede y el usuario desde el token)
+                const respuesta = await apiFetch('/api/guardar-pedido', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
+                if (!respuesta) return; // sesión expirada: apiFetch ya redirigió
 
                 const data = await respuesta.json();
 

@@ -6,6 +6,10 @@ const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
 const bcrypt = require('bcrypt');
 const nodemailer = require('nodemailer');
+const jwt = require('jsonwebtoken');
+
+const JWT_SECRET = process.env.JWT_SECRET || 'bookcenter-secreto-dev';
+const JWT_EXPIRACION = '8h'; // un turno de trabajo
 
 const app = express();
 app.use(cors());
@@ -43,23 +47,9 @@ db.getConnection((err, connection) => {
         console.error('❌ Error en MySQL:', err);
     } else {
         console.log('✅ Conectado a Aiven MySQL con Pool de conexiones.');
-
-        // MODO AUTOMÁTICO: Crea la columna y pone tu nombre apenas enciende
-        const sqlCrear = "ALTER TABLE Usuario ADD COLUMN IF NOT EXISTS nombre_completo VARCHAR(150) NOT NULL DEFAULT 'Usuario del Sistema' AFTER username;";
-        const sqlActualizar = "UPDATE Usuario SET nombre_completo = 'Diego Sebastián' WHERE id_usuario = 1;";
-
-        // Anulación de comprobantes (CU-07): motivo y estado propio del comprobante
-        const sqlColMotivo = "ALTER TABLE Comprobante_Pago ADD COLUMN IF NOT EXISTS motivo_anulacion VARCHAR(255) NULL;";
-        const sqlColEstadoComprobante = "ALTER TABLE Comprobante_Pago ADD COLUMN IF NOT EXISTS estado_comprobante ENUM('Vigente','Anulado') NOT NULL DEFAULT 'Vigente';";
-
-        connection.query(sqlCrear, () => {
-            connection.query(sqlActualizar, () => {
-                connection.query(sqlColMotivo, (err) => { if (err) console.error('❌ Error creando columna motivo_anulacion:', err); });
-                connection.query(sqlColEstadoComprobante, (err) => { if (err) console.error('❌ Error creando columna estado_comprobante:', err); });
-                console.log('🌟 ¡LISTO! Base de datos actualizada con tu nombre. Ya puedes iniciar sesión.');
-                connection.release();
-            });
-        });
+        connection.release();
+        // Los cambios de esquema NO viven aquí: ver migracion_multisede.sql
+        // y ejecutar `node scripts/migrar-multisede.js`.
     }
 });
 
@@ -81,6 +71,57 @@ const transporter = nodemailer.createTransport({
 
 // Almacén temporal de códigos (en memoria — válidos por 15 minutos)
 const codigosRecuperacion = new Map(); // { correo: { codigo, expira, id_usuario } }
+
+// ==========================================
+// SEGURIDAD: AUTENTICACIÓN JWT (Fase 1 · A2)
+// ==========================================
+// Rutas de API que NO requieren token (login, recuperación de contraseña
+// y el webhook que Mercado Pago invoca desde sus servidores).
+const RUTAS_PUBLICAS = [
+    '/api/login',
+    '/api/solicitar-codigo',
+    '/api/verificar-codigo',
+    '/api/cambiar-contrasena',
+    '/api/webhook-mp'
+];
+
+app.use((req, res, next) => {
+    if (!req.path.startsWith('/api/') || RUTAS_PUBLICAS.includes(req.path)) return next();
+
+    const auth = req.headers.authorization || '';
+    const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+    if (!token) {
+        return res.status(401).json({ exito: false, codigo: 'TOKEN_INVALIDO', mensaje: 'Sesión no válida. Inicia sesión nuevamente.' });
+    }
+
+    try {
+        // Payload: { id_usuario, id_rol, nombre_rol, id_sede }
+        req.usuario = jwt.verify(token, JWT_SECRET);
+        next();
+    } catch {
+        return res.status(401).json({ exito: false, codigo: 'TOKEN_INVALIDO', mensaje: 'Sesión expirada. Inicia sesión nuevamente.' });
+    }
+});
+
+const esAdmin = (req) => ((req.usuario && req.usuario.nombre_rol) || '').toLowerCase() === 'administrador';
+
+// Las rutas /api/admin/* y /api/roles son exclusivas del Administrador
+app.use((req, res, next) => {
+    if ((req.path.startsWith('/api/admin/') || req.path === '/api/roles') && !esAdmin(req)) {
+        return res.status(403).json({ exito: false, mensaje: 'Acceso restringido a administradores.' });
+    }
+    next();
+});
+
+// Sede efectiva para una consulta: los empleados quedan amarrados a la sede
+// de su token; el administrador puede pedir ?sede=N o nada (todas las sedes).
+function sedeDeConsulta(req) {
+    if (esAdmin(req)) {
+        const s = parseInt(req.query.sede);
+        return Number.isInteger(s) ? s : null;
+    }
+    return req.usuario.id_sede || 1;
+}
 
 // ==========================================
 // C. RUTAS DEL SISTEMA (Endpoints)
@@ -191,16 +232,21 @@ app.get('/api/verificar-pago-mp/:id_pedido', async (req, res) => {
     }
 });
 
-// 1. RUTA DE LOGIN (Verifica credenciales y rol, con hash bcrypt y auditoría)
+// 1. RUTA DE LOGIN (Verifica credenciales y rol, emite JWT con la sede)
 app.post('/api/login', (req, res) => {
     const { username, password } = req.body;
 
     const query = `
-        SELECT u.id_usuario, u.username, u.nombre_completo, u.password_hash, r.nombre_rol
+        SELECT u.id_usuario, u.username, u.nombre_completo, u.password_hash, u.id_rol, r.nombre_rol,
+               u.id_sede, s.nombre AS nombre_sede, s.codigo_sede
         FROM Usuario u
         INNER JOIN Rol r ON u.id_rol = r.id_rol
+        LEFT JOIN Sede s ON u.id_sede = s.id_sede
         WHERE u.username = ? AND u.is_active = TRUE
     `;
+
+    // CU-01: mensaje único para no revelar si el usuario existe o no
+    const MENSAJE_CREDENCIALES = 'Usuario o contraseña incorrectos';
 
     db.query(query, [username], (err, results) => {
         if (err) {
@@ -210,7 +256,7 @@ app.post('/api/login', (req, res) => {
 
         if (results.length === 0) {
             registrarAuditoria(null, 'LOGIN_FALLIDO', 'Usuario', `Usuario inexistente: ${username}`);
-            return res.status(401).json({ exito: false, mensaje: "Usuario no encontrado" });
+            return res.status(401).json({ exito: false, mensaje: MENSAJE_CREDENCIALES });
         }
 
         const usuario = results[0];
@@ -220,17 +266,33 @@ app.post('/api/login', (req, res) => {
         const continuarConResultado = (coincide) => {
             if (!coincide) {
                 registrarAuditoria(usuario.id_usuario, 'LOGIN_FALLIDO', 'Usuario', `Contraseña incorrecta para: ${usuario.username}`);
-                return res.status(401).json({ exito: false, mensaje: "Contraseña incorrecta" });
+                return res.status(401).json({ exito: false, mensaje: MENSAJE_CREDENCIALES });
             }
+
+            const token = jwt.sign(
+                {
+                    id_usuario: usuario.id_usuario,
+                    id_rol: usuario.id_rol,
+                    nombre_rol: usuario.nombre_rol,
+                    id_sede: usuario.id_sede || null
+                },
+                JWT_SECRET,
+                { expiresIn: JWT_EXPIRACION }
+            );
 
             registrarAuditoria(usuario.id_usuario, 'LOGIN_EXITOSO', 'Usuario', `Inicio de sesión: ${usuario.username}`);
             res.json({
                 exito: true,
+                token,
                 usuario: {
                     id_usuario: usuario.id_usuario,
                     username: usuario.username,
                     nombre_completo: usuario.nombre_completo,
-                    nombre_rol: usuario.nombre_rol
+                    id_rol: usuario.id_rol,
+                    nombre_rol: usuario.nombre_rol,
+                    id_sede: usuario.id_sede || null,
+                    nombre_sede: usuario.nombre_sede || null,
+                    codigo_sede: usuario.codigo_sede || null
                 }
             });
         };
@@ -260,9 +322,11 @@ app.post('/api/login', (req, res) => {
     });
 });
 
-// 2. RUTA REGISTRAR CLIENTE
+// 2. RUTA REGISTRAR CLIENTE (los clientes son universales: sin sede)
 app.post('/api/registrar-cliente', (req, res) => {
-    const { tipoDoc, numDoc, nombres, apellidoPaterno, apellidoMaterno, telefono, correo, idCreador } = req.body;
+    const { tipoDoc, numDoc, nombres, apellidoPaterno, apellidoMaterno, telefono, correo } = req.body;
+    // El creador sale del token (más confiable que el body)
+    const idCreador = req.usuario.id_usuario;
 
     const query = `
         INSERT INTO Cliente (tipo_documento, numero_documento, nombres, apellido_paterno, apellido_materno, telefono, correo, created_by) 
@@ -287,8 +351,11 @@ app.post('/api/registrar-cliente', (req, res) => {
 // ==========================================
 
 // 3. OBTENER CATEGORÍAS
+// El admin recibe todas (para su panel de gestión); los empleados solo las activas.
 app.get('/api/categorias', (req, res) => {
-    const query = 'SELECT id_categoria, nombre, icono FROM Categoria WHERE is_active = 1';
+    const query = esAdmin(req)
+        ? 'SELECT id_categoria, nombre, icono, is_active FROM Categoria ORDER BY id_categoria'
+        : 'SELECT id_categoria, nombre, icono FROM Categoria WHERE is_active = 1 ORDER BY id_categoria';
 
     db.query(query, (err, results) => {
         if (err) {
@@ -299,15 +366,37 @@ app.get('/api/categorias', (req, res) => {
     });
 });
 
-// 4. OBTENER PRODUCTOS
+// 4. OBTENER PRODUCTOS (catálogo global + stock de la sede correspondiente)
+// Empleado → stock de SU sede. Admin con ?sede=N → esa sede.
+// Admin sin sede → stock total sumado de todas las sedes (solo lectura).
 app.get('/api/productos', (req, res) => {
-    const query = `
-        SELECT id_producto, codigo, nombre, descripcion, id_categoria, url_imagen, precio_venta, stock_actual, stock_minimo 
-        FROM Producto 
-        WHERE is_active = 1
-    `;
+    const sede = sedeDeConsulta(req);
+    let query, params;
 
-    db.query(query, (err, results) => {
+    if (sede !== null) {
+        query = `
+            SELECT p.id_producto, p.codigo, p.nombre, p.descripcion, p.id_categoria, p.url_imagen, p.precio_venta,
+                   COALESCE(i.stock_actual, 0) AS stock_actual,
+                   COALESCE(i.stock_minimo, 5) AS stock_minimo
+            FROM Producto p
+            LEFT JOIN Inventario_Sede i ON i.id_producto = p.id_producto AND i.id_sede = ?
+            WHERE p.is_active = 1
+        `;
+        params = [sede];
+    } else {
+        query = `
+            SELECT p.id_producto, p.codigo, p.nombre, p.descripcion, p.id_categoria, p.url_imagen, p.precio_venta,
+                   COALESCE(SUM(i.stock_actual), 0) AS stock_actual,
+                   COALESCE(SUM(i.stock_minimo), 0) AS stock_minimo
+            FROM Producto p
+            LEFT JOIN Inventario_Sede i ON i.id_producto = p.id_producto
+            WHERE p.is_active = 1
+            GROUP BY p.id_producto
+        `;
+        params = [];
+    }
+
+    db.query(query, params, (err, results) => {
         if (err) {
             console.error('Error al obtener productos:', err);
             return res.status(500).json({ error: 'Error al obtener productos' });
@@ -344,7 +433,11 @@ app.get('/api/clientes', (req, res) => {
 
 // 6. RUTA GUARDAR PEDIDO (Con Transacción MySQL)
 app.post('/api/guardar-pedido', (req, res) => {
-    const { id_cliente, id_usuario, total, detalles } = req.body;
+    const { id_cliente, total, detalles } = req.body;
+    // Identidad y sede salen del token, no del body (seguridad multi-sede).
+    // Un admin sin sede asignada registra en la sede 1 por defecto.
+    const id_usuario = req.usuario.id_usuario;
+    const id_sede = req.usuario.id_sede || 1;
 
     // Pedimos una conexión exclusiva del pool para manejar la transacción
     db.getConnection((err, connection) => {
@@ -369,8 +462,14 @@ app.post('/api/guardar-pedido', (req, res) => {
                 });
             }
 
-            const queryStock = `SELECT id_producto, stock_actual, nombre FROM Producto WHERE id_producto IN (?)`;
-            connection.query(queryStock, [productoIds], (err, resultsStock) => {
+            // El stock ahora vive en Inventario_Sede: validamos contra la sede del pedido
+            const queryStock = `
+                SELECT p.id_producto, COALESCE(i.stock_actual, 0) AS stock_actual, p.nombre
+                FROM Producto p
+                LEFT JOIN Inventario_Sede i ON i.id_producto = p.id_producto AND i.id_sede = ?
+                WHERE p.id_producto IN (?)
+            `;
+            connection.query(queryStock, [id_sede, productoIds], (err, resultsStock) => {
                 if (err) {
                     return connection.rollback(() => {
                         connection.release();
@@ -404,9 +503,9 @@ app.post('/api/guardar-pedido', (req, res) => {
 
                 // PASO A: Insertar la cabecera en la tabla Pedido (Con hora exacta de Perú UTC-5)
                 const fechaPeru = new Date(Date.now() - 5 * 3600 * 1000).toISOString().slice(0, 19).replace('T', ' ');
-                const queryPedido = `INSERT INTO Pedido (id_cliente, id_usuario, total, estado, fecha_pedido) VALUES (?, ?, ?, 'Pendiente', ?)`;
+                const queryPedido = `INSERT INTO Pedido (id_cliente, id_usuario, id_sede, total, estado, fecha_pedido) VALUES (?, ?, ?, ?, 'Pendiente', ?)`;
 
-                connection.query(queryPedido, [id_cliente, id_usuario, total, fechaPeru], (err, resultPedido) => {
+                connection.query(queryPedido, [id_cliente, id_usuario, id_sede, total, fechaPeru], (err, resultPedido) => {
                 if (err) {
                     return connection.rollback(() => {
                         console.error('Error en Cabecera Pedido:', err);
@@ -468,15 +567,33 @@ app.post('/api/guardar-pedido', (req, res) => {
 // E. RUTAS DE ADMINISTRADOR (Dashboard)
 // ==========================================
 
-// 7. OBTENER RESUMEN (KPIs)
+// 7. OBTENER RESUMEN (KPIs) — acepta ?sede=N; sin sede = todo el negocio
 app.get('/api/admin/resumen', async (req, res) => {
     try {
+        const sede = sedeDeConsulta(req);
         const p = db.promise();
         const [[{ totalProductos }]] = await p.query('SELECT COUNT(*) as totalProductos FROM Producto WHERE is_active = 1');
         const [[{ totalClientes }]] = await p.query('SELECT COUNT(*) as totalClientes FROM Cliente WHERE is_active = 1');
-        const [[{ totalPedidos }]] = await p.query('SELECT COUNT(*) as totalPedidos FROM Pedido');
-        const [[{ stockCritico }]] = await p.query('SELECT COUNT(*) as stockCritico FROM Producto WHERE is_active = 1 AND stock_actual <= stock_minimo');
-        
+
+        const [[{ totalPedidos }]] = sede !== null
+            ? await p.query('SELECT COUNT(*) as totalPedidos FROM Pedido WHERE id_sede = ?', [sede])
+            : await p.query('SELECT COUNT(*) as totalPedidos FROM Pedido');
+
+        // Mismo criterio que GET /api/productos: por sede compara la fila de esa
+        // sede; global compara la suma de stock contra la suma de mínimos.
+        const filtroSede = sede !== null ? 'AND i.id_sede = ?' : '';
+        const paramsCritico = sede !== null ? [sede] : [];
+        const [[{ stockCritico }]] = await p.query(`
+            SELECT COUNT(*) as stockCritico FROM (
+                SELECT i.id_producto
+                FROM Inventario_Sede i
+                JOIN Producto pr ON pr.id_producto = i.id_producto AND pr.is_active = 1
+                WHERE 1=1 ${filtroSede}
+                GROUP BY i.id_producto
+                HAVING SUM(i.stock_actual) <= SUM(i.stock_minimo)
+            ) t
+        `, paramsCritico);
+
         res.json({ totalProductos, totalClientes, totalPedidos, stockCritico });
     } catch (err) {
         console.error('Error KPIs:', err);
@@ -487,12 +604,25 @@ app.get('/api/admin/resumen', async (req, res) => {
 // 8. CRUD PRODUCTOS
 app.post('/api/productos', async (req, res) => {
     try {
-        const { nombre, descripcion, precio_venta, stock_actual, stock_minimo, id_categoria, url_imagen, id_usuario } = req.body;
+        const { nombre, descripcion, precio_venta, stock_actual, stock_minimo, id_categoria, url_imagen, id_sede } = req.body;
+        const id_usuario = req.usuario.id_usuario;
         const p = db.promise();
+
+        // RN-07 / CU-04: el precio no puede ser cero y el nombre no puede duplicarse
+        if (!(parseFloat(precio_venta) > 0)) {
+            return res.status(400).json({ exito: false, mensaje: 'El precio de venta no puede ser cero.' });
+        }
+        const [[duplicado]] = await p.query(
+            'SELECT id_producto FROM Producto WHERE is_active = 1 AND LOWER(nombre) = LOWER(?)',
+            [nombre]
+        );
+        if (duplicado) {
+            return res.status(400).json({ exito: false, mensaje: 'El producto ya existe: hay otro producto activo con ese nombre.' });
+        }
 
         // 1. Obtener la categoría para generar el prefijo
         const [[categoria]] = await p.query('SELECT nombre FROM Categoria WHERE id_categoria = ?', [id_categoria]);
-        if (!categoria) return res.status(400).json({ error: 'Categoría no válida' });
+        if (!categoria) return res.status(400).json({ exito: false, mensaje: 'Categoría no válida' });
 
         // El prefijo son las 3 primeras letras en mayúscula (ej. "LIT" para Literatura)
         const prefijo = categoria.nombre.substring(0, 3).toUpperCase();
@@ -508,25 +638,72 @@ app.post('/api/productos', async (req, res) => {
         const nextNum = (result.maxNum || 0) + 1;
         const nuevoCodigo = `${prefijo}-${String(nextNum).padStart(3, '0')}`;
 
-        // 4. Guardar en la base de datos
-        const query = 'INSERT INTO Producto (codigo, nombre, descripcion, precio_venta, stock_actual, stock_minimo, id_categoria, url_imagen, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)';
-        await p.query(query, [nuevoCodigo, nombre, descripcion, precio_venta, stock_actual, stock_minimo, id_categoria, url_imagen || null]);
+        // 4. Guardar el catálogo (sin stock: el stock vive en Inventario_Sede)
+        const query = 'INSERT INTO Producto (codigo, nombre, descripcion, precio_venta, id_categoria, url_imagen, is_active) VALUES (?, ?, ?, ?, ?, ?, 1)';
+        const [insercion] = await p.query(query, [nuevoCodigo, nombre, descripcion, precio_venta, id_categoria, url_imagen || null]);
 
-        registrarAuditoria(id_usuario || null, 'AÑADIR', 'Producto', `Producto creado: ${nuevoCodigo} - ${nombre}`);
+        // 5. Crear inventario en TODAS las sedes activas: el stock inicial va a la
+        //    sede indicada (o a la del usuario / sede 1) y el resto arranca en 0.
+        const idProducto = insercion.insertId;
+        const sedeInicial = parseInt(id_sede) || req.usuario.id_sede || 1;
+        const [sedesActivas] = await p.query('SELECT id_sede FROM Sede WHERE is_active = 1');
+        if (sedesActivas.length > 0) {
+            const filas = sedesActivas.map(s => [
+                idProducto, s.id_sede,
+                s.id_sede === sedeInicial ? (parseInt(stock_actual) || 0) : 0,
+                parseInt(stock_minimo) || 5
+            ]);
+            await p.query('INSERT INTO Inventario_Sede (id_producto, id_sede, stock_actual, stock_minimo) VALUES ?', [filas]);
+        }
+
+        registrarAuditoria(id_usuario || null, 'AÑADIR', 'Producto', `Producto creado: ${nuevoCodigo} - ${nombre} (stock inicial en sede ${sedeInicial})`);
         res.json({ exito: true, codigo_generado: nuevoCodigo });
     } catch (err) {
         console.error('Error generando producto:', err);
-        res.status(500).json({ error: 'Error al crear producto' });
+        res.status(500).json({ exito: false, mensaje: 'Error al crear producto' });
     }
 });
-app.put('/api/productos/:id', (req, res) => {
-    const { nombre, descripcion, precio_venta, stock_actual, stock_minimo, id_categoria, url_imagen, id_usuario } = req.body;
-    const query = 'UPDATE Producto SET nombre=?, descripcion=?, precio_venta=?, stock_actual=?, stock_minimo=?, id_categoria=?, url_imagen=? WHERE id_producto=?';
-    db.query(query, [nombre, descripcion, precio_venta, stock_actual, stock_minimo, id_categoria, url_imagen || null, req.params.id], (err) => {
-        if (err) return res.status(500).json({ error: err.message });
-        registrarAuditoria(id_usuario || null, 'MODIFICAR', 'Producto', `Producto actualizado: id ${req.params.id} - ${nombre}`);
+app.put('/api/productos/:id', async (req, res) => {
+    try {
+        const { nombre, descripcion, precio_venta, stock_actual, stock_minimo, id_categoria, url_imagen, id_sede } = req.body;
+        const id_usuario = req.usuario.id_usuario;
+        const p = db.promise();
+
+        if (!(parseFloat(precio_venta) > 0)) {
+            return res.status(400).json({ exito: false, mensaje: 'El precio de venta no puede ser cero.' });
+        }
+        const [[duplicado]] = await p.query(
+            'SELECT id_producto FROM Producto WHERE is_active = 1 AND LOWER(nombre) = LOWER(?) AND id_producto <> ?',
+            [nombre, req.params.id]
+        );
+        if (duplicado) {
+            return res.status(400).json({ exito: false, mensaje: 'Ya existe otro producto activo con ese nombre.' });
+        }
+
+        // Datos de catálogo (globales, iguales en todas las sedes)
+        await p.query(
+            'UPDATE Producto SET nombre=?, descripcion=?, precio_venta=?, id_categoria=?, url_imagen=? WHERE id_producto=?',
+            [nombre, descripcion, precio_venta, id_categoria, url_imagen || null, req.params.id]
+        );
+
+        // Stock: SOLO se toca si la petición indica una sede concreta.
+        // (El panel admin envía id_sede cuando hay una sede seleccionada;
+        //  en la vista "Todas las Sedes" el stock mostrado es la suma y no se edita.)
+        const sedeStock = parseInt(id_sede) || req.usuario.id_sede || null;
+        if (sedeStock !== null) {
+            await p.query(`
+                INSERT INTO Inventario_Sede (id_producto, id_sede, stock_actual, stock_minimo)
+                VALUES (?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE stock_actual = VALUES(stock_actual), stock_minimo = VALUES(stock_minimo)
+            `, [req.params.id, sedeStock, parseInt(stock_actual) || 0, parseInt(stock_minimo) || 5]);
+        }
+
+        registrarAuditoria(id_usuario || null, 'MODIFICAR', 'Producto', `Producto actualizado: id ${req.params.id} - ${nombre}` + (sedeStock ? ` (stock en sede ${sedeStock})` : ' (solo catálogo)'));
         res.json({ exito: true });
-    });
+    } catch (err) {
+        console.error('Error actualizando producto:', err);
+        res.status(500).json({ exito: false, mensaje: 'Error al actualizar producto' });
+    }
 });
 
 // 8b. SUBIDA DE IMAGEN DE PRODUCTO A CLOUDINARY
@@ -551,10 +728,24 @@ app.post('/api/upload-imagen', upload.single('imagen'), (req, res) => {
     stream.end(req.file.buffer);
 });
 app.delete('/api/productos/:id', (req, res) => {
-    db.query('UPDATE Producto SET is_active = 0 WHERE id_producto = ?', [req.params.id], (err) => {
-        if (err) return res.status(500).json({ error: err.message });
-        registrarAuditoria(req.query.id_usuario || null, 'ELIMINAR', 'Producto', `Producto eliminado (baja lógica): id ${req.params.id}`);
-        res.json({ exito: true });
+    // CU-04: no se puede eliminar un producto que pertenece a un pedido en curso
+    const queryEnCurso = `
+        SELECT COUNT(*) AS n
+        FROM Detalle_Pedido dp
+        JOIN Pedido pe ON pe.id_pedido = dp.id_pedido
+        WHERE dp.id_producto = ? AND pe.estado = 'Pendiente'
+    `;
+    db.query(queryEnCurso, [req.params.id], (err, rows) => {
+        if (err) return res.status(500).json({ exito: false, mensaje: err.message });
+        if (rows[0].n > 0) {
+            return res.status(400).json({ exito: false, mensaje: 'Operación denegada: el producto pertenece a un pedido en curso.' });
+        }
+
+        db.query('UPDATE Producto SET is_active = 0 WHERE id_producto = ?', [req.params.id], (err) => {
+            if (err) return res.status(500).json({ exito: false, mensaje: err.message });
+            registrarAuditoria(req.usuario.id_usuario, 'ELIMINAR', 'Producto', `Producto eliminado (baja lógica): id ${req.params.id}`);
+            res.json({ exito: true });
+        });
     });
 });
 
@@ -576,18 +767,22 @@ app.delete('/api/clientes/:id', (req, res) => {
     });
 });
 
-// 10. PEDIDOS E HISTORIAL
+// 10. PEDIDOS E HISTORIAL (con sede; acepta ?sede=N)
 app.get('/api/admin/pedidos', (req, res) => {
     const { estado, fecha } = req.query;
+    const sede = sedeDeConsulta(req);
     let query = `
-        SELECT p.id_pedido, c.nombres, c.apellido_paterno, p.fecha_pedido, p.total, p.estado
+        SELECT p.id_pedido, c.nombres, c.apellido_paterno, p.fecha_pedido, p.total, p.estado,
+               p.id_sede, s.nombre AS nombre_sede
         FROM Pedido p
         LEFT JOIN Cliente c ON p.id_cliente = c.id_cliente
+        LEFT JOIN Sede s ON p.id_sede = s.id_sede
         WHERE 1=1
     `;
     const params = [];
     if (estado) { query += ' AND p.estado = ?'; params.push(estado); }
     if (fecha) { query += ' AND DATE(p.fecha_pedido) = ?'; params.push(fecha); }
+    if (sede !== null) { query += ' AND p.id_sede = ?'; params.push(sede); }
     query += ' ORDER BY p.id_pedido DESC';
 
     db.query(query, params, (err, results) => {
@@ -608,71 +803,65 @@ app.get('/api/admin/pedidos/:id/detalles', (req, res) => {
     });
 });
 
-// Mantenimiento de Pedidos (CU-08): editar estado del pedido
+// Mantenimiento de Pedidos (CU-08): editar estado / ANULAR pedido.
+// La anulación es lógica (estado 'Anulado' + motivo); ya no existe DELETE físico.
 app.put('/api/admin/pedidos/:id', (req, res) => {
-    const { estado, id_usuario } = req.body;
+    const { estado, motivo } = req.body;
+    const id_usuario = req.usuario.id_usuario;
     const estadosValidos = ['Pendiente', 'Completado', 'Anulado'];
     if (!estadosValidos.includes(estado)) {
         return res.status(400).json({ exito: false, mensaje: 'Estado no válido' });
     }
 
-    db.query('UPDATE Pedido SET estado = ? WHERE id_pedido = ?', [estado, req.params.id], (err, result) => {
+    db.query('SELECT estado FROM Pedido WHERE id_pedido = ?', [req.params.id], (err, rows) => {
         if (err) return res.status(500).json({ exito: false, mensaje: err.message });
-        if (result.affectedRows === 0) return res.status(404).json({ exito: false, mensaje: 'Pedido no encontrado' });
-        registrarAuditoria(id_usuario || null, 'MODIFICAR', 'Pedido', `Pedido #${req.params.id} actualizado a estado: ${estado}`);
-        res.json({ exito: true });
-    });
-});
+        if (rows.length === 0) return res.status(404).json({ exito: false, mensaje: 'Pedido no encontrado' });
 
-// Mantenimiento de Pedidos (CU-08): eliminar pedido (solo si sigue Pendiente, sin comprobante emitido)
-app.delete('/api/admin/pedidos/:id', (req, res) => {
-    db.getConnection((err, connection) => {
-        if (err) return res.status(500).json({ exito: false, mensaje: 'Error de conexión a la BD' });
-
-        connection.beginTransaction(err => {
-            if (err) { connection.release(); return res.status(500).json({ exito: false, mensaje: 'Error al iniciar transacción' }); }
-
-            connection.query('SELECT estado FROM Pedido WHERE id_pedido = ?', [req.params.id], (err, rows) => {
-                if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false, mensaje: err.message }); });
-                if (rows.length === 0) return connection.rollback(() => { connection.release(); res.status(404).json({ exito: false, mensaje: 'Pedido no encontrado' }); });
-                if (rows[0].estado !== 'Pendiente') {
-                    return connection.rollback(() => { connection.release(); res.status(400).json({ exito: false, mensaje: 'Solo se pueden eliminar pedidos en estado Pendiente' }); });
+        if (estado === 'Anulado') {
+            if (!motivo || !motivo.trim()) {
+                return res.status(400).json({ exito: false, mensaje: 'Debes indicar el motivo de la anulación' });
+            }
+            if (rows[0].estado !== 'Pendiente') {
+                return res.status(400).json({ exito: false, mensaje: 'Solo se pueden anular pedidos en estado Pendiente' });
+            }
+            return db.query(
+                'UPDATE Pedido SET estado = "Anulado", motivo_anulacion = ? WHERE id_pedido = ?',
+                [motivo.trim(), req.params.id],
+                (err) => {
+                    if (err) return res.status(500).json({ exito: false, mensaje: err.message });
+                    registrarAuditoria(id_usuario, 'ELIMINAR', 'Pedido', `Pedido #${req.params.id} anulado - Motivo: ${motivo.trim()}`);
+                    res.json({ exito: true });
                 }
+            );
+        }
 
-                connection.query('DELETE FROM Detalle_Pedido WHERE id_pedido = ?', [req.params.id], (err) => {
-                    if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false, mensaje: err.message }); });
-
-                    connection.query('DELETE FROM Pedido WHERE id_pedido = ?', [req.params.id], (err) => {
-                        if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false, mensaje: err.message }); });
-
-                        connection.commit(err => {
-                            if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false, mensaje: 'Error al confirmar la transacción' }); });
-                            connection.release();
-                            registrarAuditoria(req.query.id_usuario || null, 'ELIMINAR', 'Pedido', `Pedido #${req.params.id} eliminado`);
-                            res.json({ exito: true });
-                        });
-                    });
-                });
-            });
+        // Cambio de estado excepcional del administrador (queda en auditoría)
+        db.query('UPDATE Pedido SET estado = ? WHERE id_pedido = ?', [estado, req.params.id], (err, result) => {
+            if (err) return res.status(500).json({ exito: false, mensaje: err.message });
+            registrarAuditoria(id_usuario, 'MODIFICAR', 'Pedido', `Pedido #${req.params.id} actualizado a estado: ${estado}`);
+            res.json({ exito: true });
         });
     });
 });
 
-// 11. COMPROBANTES Y ANULACIONES
+// 11. COMPROBANTES Y ANULACIONES (con sede y estado propio del comprobante)
 app.get('/api/admin/comprobantes', (req, res) => {
     const { estado, fecha } = req.query;
-    // La tabla Comprobante_Pago no tiene estado propio; el estado se deduce del pedido asociado
+    const sede = sedeDeConsulta(req);
     let query = `
         SELECT cp.id_comprobante, cp.numero_correlativo, cp.tipo_comprobante, cp.fecha_emision, cp.monto_total,
                p.id_pedido, p.estado AS estado_pedido,
-               CASE WHEN p.estado = 'Anulado' THEN 'Anulado' ELSE 'Vigente' END AS estado
+               cp.estado_comprobante AS estado,
+               cp.id_sede, s.nombre AS nombre_sede
         FROM Comprobante_Pago cp
         JOIN Pedido p ON cp.id_pedido = p.id_pedido
+        LEFT JOIN Sede s ON cp.id_sede = s.id_sede
         WHERE 1=1
     `;
     const params = [];
-    if (estado) { query += ` AND CASE WHEN p.estado = 'Anulado' THEN 'Anulado' ELSE 'Vigente' END = ?`; params.push(estado); }
+    if (estado) { query += ' AND cp.estado_comprobante = ?'; params.push(estado); }
     if (fecha) { query += ' AND DATE(cp.fecha_emision) = ?'; params.push(fecha); }
+    if (sede !== null) { query += ' AND cp.id_sede = ?'; params.push(sede); }
     query += ' ORDER BY cp.id_comprobante DESC';
 
     db.query(query, params, (err, results) => {
@@ -681,9 +870,11 @@ app.get('/api/admin/comprobantes', (req, res) => {
     });
 });
 
-// Anular comprobante (CU-07): guarda el motivo, regresa el pedido a "Pendiente" y devuelve el stock
+// Anular comprobante (CU-07): guarda el motivo, regresa el pedido a "Pendiente"
+// y devuelve el stock al inventario de la SEDE del pedido
 app.put('/api/admin/comprobantes/:id/anular', (req, res) => {
-    const { motivo, id_usuario } = req.body;
+    const { motivo } = req.body;
+    const id_usuario = req.usuario.id_usuario;
     if (!motivo || !motivo.trim()) {
         return res.status(400).json({ exito: false, mensaje: 'Debes indicar el motivo de la anulación' });
     }
@@ -695,7 +886,10 @@ app.put('/api/admin/comprobantes/:id/anular', (req, res) => {
             if (err) { connection.release(); return res.status(500).json({ exito: false, mensaje: 'Error al iniciar transacción' }); }
 
             connection.query(
-                'SELECT id_pedido, estado_comprobante FROM Comprobante_Pago WHERE id_comprobante = ?',
+                `SELECT cp.id_pedido, cp.estado_comprobante, p.id_sede
+                 FROM Comprobante_Pago cp
+                 JOIN Pedido p ON p.id_pedido = cp.id_pedido
+                 WHERE cp.id_comprobante = ?`,
                 [req.params.id],
                 (err, rows) => {
                     if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false, mensaje: err.message }); });
@@ -705,6 +899,7 @@ app.put('/api/admin/comprobantes/:id/anular', (req, res) => {
                     }
 
                     const idPedido = rows[0].id_pedido;
+                    const idSedePedido = rows[0].id_sede || 1;
 
                     connection.query(
                         'UPDATE Comprobante_Pago SET estado_comprobante = "Anulado", motivo_anulacion = ? WHERE id_comprobante = ?',
@@ -732,7 +927,12 @@ app.put('/api/admin/comprobantes/:id/anular', (req, res) => {
                                     let pendientes = detalles.length;
                                     let huboError = false;
                                     detalles.forEach(item => {
-                                        connection.query('UPDATE Producto SET stock_actual = stock_actual + ? WHERE id_producto = ?', [item.cantidad, item.id_producto], (err) => {
+                                        // Upsert por si la fila de inventario no existiera aún en esa sede
+                                        connection.query(
+                                            `INSERT INTO Inventario_Sede (id_producto, id_sede, stock_actual)
+                                             VALUES (?, ?, ?)
+                                             ON DUPLICATE KEY UPDATE stock_actual = stock_actual + VALUES(stock_actual)`,
+                                            [item.id_producto, idSedePedido, item.cantidad], (err) => {
                                             if (huboError) return;
                                             if (err) {
                                                 huboError = true;
@@ -771,6 +971,12 @@ app.get('/api/pedidos/:id', (req, res) => {
         if (err) return res.status(500).json({ error: err.message });
         if (pedidos.length === 0) return res.status(404).json({ error: 'Pedido no encontrado' });
 
+        // Bloqueo de caja cruzada: un cajero solo ve/cobra pedidos de SU sede.
+        // El administrador (sin sede) puede consultar cualquiera.
+        if (!esAdmin(req) && req.usuario.id_sede && pedidos[0].id_sede && pedidos[0].id_sede !== req.usuario.id_sede) {
+            return res.status(403).json({ error: 'Este pedido pertenece a otra sede y no puede cobrarse aquí.' });
+        }
+
         db.query(queryDetalles, [req.params.id], (err, detalles) => {
             if (err) return res.status(500).json({ error: err.message });
             res.json({ ...pedidos[0], detalles });
@@ -779,97 +985,366 @@ app.get('/api/pedidos/:id', (req, res) => {
 });
 
 // 13. PROCESAR PAGO (Genera comprobante y actualiza estado)
-app.post('/api/procesar-pago', (req, res) => {
-    const { id_pedido, metodo_pago, cuotas, referencia, tipo_documento } = req.body;
+// Fase 3: transacción con stock atómico por sede, correlativo seguro
+// (Correlativo_Sede + FOR UPDATE) y registro fiel del pago (monto real y vuelto).
+app.post('/api/procesar-pago', async (req, res) => {
+    const { id_pedido, metodo_pago, tipo_documento, monto_recibido } = req.body;
+    const idCajero = req.usuario.id_usuario;
 
-    db.getConnection((err, connection) => {
-        if (err) return res.status(500).json({ exito: false, mensaje: 'Error de conexión' });
+    let connection;
+    try {
+        connection = await db.promise().getConnection();
+        await connection.beginTransaction();
 
-        connection.beginTransaction(err => {
-            if (err) { connection.release(); return res.status(500).json({ exito: false, mensaje: 'Error al iniciar transacción' }); }
+        const fallar = (status, mensaje) => {
+            const e = new Error(mensaje);
+            e.httpStatus = status;
+            throw e;
+        };
 
-            // Verificar que el pedido exista y esté pendiente
-            connection.query('SELECT total, estado FROM Pedido WHERE id_pedido = ?', [id_pedido], (err, rows) => {
-                if (err || rows.length === 0) {
-                    return connection.rollback(() => { connection.release(); res.status(404).json({ exito: false, mensaje: 'Pedido no encontrado' }); });
-                }
-                if (rows[0].estado !== 'Pendiente') {
-                    return connection.rollback(() => { connection.release(); res.status(400).json({ exito: false, mensaje: `El pedido ya tiene estado: ${rows[0].estado}` }); });
-                }
+        // 1. Pedido bloqueado (FOR UPDATE) para serializar dos cobros simultáneos
+        const [pedidos] = await connection.query(
+            'SELECT total, estado, id_sede FROM Pedido WHERE id_pedido = ? FOR UPDATE', [id_pedido]
+        );
+        if (pedidos.length === 0) fallar(404, 'Pedido no encontrado');
+        if (pedidos[0].estado !== 'Pendiente') fallar(400, `El pedido ya tiene estado: ${pedidos[0].estado}`);
 
-                const total = rows[0].total;
-                // IGV peruano 18% incluido en el precio (precio ya incluye IGV)
-                const igv = parseFloat((total - (total / 1.18)).toFixed(2));
+        const total = parseFloat(pedidos[0].total);
+        const idSede = pedidos[0].id_sede || 1;
 
-                // Generar número correlativo
-                connection.query('SELECT COUNT(*) + 1 AS siguiente FROM Comprobante_Pago', (err, conteo) => {
-                    if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false, mensaje: err ? err.message : 'Error desconocido' }); });
+        // Bloqueo de caja cruzada: el cajero solo cobra pedidos de su sede
+        if (!esAdmin(req) && req.usuario.id_sede && idSede !== req.usuario.id_sede) {
+            fallar(403, 'Este pedido pertenece a otra sede y no puede cobrarse aquí.');
+        }
 
-                    const correlativo = String(conteo[0].siguiente).padStart(8, '0');
+        // 2. Pago fiel (CU-06): validar el efectivo recibido y calcular el vuelto
+        const metodoDB = metodo_pago === 'billetera' ? 'Billetera Digital' : (metodo_pago === 'tarjeta' ? 'Tarjeta' : 'Efectivo');
+        let recibido = total, vuelto = 0;
+        if (metodoDB === 'Efectivo') {
+            recibido = parseFloat(monto_recibido);
+            if (!Number.isFinite(recibido) || recibido < total) {
+                fallar(400, 'Monto insuficiente para cubrir el total del pedido.');
+            }
+            vuelto = parseFloat((recibido - total).toFixed(2));
+        }
 
-                    // Insertar comprobante (con igv calculado y tipo dinámico)
-                    const tipoComprobante = (tipo_documento === 'RUC') ? 'Factura' : 'Boleta';
-                    const qComp = `INSERT INTO Comprobante_Pago (id_pedido, id_cajero, numero_correlativo, tipo_comprobante, monto_total, igv) VALUES (?, ?, ?, ?, ?, ?)`;
-                    const idCajero = parseInt(req.body.id_cajero) || 1;
-                    connection.query(qComp, [id_pedido, idCajero, correlativo, tipoComprobante, total, igv], (err, result) => {
-                        if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false, mensaje: err.message }); });
+        // 3. Stock atómico (RN-01/RN-02): descuenta y re-valida en UNA sentencia.
+        // Si affectedRows = 0, el stock ya no alcanza (otro pedido lo consumió).
+        const [detalles] = await connection.query(
+            `SELECT dp.id_producto, dp.cantidad, pr.nombre
+             FROM Detalle_Pedido dp
+             JOIN Producto pr ON pr.id_producto = dp.id_producto
+             WHERE dp.id_pedido = ?`, [id_pedido]
+        );
+        if (detalles.length === 0) fallar(400, 'El pedido no tiene productos.');
 
-                        // Insertar registro de pago
-                        const qPago = `INSERT INTO Pago (id_comprobante, metodo_pago, monto_recibido) VALUES (?, ?, ?)`;
-                        const metodoDB = metodo_pago === 'billetera' ? 'Billetera Digital' : (metodo_pago === 'tarjeta' ? 'Tarjeta' : 'Efectivo');
-                        connection.query(qPago, [result.insertId, metodoDB, total], (err) => {
-                            if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false, mensaje: err.message }); });
+        for (const item of detalles) {
+            const [r] = await connection.query(
+                `UPDATE Inventario_Sede
+                 SET stock_actual = stock_actual - ?
+                 WHERE id_producto = ? AND id_sede = ? AND stock_actual >= ?`,
+                [item.cantidad, item.id_producto, idSede, item.cantidad]
+            );
+            if (r.affectedRows === 0) {
+                fallar(400, `Stock insuficiente para "${item.nombre}" en esta sede. El pedido debe modificarse antes de cobrarse.`);
+            }
+        }
 
-                            // Actualizar estado del pedido → "Completado"
-                            connection.query("UPDATE Pedido SET estado = 'Completado' WHERE id_pedido = ?", [id_pedido], err => {
-                                if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false, mensaje: err ? err.message : 'Error desconocido' }); });
+        // 4. IGV peruano 18% incluido en el precio
+        const igv = parseFloat((total - (total / 1.18)).toFixed(2));
 
-                                // DESCONTAR STOCK REAL
-                                connection.query('SELECT id_producto, cantidad FROM Detalle_Pedido WHERE id_pedido = ?', [id_pedido], (err, detalles) => {
-                                    if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false, mensaje: 'Error al consultar detalles para stock' }); });
+        // 5. Correlativo seguro por sede y tipo (RN-04): contador dedicado + FOR UPDATE
+        const tipoComprobante = (tipo_documento === 'RUC') ? 'Factura' : 'Boleta';
+        await connection.query(
+            'INSERT IGNORE INTO Correlativo_Sede (id_sede, tipo_comprobante, ultimo_numero) VALUES (?, ?, 0)',
+            [idSede, tipoComprobante]
+        );
+        const [[contador]] = await connection.query(
+            'SELECT ultimo_numero FROM Correlativo_Sede WHERE id_sede = ? AND tipo_comprobante = ? FOR UPDATE',
+            [idSede, tipoComprobante]
+        );
+        const siguiente = contador.ultimo_numero + 1;
+        await connection.query(
+            'UPDATE Correlativo_Sede SET ultimo_numero = ? WHERE id_sede = ? AND tipo_comprobante = ?',
+            [siguiente, idSede, tipoComprobante]
+        );
+        const [[sedeInfo]] = await connection.query('SELECT codigo_sede FROM Sede WHERE id_sede = ?', [idSede]);
+        const correlativo = `${(sedeInfo && sedeInfo.codigo_sede) || 'SP'}-${String(siguiente).padStart(8, '0')}`;
 
-                                    if (detalles.length === 0) {
-                                        connection.commit(err => {
-                                            if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false, mensaje: err ? err.message : 'Error desconocido' }); });
-                                            connection.release();
-                                            registrarAuditoria(idCajero, 'AÑADIR', 'Comprobante_Pago', `Comprobante ${correlativo} (${tipoComprobante}) generado para pedido #${id_pedido}`);
-                                            registrarAuditoria(idCajero, 'REGISTRO_PAGO', 'Pago', `Pago registrado - Método: ${metodoDB} - Monto: S/${total}`);
-                                            res.json({ exito: true, numero_correlativo: correlativo, id_comprobante: result.insertId });
-                                        });
-                                        return;
-                                    }
+        // 6. Comprobante (con sede) y pago (monto real, vuelto; fecha_pago por DEFAULT)
+        const [resultComp] = await connection.query(
+            'INSERT INTO Comprobante_Pago (id_pedido, id_cajero, id_sede, numero_correlativo, tipo_comprobante, monto_total, igv) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [id_pedido, idCajero, idSede, correlativo, tipoComprobante, total, igv]
+        );
+        await connection.query(
+            'INSERT INTO Pago (id_comprobante, metodo_pago, monto_recibido, vuelto) VALUES (?, ?, ?, ?)',
+            [resultComp.insertId, metodoDB, recibido, vuelto]
+        );
 
-                                    let updatesPendientes = detalles.length;
-                                    let errorDescuento = false;
-                                    
-                                    detalles.forEach(item => {
-                                        connection.query('UPDATE Producto SET stock_actual = stock_actual - ? WHERE id_producto = ?', [item.cantidad, item.id_producto], (err) => {
-                                            if (errorDescuento) return;
-                                            if (err) {
-                                                errorDescuento = true;
-                                                return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false, mensaje: 'Error descontando stock' }); });
-                                            }
-                                            updatesPendientes--;
-                                            if (updatesPendientes === 0) {
-                                                connection.commit(err => {
-                                                    if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false, mensaje: err ? err.message : 'Error desconocido' }); });
-                                                    connection.release();
-                                                    registrarAuditoria(idCajero, 'AÑADIR', 'Comprobante_Pago', `Comprobante ${correlativo} (${tipoComprobante}) generado para pedido #${id_pedido}`);
-                                                    registrarAuditoria(idCajero, 'REGISTRO_PAGO', 'Pago', `Pago registrado - Método: ${metodoDB} - Monto: S/${total}`);
-                                                    res.json({ exito: true, numero_correlativo: correlativo, id_comprobante: result.insertId });
-                                                });
-                                            }
-                                        });
-                                    });
-                                });
-                            });
-                        });
-                    });
-                });
+        // 7. Cerrar el ciclo: pedido Completado
+        await connection.query("UPDATE Pedido SET estado = 'Completado' WHERE id_pedido = ?", [id_pedido]);
+
+        await connection.commit();
+
+        registrarAuditoria(idCajero, 'AÑADIR', 'Comprobante_Pago', `Comprobante ${correlativo} (${tipoComprobante}) generado para pedido #${id_pedido} en sede ${idSede}`);
+        registrarAuditoria(idCajero, 'REGISTRO_PAGO', 'Pago', `Pago registrado - Método: ${metodoDB} - Recibido: S/${recibido} - Vuelto: S/${vuelto}`);
+        res.json({ exito: true, numero_correlativo: correlativo, id_comprobante: resultComp.insertId });
+
+    } catch (err) {
+        if (connection) { try { await connection.rollback(); } catch {} }
+        const status = err.httpStatus || 500;
+        if (status === 500) console.error('❌ Error procesando pago:', err);
+        res.status(status).json({ exito: false, mensaje: err.httpStatus ? err.message : 'Error interno al procesar el pago' });
+    } finally {
+        if (connection) connection.release();
+    }
+});
+
+// ==========================================
+// G. SEDES (Fase 2 · multi-sede)
+// ==========================================
+// Listado disponible para cualquier usuario autenticado (el panel admin lo
+// usa para el selector global; incluye inactivas para mostrarlas en su tabla).
+app.get('/api/sedes', (req, res) => {
+    db.query('SELECT id_sede, codigo_sede, nombre, direccion, is_active FROM Sede ORDER BY id_sede', (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(results);
+    });
+});
+
+app.post('/api/admin/sedes', (req, res) => {
+    const { codigo_sede, nombre, direccion } = req.body;
+    if (!codigo_sede || !nombre) return res.status(400).json({ exito: false, mensaje: 'El código y el nombre son obligatorios.' });
+    if (!/^[A-Z]{2,5}$/.test(codigo_sede)) return res.status(400).json({ exito: false, mensaje: 'El código debe tener de 2 a 5 letras mayúsculas.' });
+
+    db.query('INSERT INTO Sede (codigo_sede, nombre, direccion) VALUES (?, ?, ?)', [codigo_sede, nombre, direccion || null], (err, result) => {
+        if (err) {
+            if (err.code === 'ER_DUP_ENTRY') return res.status(400).json({ exito: false, mensaje: 'Ya existe una sede con ese código.' });
+            return res.status(500).json({ exito: false, mensaje: err.message });
+        }
+        registrarAuditoria(req.usuario.id_usuario, 'AÑADIR', 'Sede', `Sede creada: ${codigo_sede} - ${nombre}`);
+        res.json({ exito: true, id_sede: result.insertId });
+    });
+});
+
+app.put('/api/admin/sedes/:id', (req, res) => {
+    const { codigo_sede, nombre, direccion } = req.body;
+    if (!codigo_sede || !nombre) return res.status(400).json({ exito: false, mensaje: 'El código y el nombre son obligatorios.' });
+    if (!/^[A-Z]{2,5}$/.test(codigo_sede)) return res.status(400).json({ exito: false, mensaje: 'El código debe tener de 2 a 5 letras mayúsculas.' });
+
+    db.query('UPDATE Sede SET codigo_sede=?, nombre=?, direccion=?, is_active=1 WHERE id_sede=?', [codigo_sede, nombre, direccion || null, req.params.id], (err, result) => {
+        if (err) {
+            if (err.code === 'ER_DUP_ENTRY') return res.status(400).json({ exito: false, mensaje: 'Ya existe otra sede con ese código.' });
+            return res.status(500).json({ exito: false, mensaje: err.message });
+        }
+        if (result.affectedRows === 0) return res.status(404).json({ exito: false, mensaje: 'Sede no encontrada' });
+        registrarAuditoria(req.usuario.id_usuario, 'MODIFICAR', 'Sede', `Sede actualizada: id ${req.params.id} - ${codigo_sede} ${nombre}`);
+        res.json({ exito: true });
+    });
+});
+
+app.put('/api/admin/sedes/:id/desactivar', (req, res) => {
+    db.query('SELECT COUNT(*) n FROM Sede WHERE is_active = 1 AND id_sede <> ?', [req.params.id], (err, rows) => {
+        if (err) return res.status(500).json({ exito: false, mensaje: err.message });
+        if (rows[0].n === 0) return res.status(400).json({ exito: false, mensaje: 'No puedes desactivar la única sede activa.' });
+
+        db.query('UPDATE Sede SET is_active = 0 WHERE id_sede = ?', [req.params.id], (err) => {
+            if (err) return res.status(500).json({ exito: false, mensaje: err.message });
+            // Los empleados de la sede quedan sin sede asignada (deberán reasignarse)
+            db.query('UPDATE Usuario SET id_sede = NULL WHERE id_sede = ?', [req.params.id], (err) => {
+                if (err) return res.status(500).json({ exito: false, mensaje: err.message });
+                registrarAuditoria(req.usuario.id_usuario, 'ELIMINAR', 'Sede', `Sede desactivada: id ${req.params.id} (usuarios liberados)`);
+                res.json({ exito: true });
             });
         });
     });
 });
+
+// ==========================================
+// H. GESTIÓN DE USUARIOS (Fase 4 · RN-06)
+// ==========================================
+app.get('/api/roles', (req, res) => {
+    db.query('SELECT id_rol, nombre_rol FROM Rol ORDER BY id_rol', (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(results);
+    });
+});
+
+app.get('/api/admin/usuarios', (req, res) => {
+    const query = `
+        SELECT u.id_usuario, u.username, u.nombre_completo, u.correo, u.is_active,
+               u.id_rol, r.nombre_rol, u.id_sede, s.nombre AS nombre_sede
+        FROM Usuario u
+        JOIN Rol r ON u.id_rol = r.id_rol
+        LEFT JOIN Sede s ON u.id_sede = s.id_sede
+        ORDER BY u.id_usuario
+    `;
+    db.query(query, (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(results);
+    });
+});
+
+app.post('/api/admin/usuarios', async (req, res) => {
+    try {
+        const { username, nombre_completo, correo, id_rol, id_sede, password } = req.body;
+        if (!username || !nombre_completo || !id_rol || !password) {
+            return res.status(400).json({ exito: false, mensaje: 'Usuario, nombre, rol y contraseña son obligatorios.' });
+        }
+        const p = db.promise();
+        const [[duplicado]] = await p.query('SELECT id_usuario FROM Usuario WHERE username = ?', [username]);
+        if (duplicado) return res.status(400).json({ exito: false, mensaje: 'Ese nombre de usuario ya existe.' });
+
+        const hash = await bcrypt.hash(password, 10);
+        const [r] = await p.query(
+            'INSERT INTO Usuario (username, nombre_completo, password_hash, correo, id_rol, id_sede, is_active) VALUES (?, ?, ?, ?, ?, ?, 1)',
+            [username, nombre_completo, hash, correo || null, id_rol, id_sede || null]
+        );
+        registrarAuditoria(req.usuario.id_usuario, 'AÑADIR', 'Usuario', `Usuario creado: ${username} (rol ${id_rol}, sede ${id_sede || 'global'})`);
+        res.json({ exito: true, id_usuario: r.insertId });
+    } catch (err) {
+        console.error('Error creando usuario:', err);
+        res.status(500).json({ exito: false, mensaje: 'Error al crear el usuario' });
+    }
+});
+
+app.put('/api/admin/usuarios/:id', async (req, res) => {
+    try {
+        const { username, nombre_completo, correo, id_rol, id_sede, password } = req.body;
+        if (!username || !nombre_completo || !id_rol) {
+            return res.status(400).json({ exito: false, mensaje: 'Usuario, nombre y rol son obligatorios.' });
+        }
+        const p = db.promise();
+        const [[duplicado]] = await p.query('SELECT id_usuario FROM Usuario WHERE username = ? AND id_usuario <> ?', [username, req.params.id]);
+        if (duplicado) return res.status(400).json({ exito: false, mensaje: 'Ese nombre de usuario ya existe.' });
+
+        await p.query(
+            'UPDATE Usuario SET username=?, nombre_completo=?, correo=?, id_rol=?, id_sede=? WHERE id_usuario=?',
+            [username, nombre_completo, correo || null, id_rol, id_sede || null, req.params.id]
+        );
+        if (password) {
+            const hash = await bcrypt.hash(password, 10);
+            await p.query('UPDATE Usuario SET password_hash=? WHERE id_usuario=?', [hash, req.params.id]);
+        }
+        registrarAuditoria(req.usuario.id_usuario, 'MODIFICAR', 'Usuario', `Usuario actualizado: id ${req.params.id} (${username})` + (password ? ' — contraseña restablecida' : ''));
+        res.json({ exito: true });
+    } catch (err) {
+        console.error('Error actualizando usuario:', err);
+        res.status(500).json({ exito: false, mensaje: 'Error al actualizar el usuario' });
+    }
+});
+
+// Activar/desactivar (nunca DELETE físico). body: { activar: true|false }
+app.put('/api/admin/usuarios/:id/desactivar', (req, res) => {
+    const idObjetivo = parseInt(req.params.id);
+    if (idObjetivo === req.usuario.id_usuario) {
+        return res.status(400).json({ exito: false, mensaje: 'No puedes desactivar tu propia cuenta.' });
+    }
+    const activar = req.body && req.body.activar === true;
+    db.query('UPDATE Usuario SET is_active = ? WHERE id_usuario = ?', [activar ? 1 : 0, idObjetivo], (err, result) => {
+        if (err) return res.status(500).json({ exito: false, mensaje: err.message });
+        if (result.affectedRows === 0) return res.status(404).json({ exito: false, mensaje: 'Usuario no encontrado' });
+        registrarAuditoria(req.usuario.id_usuario, activar ? 'MODIFICAR' : 'ELIMINAR', 'Usuario', `Usuario ${activar ? 'reactivado' : 'desactivado'}: id ${idObjetivo}`);
+        res.json({ exito: true });
+    });
+});
+
+// ==========================================
+// I. GESTIÓN DE CATEGORÍAS (Fase 4)
+// ==========================================
+app.post('/api/categorias', (req, res) => {
+    if (!esAdmin(req)) return res.status(403).json({ exito: false, mensaje: 'Acceso restringido a administradores.' });
+    const { nombre, icono } = req.body;
+    if (!nombre || !nombre.trim()) return res.status(400).json({ exito: false, mensaje: 'El nombre es obligatorio.' });
+
+    db.query('SELECT id_categoria FROM Categoria WHERE LOWER(nombre) = LOWER(?)', [nombre.trim()], (err, rows) => {
+        if (err) return res.status(500).json({ exito: false, mensaje: err.message });
+        if (rows.length > 0) return res.status(400).json({ exito: false, mensaje: 'Ya existe una categoría con ese nombre.' });
+
+        db.query('INSERT INTO Categoria (nombre, icono, is_active) VALUES (?, ?, 1)', [nombre.trim(), icono || null], (err, result) => {
+            if (err) return res.status(500).json({ exito: false, mensaje: err.message });
+            registrarAuditoria(req.usuario.id_usuario, 'AÑADIR', 'Categoria', `Categoría creada: ${nombre.trim()}`);
+            res.json({ exito: true, id_categoria: result.insertId });
+        });
+    });
+});
+
+app.put('/api/categorias/:id', (req, res) => {
+    if (!esAdmin(req)) return res.status(403).json({ exito: false, mensaje: 'Acceso restringido a administradores.' });
+    const { nombre, icono } = req.body;
+    if (!nombre || !nombre.trim()) return res.status(400).json({ exito: false, mensaje: 'El nombre es obligatorio.' });
+
+    db.query('SELECT id_categoria FROM Categoria WHERE LOWER(nombre) = LOWER(?) AND id_categoria <> ?', [nombre.trim(), req.params.id], (err, rows) => {
+        if (err) return res.status(500).json({ exito: false, mensaje: err.message });
+        if (rows.length > 0) return res.status(400).json({ exito: false, mensaje: 'Ya existe otra categoría con ese nombre.' });
+
+        db.query('UPDATE Categoria SET nombre=?, icono=?, is_active=1 WHERE id_categoria=?', [nombre.trim(), icono || null, req.params.id], (err, result) => {
+            if (err) return res.status(500).json({ exito: false, mensaje: err.message });
+            if (result.affectedRows === 0) return res.status(404).json({ exito: false, mensaje: 'Categoría no encontrada' });
+            registrarAuditoria(req.usuario.id_usuario, 'MODIFICAR', 'Categoria', `Categoría actualizada: id ${req.params.id} - ${nombre.trim()}`);
+            res.json({ exito: true });
+        });
+    });
+});
+
+app.put('/api/categorias/:id/desactivar', (req, res) => {
+    if (!esAdmin(req)) return res.status(403).json({ exito: false, mensaje: 'Acceso restringido a administradores.' });
+
+    db.query('SELECT COUNT(*) n FROM Producto WHERE id_categoria = ? AND is_active = 1', [req.params.id], (err, rows) => {
+        if (err) return res.status(500).json({ exito: false, mensaje: err.message });
+        if (rows[0].n > 0) {
+            return res.status(400).json({ exito: false, mensaje: `La categoría tiene ${rows[0].n} producto(s) activo(s). Reasícalos o desactívalos primero.` });
+        }
+        db.query('UPDATE Categoria SET is_active = 0 WHERE id_categoria = ?', [req.params.id], (err) => {
+            if (err) return res.status(500).json({ exito: false, mensaje: err.message });
+            registrarAuditoria(req.usuario.id_usuario, 'ELIMINAR', 'Categoria', `Categoría desactivada: id ${req.params.id}`);
+            res.json({ exito: true });
+        });
+    });
+});
+
+// ==========================================
+// J. REPORTES DE VENTAS (Fase 4 · RN-08)
+// Solo pedidos COMPLETADOS. ?agrupacion=dia|semana|mes&desde&hasta&sede
+// ==========================================
+app.get('/api/admin/reportes/ventas', (req, res) => {
+    const { agrupacion = 'dia', desde, hasta, sede } = req.query;
+
+    let periodoExpr;
+    if (agrupacion === 'semana') {
+        // Semana ISO: "2026-S29"
+        periodoExpr = "CONCAT(YEAR(p.fecha_pedido), '-S', LPAD(WEEK(p.fecha_pedido, 3), 2, '0'))";
+    } else if (agrupacion === 'mes') {
+        periodoExpr = "DATE_FORMAT(p.fecha_pedido, '%Y-%m')";
+    } else {
+        periodoExpr = "DATE_FORMAT(p.fecha_pedido, '%Y-%m-%d')";
+    }
+
+    const conSede = sede !== undefined && sede !== '';
+    // Con filtro de sede mostramos su nombre; sin filtro la fila agrega todas
+    const selectSede = conSede ? 'MAX(s.nombre) AS nombre_sede' : 'NULL AS nombre_sede';
+
+    let query = `
+        SELECT ${periodoExpr} AS periodo,
+               ${selectSede},
+               COUNT(*) AS num_pedidos,
+               SUM(p.total) AS total_vendido
+        FROM Pedido p
+        LEFT JOIN Sede s ON p.id_sede = s.id_sede
+        WHERE p.estado = 'Completado'
+    `;
+    const params = [];
+    if (desde) { query += ' AND DATE(p.fecha_pedido) >= ?'; params.push(desde); }
+    if (hasta) { query += ' AND DATE(p.fecha_pedido) <= ?'; params.push(hasta); }
+    if (conSede) { query += ' AND p.id_sede = ?'; params.push(parseInt(sede)); }
+    query += ' GROUP BY periodo ORDER BY periodo';
+
+    db.query(query, params, (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(results);
+    });
+});
+
 
 // ==========================================
 // F. RUTAS DE PÁGINAS (Sirve los archivos HTML)
