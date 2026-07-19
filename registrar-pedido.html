@@ -779,12 +779,12 @@
         // =============================================
         // PROTECCIÓN DE RUTA
         // =============================================
-        const rolActual = localStorage.getItem('rolUsuario');
-        if (!rolActual) {
-            window.location.href = 'index.html';
-        } else if (rolActual === 'cajero') {
+        const usuarioActual = getUsuario();
+        const rolActual = usuarioActual ? usuarioActual.nombre_rol?.toLowerCase() : null;
+        if (!usuarioActual) { cerrarSesion(); }
+        else if (rolActual === 'cajero') {
             alert('Acceso denegado: los cajeros no pueden registrar pedidos.');
-            window.location.href = 'menu.html';
+            window.location.href = '/menu';
         }
 
         // =============================================
@@ -793,16 +793,19 @@
         async function cargarDatosIniciales() {
             try {
                 // 1. Cargar Categorías
-                const resCat = await fetch(`${URL_BACKEND}/api/categorias`);
+                const resCat = await apiFetch('/api/categorias');
+                if (!resCat) return;
                 const datosCat = await resCat.json();
                 CATEGORIAS = [{ id_categoria: 0, nombre: 'Todos', icono: 'bx-grid-alt' }, ...datosCat];
 
                 // 2. Cargar Productos Activos
-                const resProd = await fetch(`${URL_BACKEND}/api/productos`);
+                const resProd = await apiFetch('/api/productos');
+                if (!resProd) return;
                 PRODUCTOS = await resProd.json();
 
                 // 3. Cargar Clientes
-                const resCli = await fetch(`${URL_BACKEND}/api/clientes`);
+                const resCli = await apiFetch('/api/clientes');
+                if (!resCli) return;
                 CLIENTES = await resCli.json();
 
                 // Renderizamos la interfaz

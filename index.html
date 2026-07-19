@@ -101,9 +101,14 @@ document.getElementById('formularioLogin').addEventListener('submit', async (e) 
         const resultado = await respuesta.json();
         
         if (resultado.exito) {
-            localStorage.setItem('rolUsuario', resultado.usuario.nombre_rol.toLowerCase());
+            // Guardar token JWT
+            localStorage.setItem('token', resultado.token);
+            // Guardar objeto completo del usuario (id_usuario, nombre_completo, id_rol, nombre_rol, id_sede, nombre_sede, codigo_sede)
+            localStorage.setItem('usuarioInfo', JSON.stringify(resultado.usuario));
+            // Mantener compatibilidad durante transición (Persona A puede eliminar esto cuando el backend esté listo)
+            localStorage.setItem('rolUsuario', resultado.usuario.nombre_rol ? resultado.usuario.nombre_rol.toLowerCase() : '');
             localStorage.setItem('idUsuario', resultado.usuario.id_usuario);
-            localStorage.setItem('nombreUsuario', resultado.usuario.nombre_completo); 
+            localStorage.setItem('nombreUsuario', resultado.usuario.nombre_completo);
             window.location.href = '/menu';
         } else {
             alert("❌ " + resultado.mensaje);

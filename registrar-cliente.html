@@ -106,12 +106,12 @@
 
     <script>
         // Lógica de Protección de Ruta (Evitar intrusos)
-        const rolActual = localStorage.getItem('rolUsuario');
-        if (!rolActual) {
-            window.location.href = 'index.html';
-        } else if (rolActual === 'cajero') {
+        const usuarioActual = getUsuario();
+        const rolActual = usuarioActual ? usuarioActual.nombre_rol?.toLowerCase() : null;
+        if (!usuarioActual) { cerrarSesion(); }
+        else if (rolActual === 'cajero') {
             alert("Acceso denegado: Los cajeros no pueden registrar clientes.");
-            window.location.href = 'menu.html';
+            window.location.href = '/menu';
         }
         // Lógica de Validación de Documento (8 para DNI, 11 para RUC)
         const tipoDoc = document.getElementById('tipoDoc');
@@ -188,14 +188,13 @@ document.getElementById('formRegistroCliente').addEventListener('submit', async 
         apellidoMaterno: document.getElementById('apellidoMaterno').value,
         telefono: telefono,
         correo: document.getElementById('correo').value,
-        idCreador: localStorage.getItem('idUsuario')
+        idCreador: getUsuario()?.id_usuario
     };
 
     // 3. Enviar al Backend
     try {
-        const respuesta = await fetch(`${URL_BACKEND}/api/registrar-cliente`, {
+        const respuesta = await apiFetch('/api/registrar-cliente', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(datosCliente)
         });
 

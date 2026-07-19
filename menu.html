@@ -91,31 +91,41 @@
             window.location.href = '/'; 
         });
         
-        // Lógica de Protección y Roles
-        const rolActual = localStorage.getItem('rolUsuario');
-        
-        // Si alguien intenta entrar sin loguearse, lo pateamos al index
-        if (!rolActual) window.location.href = '/';
+        // =============================================
+        // LÓGICA DE PROTECCIÓN Y ROLES
+        // =============================================
+        const usuarioActual = getUsuario();
+        const rolActual = usuarioActual ? usuarioActual.nombre_rol?.toLowerCase() : null;
+
+        // Si alguien intenta entrar sin loguearse, lo redirigimos al index
+        if (!usuarioActual) { cerrarSesion(); }
 
         // Lógica de visualización según el rol
         if (rolActual === 'vendedor') {
             document.getElementById('modPedido').classList.remove('oculto');
-            // Cliente ya es visible por defecto
         } 
         else if (rolActual === 'cajero') {
             document.getElementById('modPago').classList.remove('oculto');
-            // Cliente ya es visible por defecto
         } 
         else if (rolActual === 'administrador') {
             document.getElementById('modPedido').classList.remove('oculto');
             document.getElementById('modPago').classList.remove('oculto');
             document.getElementById('btnAdmin').classList.remove('oculto');
         }
-        // Inyectar el nombre dinámicamente
-        const nombreActual = localStorage.getItem('nombreUsuario');
-            if (nombreActual) {
-                document.getElementById('saludoUsuario').innerText = `¡Bienvenido, ${nombreActual}!`;
+
+        // Mostrar el nombre del usuario
+        const nombreActual = usuarioActual?.nombre_completo;
+        if (nombreActual) {
+            document.getElementById('saludoUsuario').innerText = `¡Bienvenido, ${nombreActual}!`;
+        }
+
+        // Mostrar sede en el saludo si el usuario tiene una asignada
+        if (usuarioActual?.nombre_sede) {
+            const pSaludo = document.querySelector('.contenedor-menu p');
+            if (pSaludo) {
+                pSaludo.innerHTML = `Seleccione el módulo con el que desea trabajar hoy. &nbsp;<span style="background:#eff6ff;color:#2563eb;padding:0.15rem 0.6rem;border-radius:20px;font-size:0.85rem;font-weight:600;">📍 ${usuarioActual.nombre_sede}</span>`;
             }
+        }
     </script>
 </body>
 </html>

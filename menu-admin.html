@@ -89,7 +89,12 @@ select.input-moderno{cursor:pointer}
 <header class="encabezado">
   <div class="zona-izquierda"><a href="/menu" class="btn-salir"><i class="bx bx-arrow-back"></i> Volver al Menu</a></div>
   <img src="https://res.cloudinary.com/dwk77ddoq/image/upload/v1781397979/imagen_2026-06-13_194618193_hkz2d2.png" alt="Logo Book Center" class="logo-header">
-  <div class="zona-derecha"><span class="titulo-panel">Panel de Control &mdash; Administracion</span></div>
+  <div class="zona-derecha" style="display:flex;align-items:center;gap:0.75rem;">
+    <select id="selectorSedeGlobal" style="padding:0.3rem 0.6rem;border-radius:8px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.15);color:white;font-size:0.82rem;font-weight:600;cursor:pointer;outline:none;" onchange="onCambioSede()">
+      <option value="">📍 Todas las Sedes</option>
+    </select>
+    <span class="titulo-panel">Panel de Control &mdash; Administracion</span>
+  </div>
 </header>
 <div class="contenedor-admin">
   <aside class="sidebar">
@@ -99,6 +104,11 @@ select.input-moderno{cursor:pointer}
     <button class="btn-sidebar" id="nav-clientes" onclick="cambiarVista('clientes')"><i class="bx bx-group"></i> Clientes</button>
     <button class="btn-sidebar" id="nav-pedidos" onclick="cambiarVista('pedidos')"><i class="bx bx-cart"></i> Pedidos</button>
     <button class="btn-sidebar" id="nav-comprobantes" onclick="cambiarVista('comprobantes')"><i class="bx bx-receipt"></i> Comprobantes</button>
+    <div class="sidebar-titulo" style="margin-top:1rem;">Configuracion</div>
+    <button class="btn-sidebar" id="nav-sedes" onclick="cambiarVista('sedes')"><i class="bx bx-buildings"></i> Sedes</button>
+    <button class="btn-sidebar" id="nav-usuarios" onclick="cambiarVista('usuarios')"><i class="bx bx-user-circle"></i> Usuarios</button>
+    <button class="btn-sidebar" id="nav-categorias-admin" onclick="cambiarVista('categorias-admin')"><i class="bx bx-category"></i> Categorias</button>
+    <button class="btn-sidebar" id="nav-reportes" onclick="cambiarVista('reportes')"><i class="bx bx-line-chart"></i> Reportes</button>
   </aside>
   <main class="area-contenido">
     <div class="vista activa" id="vista-resumen">
@@ -168,12 +178,135 @@ select.input-moderno{cursor:pointer}
             <input type="date" id="filtro-fecha-comprobantes" class="input-moderno" style="width:auto" onchange="cargarComprobantes()">
           </div>
         </div>
-        <table><thead><tr><th>N. Comprobante</th><th>Tipo</th><th>Cliente</th><th>Fecha</th><th>Total</th><th>Estado</th><th>Acciones</th></tr></thead>
-        <tbody id="body-comprobantes"><tr><td colspan="7" class="estado-vacio">Cargando...</td></tr></tbody></table>
+        <table><thead><tr><th>N. Comprobante</th><th>Tipo</th><th>Cliente</th><th>Fecha</th><th>Total</th><th>Sede</th><th>Estado</th><th>Acciones</th></tr></thead>
+        <tbody id="body-comprobantes"><tr><td colspan="8" class="estado-vacio">Cargando...</td></tr></tbody></table>
       </div>
     </div>
+
+    <!-- VISTA: SEDES -->
+    <div class="vista" id="vista-sedes">
+      <div class="vista-header"><h2 class="vista-titulo">Gestion de Sedes</h2><button class="btn-principal" onclick="abrirModalSede()"><i class="bx bx-plus"></i> Nueva Sede</button></div>
+      <div class="tabla-wrapper">
+        <table><thead><tr><th>Codigo</th><th>Nombre</th><th>Direccion</th><th>Estado</th><th>Acciones</th></tr></thead>
+        <tbody id="body-sedes"><tr><td colspan="5" class="estado-vacio">Cargando...</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <!-- VISTA: USUARIOS -->
+    <div class="vista" id="vista-usuarios">
+      <div class="vista-header"><h2 class="vista-titulo">Gestion de Usuarios</h2><button class="btn-principal" onclick="abrirModalUsuario()"><i class="bx bx-plus"></i> Nuevo Usuario</button></div>
+      <div class="tabla-wrapper">
+        <div class="tabla-header"><div class="buscador-tabla"><i class="bx bx-search"></i><input type="text" id="buscador-usuarios" placeholder="Buscar por nombre o usuario..." oninput="filtrarUsuarios()"></div></div>
+        <table><thead><tr><th>Usuario</th><th>Nombre Completo</th><th>Rol</th><th>Sede</th><th>Estado</th><th>Acciones</th></tr></thead>
+        <tbody id="body-usuarios"><tr><td colspan="6" class="estado-vacio">Cargando...</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <!-- VISTA: CATEGORIAS ADMIN -->
+    <div class="vista" id="vista-categorias-admin">
+      <div class="vista-header"><h2 class="vista-titulo">Gestion de Categorias</h2><button class="btn-principal" onclick="abrirModalCategoria()"><i class="bx bx-plus"></i> Nueva Categoria</button></div>
+      <div class="tabla-wrapper">
+        <table><thead><tr><th>Icono</th><th>Nombre</th><th>Estado</th><th>Acciones</th></tr></thead>
+        <tbody id="body-categorias-admin"><tr><td colspan="4" class="estado-vacio">Cargando...</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <!-- VISTA: REPORTES -->
+    <div class="vista" id="vista-reportes">
+      <div class="vista-header"><h2 class="vista-titulo">Reportes de Ventas</h2></div>
+      <div class="seccion-card" style="margin-bottom:1.5rem;">
+        <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end;">
+          <div class="input-grupo" style="margin-bottom:0;">
+            <label>Agrupacion</label>
+            <select id="rep-agrupacion" class="input-moderno" style="width:auto">
+              <option value="dia">Diaria</option>
+              <option value="semana">Semanal</option>
+              <option value="mes" selected>Mensual</option>
+            </select>
+          </div>
+          <div class="input-grupo" style="margin-bottom:0;">
+            <label>Desde</label>
+            <input type="date" id="rep-desde" class="input-moderno" style="width:auto">
+          </div>
+          <div class="input-grupo" style="margin-bottom:0;">
+            <label>Hasta</label>
+            <input type="date" id="rep-hasta" class="input-moderno" style="width:auto">
+          </div>
+          <div class="input-grupo" style="margin-bottom:0;">
+            <label>Sede</label>
+            <select id="rep-sede" class="input-moderno" style="width:auto">
+              <option value="">Todas</option>
+            </select>
+          </div>
+          <button class="btn-principal" onclick="cargarReportes()"><i class="bx bx-search"></i> Generar</button>
+        </div>
+      </div>
+      <div class="seccion-card">
+        <canvas id="rep-grafico" height="80"></canvas>
+      </div>
+      <div class="tabla-wrapper" style="margin-top:1.5rem;">
+        <table><thead><tr><th>Periodo</th><th>Sede</th><th>N. Pedidos</th><th>Total Vendido</th></tr></thead>
+        <tbody id="body-reportes"><tr><td colspan="4" class="estado-vacio">Genera un reporte para ver los datos.</td></tr></tbody></table>
+        <div style="display:flex;justify-content:flex-end;padding:1rem 1.5rem;font-weight:700;font-size:1rem;color:var(--azul-oscuro);gap:1rem;border-top:1px solid #e2e8f0;">
+          <span>Total general:</span><span id="rep-total-general">S/ 0.00</span>
+        </div>
+      </div>
+    </div>
+
   </main>
 </div>
+
+<!-- MODAL: SEDE -->
+<div class="modal-overlay oculto" id="modal-sede">
+  <div class="modal-contenido modal-sm">
+    <div class="modal-header"><span class="modal-titulo" id="titulo-modal-sede">Nueva Sede</span><button class="btn-cerrar-modal" onclick="cerrarModal('modal-sede')">&times;</button></div>
+    <div class="modal-body">
+      <form id="form-sede">
+        <div class="input-grupo"><label>Código (2-5 letras, ej: VH, AY)</label><input type="text" id="sede-codigo" class="input-moderno" maxlength="5" placeholder="VH" required oninput="this.value=this.value.toUpperCase().replace(/[^A-Z]/g,'')"></div>
+        <div class="input-grupo"><label>Nombre de la Sede</label><input type="text" id="sede-nombre" class="input-moderno" placeholder="Sede Vista Hermosa" required></div>
+        <div class="input-grupo"><label>Dirección</label><input type="text" id="sede-direccion" class="input-moderno" placeholder="Av. Principal 123"></div>
+      </form>
+    </div>
+    <div class="modal-footer"><button class="btn-secundario" onclick="cerrarModal('modal-sede')">Cancelar</button><button class="btn-principal" onclick="guardarSede()"><i class="bx bx-save"></i> Guardar</button></div>
+  </div>
+</div>
+
+<!-- MODAL: USUARIO -->
+<div class="modal-overlay oculto" id="modal-usuario">
+  <div class="modal-contenido">
+    <div class="modal-header"><span class="modal-titulo" id="titulo-modal-usuario">Nuevo Usuario</span><button class="btn-cerrar-modal" onclick="cerrarModal('modal-usuario')">&times;</button></div>
+    <div class="modal-body">
+      <form id="form-usuario"><input type="hidden" id="usuario-id">
+        <div class="fila-doble">
+          <div class="input-grupo"><label>Usuario (username)</label><input type="text" id="usuario-username" class="input-moderno" placeholder="cajero01" required></div>
+          <div class="input-grupo"><label>Nombre Completo</label><input type="text" id="usuario-nombre" class="input-moderno" required></div>
+        </div>
+        <div class="fila-doble">
+          <div class="input-grupo"><label>Rol</label><select id="usuario-rol" class="input-moderno"></select></div>
+          <div class="input-grupo"><label>Sede Asignada</label><select id="usuario-sede" class="input-moderno"></select></div>
+        </div>
+        <div class="input-grupo"><label>Correo</label><input type="email" id="usuario-correo" class="input-moderno" placeholder="opcional"></div>
+        <div class="input-grupo" id="usuario-pass-grupo"><label>Contraseña</label><input type="password" id="usuario-password" class="input-moderno" placeholder="••••••••"></div>
+      </form>
+    </div>
+    <div class="modal-footer"><button class="btn-secundario" onclick="cerrarModal('modal-usuario')">Cancelar</button><button class="btn-principal" onclick="guardarUsuario()"><i class="bx bx-save"></i> Guardar</button></div>
+  </div>
+</div>
+
+<!-- MODAL: CATEGORÍA -->
+<div class="modal-overlay oculto" id="modal-categoria">
+  <div class="modal-contenido modal-sm">
+    <div class="modal-header"><span class="modal-titulo" id="titulo-modal-categoria">Nueva Categoría</span><button class="btn-cerrar-modal" onclick="cerrarModal('modal-categoria')">&times;</button></div>
+    <div class="modal-body">
+      <form id="form-categoria">
+        <div class="input-grupo"><label>Icono (emoji)</label><input type="text" id="cat-icono" class="input-moderno" placeholder="📚" maxlength="4"></div>
+        <div class="input-grupo"><label>Nombre</label><input type="text" id="cat-nombre" class="input-moderno" required placeholder="Literatura"></div>
+      </form>
+    </div>
+    <div class="modal-footer"><button class="btn-secundario" onclick="cerrarModal('modal-categoria')">Cancelar</button><button class="btn-principal" onclick="guardarCategoria()"><i class="bx bx-save"></i> Guardar</button></div>
+  </div>
+</div>
+
 <div class="modal-overlay oculto" id="modal-producto">
   <div class="modal-contenido">
     <div class="modal-header"><span class="modal-titulo" id="titulo-modal-producto">Nuevo Producto</span><button class="btn-cerrar-modal" onclick="cerrarModal('modal-producto')">&times;</button></div>
@@ -279,13 +412,50 @@ document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('cli
 // ===============================================
 // CARGAS DESDE LA BASE DE DATOS (API REST)
 // ===============================================
+// Variable global para sede seleccionada en el admin
+let sedeSeleccionada = '';
+let sedes = [];
+let usuarios = [];
+let repChart = null;
+
+function onCambioSede() {
+  sedeSeleccionada = document.getElementById('selectorSedeGlobal').value;
+  // Recargar la vista activa
+  const vistaActiva = document.querySelector('.vista.activa');
+  if (vistaActiva) {
+    const id = vistaActiva.id.replace('vista-','');
+    if (id === 'resumen') cargarResumen();
+    else if (id === 'productos') cargarProductos();
+    else if (id === 'pedidos') cargarPedidos();
+    else if (id === 'comprobantes') cargarComprobantes();
+  }
+}
+
+async function cargarSedes() {
+  try {
+    const res = await apiFetch('/api/sedes');
+    if (!res) return;
+    sedes = await res.json();
+    // Llenar selector global
+    const sel = document.getElementById('selectorSedeGlobal');
+    sel.innerHTML = '<option value="">📍 Todas las Sedes</option>' +
+      sedes.map(s => `<option value="${s.id_sede}">${s.nombre}</option>`).join('');
+    // Llenar selector de reportes
+    const repSel = document.getElementById('rep-sede');
+    if (repSel) repSel.innerHTML = '<option value="">Todas</option>' + sedes.map(s => `<option value="${s.id_sede}">${s.nombre}</option>`).join('');
+  } catch(e) { console.warn('Sedes no disponibles aún:', e.message); }
+}
+
 async function cargarCategorias() {
-  const res = await fetch(URL_BACKEND + '/api/categorias');
+  const res = await apiFetch('/api/categorias');
+  if (!res) return;
   categorias = await res.json();
 }
 
 async function cargarResumen() {
-  const res = await fetch(URL_BACKEND + '/api/admin/resumen');
+  const params = sedeSeleccionada ? `?sede=${sedeSeleccionada}` : '';
+  const res = await apiFetch(`/api/admin/resumen${params}`);
+  if (!res) return;
   const data = await res.json();
   document.getElementById('kpi-productos').textContent = data.totalProductos;
   document.getElementById('kpi-clientes').textContent = data.totalClientes;
@@ -293,7 +463,8 @@ async function cargarResumen() {
   document.getElementById('kpi-stock-critico').textContent = data.stockCritico;
   document.getElementById('badge-critico').textContent = data.stockCritico;
   
-  const resProd = await fetch(URL_BACKEND + '/api/productos');
+  const resProd = await apiFetch(`/api/productos${params}`);
+  if (!resProd) return;
   const prods = await resProd.json();
   const cr = prods.filter(p => p.stock_actual <= p.stock_minimo);
   const tb = document.getElementById('body-stock-critico');
@@ -305,7 +476,9 @@ async function cargarResumen() {
 }
 
 async function cargarProductos() {
-  const res = await fetch(URL_BACKEND + '/api/productos');
+  const params = sedeSeleccionada ? `?sede=${sedeSeleccionada}` : '';
+  const res = await apiFetch(`/api/productos${params}`);
+  if (!res) return;
   productos = await res.json();
   renderProductos();
 }
@@ -327,7 +500,8 @@ function renderProductos(lista) {
 function filtrarProductos() { const q = document.getElementById('buscador-productos').value.toLowerCase(); renderProductos(productos.filter(p => p.nombre.toLowerCase().includes(q) || p.codigo.toLowerCase().includes(q))); }
 
 async function cargarClientes() {
-  const res = await fetch(URL_BACKEND + '/api/clientes');
+  const res = await apiFetch('/api/clientes');
+  if (!res) return;
   clientes = await res.json();
   renderClientes();
 }
@@ -347,7 +521,9 @@ async function cargarPedidos() {
   const params = new URLSearchParams();
   if (estado) params.append('estado', estado);
   if (fecha) params.append('fecha', fecha);
-  const res = await fetch(URL_BACKEND + '/api/admin/pedidos' + (params.toString() ? '?' + params.toString() : ''));
+  if (sedeSeleccionada) params.append('sede', sedeSeleccionada);
+  const res = await apiFetch('/api/admin/pedidos' + (params.toString() ? '?' + params.toString() : ''));
+  if (!res) return;
   pedidos = await res.json();
   renderPedidos();
 }
@@ -360,8 +536,9 @@ function renderPedidos(lista) {
     const bs = p.estado === 'Completado' ? '<span class="badge badge-verde">'+p.estado+'</span>' : (p.estado === 'Anulado' ? '<span class="badge badge-rojo">'+p.estado+'</span>' : '<span class="badge badge-amarillo">'+p.estado+'</span>');
     const d = p.fecha_pedido ? new Date(p.fecha_pedido).toLocaleDateString('es-PE') : '-';
     const nombreCompleto = (p.nombres+' '+p.apellido_paterno).trim();
-    const btnEliminar = p.estado === 'Pendiente' ? '<button class="btn-accion eliminar" title="Eliminar" onclick="confirmarEliminar(\'pedido\','+p.id_pedido+',\'Pedido #'+p.id_pedido+'\')"><i class="bx bx-trash"></i></button>' : '';
-    return '<tr><td><b>#'+p.id_pedido+'</b></td><td>'+nombreCompleto+'</td><td>'+d+'</td><td><b>S/ '+parseFloat(p.total).toFixed(2)+'</b></td><td>'+bs+'</td><td><div class="acciones-fila"><button class="btn-accion ver" title="Ver detalle" onclick="verDetallePedido('+p.id_pedido+', \''+nombreCompleto+'\', \''+d+'\', \''+p.estado+'\', '+p.total+')"><i class="bx bx-show"></i></button><button class="btn-accion editar" title="Editar estado" onclick="abrirModalEditarPedido('+p.id_pedido+',\''+p.estado+'\')"><i class="bx bx-edit"></i></button>'+btnEliminar+'</div></td></tr>';
+    const sedeBadge = p.nombre_sede ? `<span class="badge badge-azul">${p.nombre_sede}</span>` : '-';
+    const btnAnular = p.estado === 'Pendiente' ? `<button class="btn-accion anular" title="Anular pedido" onclick="confirmarAnularPedido(${p.id_pedido})"><i class="bx bx-block"></i></button>` : '';
+    return `<tr><td><b>#${p.id_pedido}</b></td><td>${nombreCompleto}</td><td>${d}</td><td><b>S/ ${parseFloat(p.total).toFixed(2)}</b></td><td>${bs}</td><td>${sedeBadge}</td><td><div class="acciones-fila"><button class="btn-accion ver" title="Ver detalle" onclick="verDetallePedido(${p.id_pedido},'${nombreCompleto}','${d}','${p.estado}',${p.total})"><i class="bx bx-show"></i></button><button class="btn-accion editar" title="Editar estado" onclick="abrirModalEditarPedido(${p.id_pedido},'${p.estado}')"><i class="bx bx-edit"></i></button>${btnAnular}</div></td></tr>`;
   }).join('');
 }
 
@@ -413,7 +590,9 @@ async function cargarComprobantes() {
   const params = new URLSearchParams();
   if (estado) params.append('estado', estado);
   if (fecha) params.append('fecha', fecha);
-  const res = await fetch(URL_BACKEND + '/api/admin/comprobantes' + (params.toString() ? '?' + params.toString() : ''));
+  if (sedeSeleccionada) params.append('sede', sedeSeleccionada);
+  const res = await apiFetch('/api/admin/comprobantes' + (params.toString() ? '?' + params.toString() : ''));
+  if (!res) return;
   comprobantes = await res.json();
   renderComprobantes();
 }
@@ -425,9 +604,10 @@ function renderComprobantes(lista) {
   tb.innerHTML = data.map(c => {
     const isAnulado = c.estado === 'Anulado';
     const bs = !isAnulado ? '<span class="badge badge-verde">Vigente</span>' : '<span class="badge badge-rojo">Anulado</span>';
-    const btnA = !isAnulado ? '<button class="btn-accion anular" title="Anular" onclick="confirmarAnular('+c.id_pedido+','+c.id_comprobante+',\''+c.numero_correlativo+'\')"><i class="bx bx-block"></i></button>' : '';
+    const btnA = !isAnulado ? `<button class="btn-accion anular" title="Anular" onclick="confirmarAnular(${c.id_pedido},${c.id_comprobante},'${c.numero_correlativo}')"><i class="bx bx-block"></i></button>` : '';
     const d = c.fecha_emision ? new Date(c.fecha_emision).toLocaleDateString('es-PE') : '-';
-    return '<tr><td><b>'+c.numero_correlativo+'</b></td><td><span class="badge badge-azul">'+c.tipo_comprobante+'</span></td><td>Pedido #'+c.id_pedido+'</td><td>'+d+'</td><td><b>S/ '+parseFloat(c.monto_total).toFixed(2)+'</b></td><td>'+bs+'</td><td><div class="acciones-fila"><button class="btn-accion ver" title="Ver detalle" onclick="verDetallePedido('+c.id_pedido+')"><i class="bx bx-show"></i></button>'+btnA+'</div></td></tr>';
+    const sedeBadge = c.nombre_sede ? `<span class="badge badge-azul">${c.nombre_sede}</span>` : '-';
+    return `<tr><td><b>${c.numero_correlativo}</b></td><td><span class="badge badge-azul">${c.tipo_comprobante}</span></td><td>Pedido #${c.id_pedido}</td><td>${d}</td><td><b>S/ ${parseFloat(c.monto_total).toFixed(2)}</b></td><td>${sedeBadge}</td><td>${bs}</td><td><div class="acciones-fila"><button class="btn-accion ver" title="Ver detalle" onclick="verDetallePedido(${c.id_pedido})"><i class="bx bx-show"></i></button>${btnA}</div></td></tr>`;
   }).join('');
 }
 
@@ -474,7 +654,12 @@ function previsualizarImagenProducto(input) {
 async function subirImagenCloudinary(archivo) {
   const formData = new FormData();
   formData.append('imagen', archivo);
-  const res = await fetch(URL_BACKEND + '/api/upload-imagen', { method: 'POST', body: formData });
+  const token = getToken();
+  const res = await fetch(`${URL_BACKEND}/api/upload-imagen`, {
+    method: 'POST',
+    body: formData,
+    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+  });
   const data = await res.json();
   if (!res.ok || !data.exito) throw new Error(data.mensaje || 'Error al subir la imagen');
   return data.url;
@@ -513,11 +698,15 @@ async function guardarProducto() {
     }
   }
 
-  const payload = { nombre, descripcion, id_categoria, precio_venta, stock_actual, stock_minimo, url_imagen, id_usuario: localStorage.getItem('idUsuario') };
+  const usuario = getUsuario();
+  const payload = { nombre, descripcion, id_categoria, precio_venta, stock_actual, stock_minimo, url_imagen, id_usuario: usuario?.id_usuario };
   const method = productoEditar ? 'PUT' : 'POST';
-  const url = URL_BACKEND + '/api/productos' + (productoEditar ? '/' + productoEditar.id_producto : '');
+  const ruta = '/api/productos' + (productoEditar ? '/' + productoEditar.id_producto : '');
 
-  await fetch(url, { method, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+  const res = await apiFetch(ruta, { method, body: JSON.stringify(payload) });
+  if (!res) return;
+  const data = await res.json();
+  if (!res.ok) { alert('❌ ' + (data.mensaje || 'No se pudo guardar el producto.')); return; }
   cerrarModal('modal-producto');
   cargarProductos();
   cargarResumen();
@@ -565,15 +754,14 @@ async function guardarCliente() {
   if (tel && !/^9\d{8}$/.test(tel)) { alert('El teléfono debe tener 9 dígitos y comenzar con 9.'); return; }
   if (correo && !/^[^\s@]+@[^\s@]+\.com$/i.test(correo)) { alert('El correo debe ser válido y terminar en .com'); return; }
 
-  const payload = { tipoDoc, numDoc, nombres, apellidoPaterno: apP, apellidoMaterno: apM, telefono: tel, correo, idCreador: localStorage.getItem('idUsuario') };
-  // Aiven API usa camelCase en /api/registrar-cliente para insertar, pero el PUT espera snake_case (tipo_documento, numero_documento).
-  // Vamos a alinear ambos. Si es crear, usamos /api/registrar-cliente. Si es editar, usamos el nuevo /api/clientes/:id con snake_case
+  const usuario = getUsuario();
+  const payload = { tipoDoc, numDoc, nombres, apellidoPaterno: apP, apellidoMaterno: apM, telefono: tel, correo, idCreador: usuario?.id_usuario };
   
   if (clienteEditar) {
-    const payloadUpdate = { tipo_documento: tipoDoc, numero_documento: numDoc, nombres, apellido_paterno: apP, apellido_materno: apM, telefono: tel, correo, id_usuario: localStorage.getItem('idUsuario') };
-    await fetch(URL_BACKEND + '/api/clientes/' + clienteEditar.id_cliente, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payloadUpdate) });
+    const payloadUpdate = { tipo_documento: tipoDoc, numero_documento: numDoc, nombres, apellido_paterno: apP, apellido_materno: apM, telefono: tel, correo, id_usuario: usuario?.id_usuario };
+    await apiFetch('/api/clientes/' + clienteEditar.id_cliente, { method: 'PUT', body: JSON.stringify(payloadUpdate) });
   } else {
-    await fetch(URL_BACKEND + '/api/registrar-cliente', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+    await apiFetch('/api/registrar-cliente', { method: 'POST', body: JSON.stringify(payload) });
   }
   
   cerrarModal('modal-cliente');
@@ -581,22 +769,49 @@ async function guardarCliente() {
   cargarResumen();
 }
 
+// B8: Anular pedido (en vez de eliminar)
+function confirmarAnularPedido(idPedido) {
+  document.getElementById('grupo-motivo-anulacion').classList.remove('oculto');
+  document.getElementById('input-motivo-anulacion').value = '';
+  document.getElementById('confirmar-titulo').textContent = 'Anular Pedido';
+  document.getElementById('confirmar-mensaje').textContent = `¿Anular el Pedido #${idPedido}? El estado cambiará a "Anulado" y no podrá procesarse para pago.`;
+  document.getElementById('btn-confirmar-accion').onclick = () => ejecutarAnularPedido(idPedido);
+  document.getElementById('modal-confirmar').classList.remove('oculto');
+}
+
+async function ejecutarAnularPedido(idPedido) {
+  const motivo = document.getElementById('input-motivo-anulacion').value.trim();
+  if (!motivo) { alert('Debes indicar el motivo de la anulación.'); return; }
+  const usuario = getUsuario();
+  const res = await apiFetch(`/api/admin/pedidos/${idPedido}`, {
+    method: 'PUT',
+    body: JSON.stringify({ estado: 'Anulado', motivo, id_usuario: usuario?.id_usuario })
+  });
+  if (!res) return;
+  const data = await res.json().catch(() => ({}));
+  cerrarModal('modal-confirmar');
+  if (!res.ok) { alert('❌ ' + (data.mensaje || 'No se pudo anular el pedido.')); return; }
+  cargarPedidos();
+  cargarResumen();
+}
+
 function confirmarEliminar(tipo, id, nombre) {
   document.getElementById('grupo-motivo-anulacion').classList.add('oculto');
   document.getElementById('confirmar-titulo').textContent = 'Confirmar eliminacion';
-  document.getElementById('confirmar-mensaje').textContent = 'Eliminar "' + nombre + '"? ' + (tipo === 'pedido' ? '(Esta acción no se puede deshacer).' : '(Solo Soft Delete).');
+  document.getElementById('confirmar-mensaje').textContent = '¿Eliminar "' + nombre + '"? (Solo Soft Delete).';
   document.getElementById('btn-confirmar-accion').onclick = () => ejecutarEliminar(tipo, id);
   document.getElementById('modal-confirmar').classList.remove('oculto');
 }
 
 async function ejecutarEliminar(tipo, id) {
-  const base = URL_BACKEND + (tipo === 'producto' ? '/api/productos/' : tipo === 'cliente' ? '/api/clientes/' : '/api/admin/pedidos/') + id;
-  const url = base + '?id_usuario=' + encodeURIComponent(localStorage.getItem('idUsuario') || '');
-  const res = await fetch(url, { method: 'DELETE' });
+  const usuario = getUsuario();
+  const ruta = (tipo === 'producto' ? '/api/productos/' : '/api/clientes/') + id + '?id_usuario=' + (usuario?.id_usuario || '');
+  const res = await apiFetch(ruta, { method: 'DELETE' });
+  if (!res) return;
   const data = await res.json().catch(() => ({}));
   cerrarModal('modal-confirmar');
   if (!res.ok) { alert('❌ ' + (data.mensaje || 'No se pudo eliminar.')); return; }
-  if (tipo === 'producto') cargarProductos(); else if (tipo === 'cliente') cargarClientes(); else cargarPedidos();
+  if (tipo === 'producto') cargarProductos(); else cargarClientes();
   cargarResumen();
 }
 
@@ -612,11 +827,12 @@ function confirmarAnular(idPedido, idComprobante, correlativo) {
 async function ejecutarAnular(idPedido, idComprobante) {
   const motivo = document.getElementById('input-motivo-anulacion').value.trim();
   if (!motivo) { alert('Debes indicar el motivo de la anulación.'); return; }
-  const res = await fetch(URL_BACKEND + '/api/admin/comprobantes/' + idComprobante + '/anular', {
+  const usuario = getUsuario();
+  const res = await apiFetch('/api/admin/comprobantes/' + idComprobante + '/anular', {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ motivo, id_usuario: localStorage.getItem('idUsuario') })
+    body: JSON.stringify({ motivo, id_usuario: usuario?.id_usuario })
   });
+  if (!res) return;
   const data = await res.json().catch(() => ({}));
   if (!res.ok) { alert('❌ ' + (data.mensaje || 'No se pudo anular el comprobante.')); return; }
   cerrarModal('modal-confirmar');
@@ -634,11 +850,12 @@ function abrirModalEditarPedido(id, estadoActual) {
 async function guardarEstadoPedido() {
   const id = document.getElementById('editar-pedido-id').value;
   const estado = document.getElementById('editar-pedido-estado').value;
-  const res = await fetch(URL_BACKEND + '/api/admin/pedidos/' + id, {
+  const usuario = getUsuario();
+  const res = await apiFetch('/api/admin/pedidos/' + id, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ estado, id_usuario: localStorage.getItem('idUsuario') })
+    body: JSON.stringify({ estado, id_usuario: usuario?.id_usuario })
   });
+  if (!res) return;
   const data = await res.json().catch(() => ({}));
   if (!res.ok) { alert('❌ ' + (data.mensaje || 'No se pudo actualizar el pedido.')); return; }
   cerrarModal('modal-editar-pedido');
@@ -648,7 +865,6 @@ async function guardarEstadoPedido() {
 }
 
 async function verDetallePedido(idPedido, cliente, fecha, estado, total) {
-  // If called from Comprobantes without extra parameters, fetch them from pedidos array
   if (!cliente) {
       const p = pedidos.find(x => x.id_pedido === idPedido);
       if(p) {
@@ -658,7 +874,8 @@ async function verDetallePedido(idPedido, cliente, fecha, estado, total) {
           total = p.total;
       }
   }
-  const res = await fetch(URL_BACKEND + '/api/admin/pedidos/' + idPedido + '/detalles');
+  const res = await apiFetch('/api/admin/pedidos/' + idPedido + '/detalles');
+  if (!res) return;
   const detalles = await res.json();
   
   document.getElementById('titulo-modal-detalle').textContent = 'Detalle Pedido #' + idPedido;
@@ -668,9 +885,215 @@ async function verDetallePedido(idPedido, cliente, fecha, estado, total) {
   document.getElementById('modal-detalle').classList.remove('oculto');
 }
 
+// =============================================
+// GESTIÓN DE SEDES (B7)
+// =============================================
+let sedeEditar = null;
+function abrirModalSede(id) {
+  sedeEditar = id ? sedes.find(s => s.id_sede === id) : null;
+  document.getElementById('titulo-modal-sede').textContent = sedeEditar ? 'Editar Sede' : 'Nueva Sede';
+  if (sedeEditar) {
+    document.getElementById('sede-codigo').value = sedeEditar.codigo_sede;
+    document.getElementById('sede-nombre').value = sedeEditar.nombre;
+    document.getElementById('sede-direccion').value = sedeEditar.direccion || '';
+  } else {
+    document.getElementById('form-sede').reset();
+  }
+  document.getElementById('modal-sede').classList.remove('oculto');
+}
+async function guardarSede() {
+  const codigo = document.getElementById('sede-codigo').value.trim().toUpperCase();
+  const nombre = document.getElementById('sede-nombre').value.trim();
+  const direccion = document.getElementById('sede-direccion').value.trim();
+  if (!codigo || !nombre) { alert('El código y nombre son obligatorios.'); return; }
+  if (!/^[A-Z]{2,5}$/.test(codigo)) { alert('El código debe tener 2 a 5 letras mayúsculas. Ej: VH, AY'); return; }
+  const payload = { codigo_sede: codigo, nombre, direccion };
+  const ruta = sedeEditar ? `/api/admin/sedes/${sedeEditar.id_sede}` : '/api/admin/sedes';
+  const method = sedeEditar ? 'PUT' : 'POST';
+  const res = await apiFetch(ruta, { method, body: JSON.stringify(payload) });
+  if (!res) return;
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) { alert('❌ ' + (data.mensaje || 'No se pudo guardar la sede.')); return; }
+  cerrarModal('modal-sede');
+  await cargarSedes();
+  cargarTabSedes();
+}
+async function desactivarSede(id, nombre) {
+  if (!confirm(`¿Desactivar la sede "${nombre}"? Los usuarios de esta sede quedarán sin sede asignada.`)) return;
+  const res = await apiFetch(`/api/admin/sedes/${id}/desactivar`, { method: 'PUT' });
+  if (!res) return;
+  await cargarSedes();
+  cargarTabSedes();
+}
+async function cargarTabSedes() {
+  const tb = document.getElementById('body-sedes');
+  if (!sedes.length) { tb.innerHTML = '<tr><td colspan="5" class="estado-vacio"><i class="bx bx-buildings"></i>Sin sedes registradas</td></tr>'; return; }
+  tb.innerHTML = sedes.map(s => `<tr><td><code>${s.codigo_sede}</code></td><td><b>${s.nombre}</b></td><td>${s.direccion||'-'}</td><td>${s.is_active ? '<span class="badge badge-verde">Activa</span>' : '<span class="badge badge-rojo">Inactiva</span>'}</td><td><div class="acciones-fila"><button class="btn-accion editar" onclick="abrirModalSede(${s.id_sede})"><i class="bx bx-edit"></i></button><button class="btn-accion eliminar" onclick="desactivarSede(${s.id_sede},'${s.nombre}')"><i class="bx bx-power-off"></i></button></div></td></tr>`).join('');
+}
+
+// =============================================
+// GESTIÓN DE USUARIOS (B11)
+// =============================================
+let usuarioEditar = null;
+async function cargarUsuarios() {
+  const res = await apiFetch('/api/admin/usuarios');
+  if (!res) return;
+  usuarios = await res.json();
+  renderUsuarios();
+}
+function filtrarUsuarios() {
+  const q = document.getElementById('buscador-usuarios').value.toLowerCase();
+  renderUsuarios(usuarios.filter(u => u.username.toLowerCase().includes(q) || u.nombre_completo.toLowerCase().includes(q)));
+}
+function renderUsuarios(lista) {
+  const data = lista || usuarios;
+  const tb = document.getElementById('body-usuarios');
+  const yoId = getUsuario()?.id_usuario;
+  if (!data.length) { tb.innerHTML = '<tr><td colspan="6" class="estado-vacio"><i class="bx bx-user-circle"></i>Sin usuarios</td></tr>'; return; }
+  tb.innerHTML = data.map(u => {
+    const esYo = u.id_usuario === yoId;
+    const bsActivo = u.is_active ? '<span class="badge badge-verde">Activo</span>' : '<span class="badge badge-rojo">Inactivo</span>';
+    const btnToggle = !esYo ? `<button class="btn-accion ${u.is_active ? 'eliminar' : 'ver'}" title="${u.is_active ? 'Desactivar':'Activar'}" onclick="toggleUsuario(${u.id_usuario},${u.is_active})"><i class="bx ${u.is_active ? 'bx-power-off':'bx-check'}"></i></button>` : '';
+    return `<tr><td><code>${u.username}</code>${esYo ? ' <span class="badge badge-azul">Tú</span>' : ''}</td><td>${u.nombre_completo}</td><td>${u.nombre_rol||'-'}</td><td>${u.nombre_sede||'<span class="badge badge-gris">Global</span>'}</td><td>${bsActivo}</td><td><div class="acciones-fila"><button class="btn-accion editar" onclick="abrirModalUsuario(${u.id_usuario})"><i class="bx bx-edit"></i></button>${btnToggle}</div></td></tr>`;
+  }).join('');
+}
+async function toggleUsuario(id, estadoActual) {
+  const accion = estadoActual ? 'desactivar' : 'activar';
+  if (!confirm(`¿${accion.charAt(0).toUpperCase()+accion.slice(1)} este usuario?`)) return;
+  const res = await apiFetch(`/api/admin/usuarios/${id}/desactivar`, { method: 'PUT', body: JSON.stringify({ activar: !estadoActual }) });
+  if (!res) return;
+  await cargarUsuarios();
+}
+let roles = [];
+async function cargarRoles() {
+  try {
+    const res = await apiFetch('/api/roles');
+    if (!res) return;
+    roles = await res.json();
+  } catch(e) { console.warn('Roles no disponibles:', e.message); }
+}
+async function abrirModalUsuario(id) {
+  usuarioEditar = id ? usuarios.find(u => u.id_usuario === id) : null;
+  document.getElementById('titulo-modal-usuario').textContent = usuarioEditar ? 'Editar Usuario' : 'Nuevo Usuario';
+  // Poblar selects de roles y sedes
+  const selRol = document.getElementById('usuario-rol');
+  const selSede = document.getElementById('usuario-sede');
+  selRol.innerHTML = roles.map(r => `<option value="${r.id_rol}">${r.nombre_rol}</option>`).join('');
+  selSede.innerHTML = '<option value="">Sin sede (Global/Admin)</option>' + sedes.map(s => `<option value="${s.id_sede}">${s.nombre}</option>`).join('');
+  const passGrupo = document.getElementById('usuario-pass-grupo');
+  if (usuarioEditar) {
+    document.getElementById('usuario-id').value = usuarioEditar.id_usuario;
+    document.getElementById('usuario-username').value = usuarioEditar.username;
+    document.getElementById('usuario-nombre').value = usuarioEditar.nombre_completo;
+    document.getElementById('usuario-correo').value = usuarioEditar.correo || '';
+    selRol.value = usuarioEditar.id_rol;
+    selSede.value = usuarioEditar.id_sede || '';
+    if (passGrupo) passGrupo.style.display = 'none';
+  } else {
+    document.getElementById('form-usuario').reset();
+    if (passGrupo) passGrupo.style.display = 'block';
+  }
+  document.getElementById('modal-usuario').classList.remove('oculto');
+}
+async function guardarUsuario() {
+  const username = document.getElementById('usuario-username').value.trim();
+  const nombre = document.getElementById('usuario-nombre').value.trim();
+  const correo = document.getElementById('usuario-correo').value.trim();
+  const id_rol = parseInt(document.getElementById('usuario-rol').value);
+  const id_sede = document.getElementById('usuario-sede').value || null;
+  const password = document.getElementById('usuario-password')?.value || '';
+  if (!username || !nombre || !id_rol) { alert('Usuario, nombre y rol son obligatorios.'); return; }
+  if (!usuarioEditar && !password) { alert('La contraseña es obligatoria al crear un usuario.'); return; }
+  const payload = { username, nombre_completo: nombre, correo, id_rol, id_sede };
+  if (password) payload.password = password;
+  const ruta = usuarioEditar ? `/api/admin/usuarios/${usuarioEditar.id_usuario}` : '/api/admin/usuarios';
+  const method = usuarioEditar ? 'PUT' : 'POST';
+  const res = await apiFetch(ruta, { method, body: JSON.stringify(payload) });
+  if (!res) return;
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) { alert('❌ ' + (data.mensaje || 'No se pudo guardar el usuario.')); return; }
+  cerrarModal('modal-usuario');
+  cargarUsuarios();
+}
+
+// =============================================
+// GESTIÓN DE CATEGORÍAS ADMIN (B12)
+// =============================================
+let categoriaEditar = null;
+function abrirModalCategoria(id) {
+  categoriaEditar = id ? categorias.find(c => c.id_categoria === id) : null;
+  document.getElementById('titulo-modal-categoria').textContent = categoriaEditar ? 'Editar Categoría' : 'Nueva Categoría';
+  if (categoriaEditar) {
+    document.getElementById('cat-icono').value = categoriaEditar.icono || '';
+    document.getElementById('cat-nombre').value = categoriaEditar.nombre;
+  } else {
+    document.getElementById('form-categoria').reset();
+  }
+  document.getElementById('modal-categoria').classList.remove('oculto');
+}
+async function guardarCategoria() {
+  const nombre = document.getElementById('cat-nombre').value.trim();
+  const icono = document.getElementById('cat-icono').value.trim();
+  if (!nombre) { alert('El nombre es obligatorio.'); return; }
+  const payload = { nombre, icono };
+  const ruta = categoriaEditar ? `/api/categorias/${categoriaEditar.id_categoria}` : '/api/categorias';
+  const method = categoriaEditar ? 'PUT' : 'POST';
+  const res = await apiFetch(ruta, { method, body: JSON.stringify(payload) });
+  if (!res) return;
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) { alert('❌ ' + (data.mensaje || 'No se pudo guardar la categoría.')); return; }
+  cerrarModal('modal-categoria');
+  await cargarCategorias();
+  cargarTabCategorias();
+}
+async function desactivarCategoria(id, nombre) {
+  if (!confirm(`¿Desactivar la categoría "${nombre}"?`)) return;
+  const res = await apiFetch(`/api/categorias/${id}/desactivar`, { method: 'PUT' });
+  if (!res) return;
+  const data = await res.json().catch(()=>({}));
+  if (!res.ok) { alert('❌ ' + (data.mensaje || 'No se pudo desactivar.')); return; }
+  await cargarCategorias();
+  cargarTabCategorias();
+}
+function cargarTabCategorias() {
+  const tb = document.getElementById('body-categorias-admin');
+  if (!categorias.length) { tb.innerHTML = '<tr><td colspan="4" class="estado-vacio"><i class="bx bx-category"></i>Sin categorías</td></tr>'; return; }
+  tb.innerHTML = categorias.map(c => `<tr><td style="font-size:1.5rem;">${c.icono||'📁'}</td><td><b>${c.nombre}</b></td><td>${c.is_active!==0 ? '<span class="badge badge-verde">Activa</span>' : '<span class="badge badge-rojo">Inactiva</span>'}</td><td><div class="acciones-fila"><button class="btn-accion editar" onclick="abrirModalCategoria(${c.id_categoria})"><i class="bx bx-edit"></i></button><button class="btn-accion eliminar" onclick="desactivarCategoria(${c.id_categoria},'${c.nombre}')"><i class="bx bx-power-off"></i></button></div></td></tr>`).join('');
+}
+
+// =============================================
+// REPORTES DE VENTAS (B10)
+// =============================================
+async function cargarReportes() {
+  const agrupacion = document.getElementById('rep-agrupacion').value;
+  const desde = document.getElementById('rep-desde').value;
+  const hasta = document.getElementById('rep-hasta').value;
+  const sede = document.getElementById('rep-sede').value;
+  const params = new URLSearchParams({ agrupacion });
+  if (desde) params.append('desde', desde);
+  if (hasta) params.append('hasta', hasta);
+  if (sede) params.append('sede', sede);
+  const res = await apiFetch(`/api/admin/reportes/ventas?${params.toString()}`);
+  if (!res) return;
+  const data = await res.json();
+  const tb = document.getElementById('body-reportes');
+  if (!data.length) { tb.innerHTML = '<tr><td colspan="4" class="estado-vacio">Sin datos para el período seleccionado.</td></tr>'; document.getElementById('rep-total-general').textContent = 'S/ 0.00'; return; }
+  let totalGeneral = 0;
+  tb.innerHTML = data.map(r => { totalGeneral += parseFloat(r.total_vendido||0); return `<tr><td>${r.periodo||'-'}</td><td>${r.nombre_sede||'Todas'}</td><td>${r.num_pedidos}</td><td><b>S/ ${parseFloat(r.total_vendido).toFixed(2)}</b></td></tr>`; }).join('');
+  document.getElementById('rep-total-general').textContent = `S/ ${totalGeneral.toFixed(2)}`;
+  // Dibujar gráfico
+  const labels = data.map(r => r.periodo || '-');
+  const valores = data.map(r => parseFloat(r.total_vendido||0));
+  if (repChart) repChart.destroy();
+  const ctx = document.getElementById('rep-grafico').getContext('2d');
+  repChart = new Chart(ctx, { type: 'bar', data: { labels, datasets: [{ label: 'Ventas (S/)', data: valores, backgroundColor: 'rgba(37,99,235,0.7)', borderRadius: 6 }] }, options: { responsive: true, plugins: { legend: { display: false } } } });
+}
+
 // Inicialización de la vista
 async function inicializarDashboard() {
+  await cargarSedes();
   await cargarCategorias();
+  await cargarRoles();
   cargarResumen();
   cargarProductos();
   cargarClientes();
@@ -678,8 +1101,19 @@ async function inicializarDashboard() {
   cargarComprobantes();
 }
 
+// Extender cambiarVista para cargar datos de las nuevas secciones
+const _cambiarVistaOriginal = cambiarVista;
+cambiarVista = function(nombre) {
+  _cambiarVistaOriginal(nombre);
+  if (nombre === 'sedes') cargarTabSedes();
+  else if (nombre === 'usuarios') cargarUsuarios();
+  else if (nombre === 'categorias-admin') { cargarCategorias().then(cargarTabCategorias); }
+  else if (nombre === 'reportes') { /* usuario hace clic en Generar */ }
+};
+
 inicializarDashboard();
 
 </script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </body>
 </html>

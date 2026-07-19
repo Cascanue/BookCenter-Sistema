@@ -574,10 +574,11 @@
         async function procesarVentaEnBD() {
             if (!pedido || pedido.items.length === 0) return;
 
-            // 1. Recuperar el ID del usuario logueado (Cajero/Admin)
-            // Asumiendo que guardas los datos completos del usuario en localStorage
-            const datosUsuario = JSON.parse(localStorage.getItem('usuarioInfo') || '{}');
-            const idUsuario = datosUsuario.id_usuario || 1; // Usamos 1 de respaldo temporal si no está configurado
+            // 1. Recuperar el ID del usuario logueado usando el helper centralizado
+            const datosUsuario = getUsuario();
+            // Si no hay sesión activa, getUsuario() devuelve null → apiFetch redirigirá al login
+            const idUsuario = datosUsuario ? datosUsuario.id_usuario : null;
+            if (!idUsuario) { cerrarSesion(); return; }
 
             // 2. Calcular total (Soporta compatibilidad si usaste 'precio' o 'precio_venta')
             const totalPedido = pedido.items.reduce((suma, item) => {

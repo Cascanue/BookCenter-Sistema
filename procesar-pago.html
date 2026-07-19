@@ -1531,10 +1531,10 @@
         // =============================================
         // PROTECCIÓN DE RUTA
         // =============================================
-        const rolActual = localStorage.getItem('rolUsuario');
-        if (!rolActual) {
-            window.location.href = '/';
-        } else if (rolActual === 'vendedor') {
+        const usuarioActual = getUsuario();
+        const rolActual = usuarioActual ? usuarioActual.nombre_rol?.toLowerCase() : null;
+        if (!usuarioActual) { cerrarSesion(); }
+        else if (rolActual === 'vendedor') {
             alert('Acceso denegado: los vendedores no pueden procesar pagos.');
             window.location.href = '/menu';
         }
@@ -2090,15 +2090,16 @@
                 cuotas: 1,
                 referencia: referenciaFinal,
                 tipo_documento: pedidoActual.tipo_documento,
-                id_cajero: localStorage.getItem('idUsuario')
+                monto_recibido: metodoPago === 'efectivo' ? (parseFloat(document.getElementById('montoRecibido').value) || 0) : null,
+                id_cajero: getUsuario()?.id_usuario
             };
 
             try {
-                const res = await fetch(`${URL_BACKEND}/api/procesar-pago`, {
+                const res = await apiFetch('/api/procesar-pago', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
+                if (!res) { restaurarBotonesModal(); return; }
                 const data = await res.json();
 
                 if (data.exito) {
@@ -2378,7 +2379,7 @@
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(7.5);
             doc.setTextColor(148, 163, 184);
-            doc.text(`Atendido por: ${localStorage.getItem('nombreUsuario') || '—'}`, margen, alturaPagina - 18);
+            doc.text(`Atendido por: ${getUsuario()?.nombre_completo || '—'}`, margen, alturaPagina - 18);
             doc.text('Representación de comprobante electrónico generada por el sistema Book Center.', margen, alturaPagina - 13);
             doc.text('Documento de uso interno para el control de ventas de la librería.', margen, alturaPagina - 9);
 
