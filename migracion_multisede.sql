@@ -22,8 +22,13 @@ CREATE TABLE IF NOT EXISTS Sede (
 
 -- Sede inicial (todo el histórico pertenece a ella)
 INSERT INTO Sede (codigo_sede, nombre, direccion)
-SELECT 'SP', 'Sede Principal', 'Trujillo — local original'
+SELECT 'AY', 'Sede Ayacucho', 'Ayacucho — local original'
 WHERE NOT EXISTS (SELECT 1 FROM Sede);
+
+-- Segunda sede (Sede Vista Hermosa)
+INSERT INTO Sede (codigo_sede, nombre, direccion)
+SELECT 'VH', 'Sede Vista Hermosa', 'Sede Vista Hermosa'
+WHERE NOT EXISTS (SELECT 1 FROM Sede WHERE codigo_sede = 'VH');
 
 -- 2. Inventario separado del catálogo ("Camino B")
 CREATE TABLE IF NOT EXISTS Inventario_Sede (

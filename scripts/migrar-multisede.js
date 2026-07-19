@@ -58,8 +58,9 @@ async function main() {
     )`);
     const [[{ nSedes }]] = await con.query('SELECT COUNT(*) nSedes FROM Sede');
     if (nSedes === 0) {
-        await con.query(`INSERT INTO Sede (codigo_sede, nombre, direccion) VALUES ('SP', 'Sede Principal', 'Trujillo — local original')`);
-        paso('Sede inicial "SP — Sede Principal" creada (id 1).');
+        await con.query(`INSERT INTO Sede (codigo_sede, nombre, direccion) VALUES ('AY', 'Sede Ayacucho', 'Ayacucho — local original')`);
+        await con.query(`INSERT INTO Sede (codigo_sede, nombre, direccion) VALUES ('VH', 'Sede Vista Hermosa', 'Sede Vista Hermosa')`);
+        paso('Sedes iniciales "AY — Sede Ayacucho" (id 1) y "VH — Sede Vista Hermosa" (id 2) creadas.');
     } else {
         paso(`Ya existen ${nSedes} sede(s), no se insertó ninguna.`);
     }
