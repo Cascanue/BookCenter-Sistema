@@ -900,13 +900,19 @@
             grid.innerHTML = filtrados.map(p => {
                 // Ajustado a id_producto
                 const cant = cantidades[p.id_producto] || 0;
+                const sinStock = Number(p.stock_actual) <= 0;
+                // Badge de stock: rojo si agotado, gris suave si hay unidades
+                const badgeStock = sinStock
+                    ? `<span style="background:#fee2e2;color:#b91c1c;font-size:0.68rem;font-weight:700;padding:0.15rem 0.5rem;border-radius:20px;display:inline-block;margin-bottom:0.3rem;">Sin Stock</span>`
+                    : '';
                 return `
-                <div class="card-producto ${cant > 0 ? 'seleccionado' : ''}" id="card-${p.id_producto}">
+                <div class="card-producto ${cant > 0 ? 'seleccionado' : ''} ${sinStock ? 'sin-stock-card' : ''}" id="card-${p.id_producto}" style="${sinStock ? 'opacity:0.55;' : ''}">
                     <div class="card-imagen-contenedor">
                         <img src="${p.url_imagen}" alt="${p.nombre}" class="card-imagen"
                              onerror="this.style.background='#e2e8f0'; this.src='';">
                     </div>
                     <div class="card-detalles">
+                        ${badgeStock}
                         <div class="card-nombre">${p.nombre}</div>
                         <div class="card-info-row">
                             <span class="card-info-label">Código:</span>
@@ -914,7 +920,7 @@
                         </div>
                         <div class="card-info-row">
                             <span class="card-info-label">Stock actual:</span>
-                            <span class="card-info-valor">${p.stock_actual}</span>
+                            <span class="card-info-valor" style="${sinStock ? 'color:#b91c1c;font-weight:700;' : ''}">${p.stock_actual}</span>
                         </div>
                         <div class="card-info-row">
                             <span class="card-info-label">Precio:</span>
@@ -926,8 +932,8 @@
                         <input type="number" class="input-cantidad"
                                id="input-${p.id_producto}" value="${cant}" min="0" max="${p.stock_actual}"
                                onchange="setCantidad(${p.id_producto}, this.value, ${p.stock_actual})"
-                               onfocus="this.select()" ${p.stock_actual <= 0 ? 'disabled' : ''}>
-                        <button class="btn-cantidad btn-mas-${p.id_producto}" onclick="cambiarCantidad(${p.id_producto}, 1, ${p.stock_actual})" ${cant >= p.stock_actual || p.stock_actual <= 0 ? 'disabled' : ''}>+</button>
+                               onfocus="this.select()" ${sinStock ? 'disabled' : ''}>
+                        <button class="btn-cantidad btn-mas-${p.id_producto}" onclick="cambiarCantidad(${p.id_producto}, 1, ${p.stock_actual})" ${cant >= p.stock_actual || sinStock ? 'disabled' : ''}>+</button>
                     </div>
                 </div>`;
             }).join('');

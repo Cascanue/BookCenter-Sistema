@@ -621,7 +621,10 @@
                     // Si la BD confirmó el guardado exitoso, recién abrimos tu modal
                     abrirModalExito(data.id_pedido);
                 } else {
-                    alert("Error al guardar: " + data.mensaje);
+                    // El backend envía el mensaje exacto del problema (ej. stock insuficiente).
+                    // Lo mostramos tal cual para que el vendedor sepa qué corregir (Brecha-1).
+                    const msgError = data.mensaje || 'No se pudo registrar el pedido. Inténtalo de nuevo.';
+                    alert('\u26a0\ufe0f ' + msgError);
                     // Restauramos el botón si hubo error
                     btn.innerHTML = `FINALIZAR <i class='bx bx-check-circle'></i>`;
                     btn.disabled = false;

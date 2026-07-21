@@ -705,6 +705,12 @@ app.put('/api/productos/:id', async (req, res) => {
             return res.status(400).json({ exito: false, mensaje: 'Ya existe otro producto activo con ese nombre.' });
         }
 
+        // RF-02 / Brecha-9: leer valores anteriores ANTES del UPDATE para el log de auditoría
+        // (permite detectar cambios de precio o nombre que podrían ser fraudulentos).
+        const [[productoAnterior]] = await p.query(
+            'SELECT nombre, precio_venta FROM Producto WHERE id_producto = ?', [req.params.id]
+        );
+
         // Datos de catálogo (globales, iguales en todas las sedes)
         await p.query(
             'UPDATE Producto SET nombre=?, descripcion=?, precio_venta=?, id_categoria=?, url_imagen=? WHERE id_producto=?',
@@ -723,7 +729,13 @@ app.put('/api/productos/:id', async (req, res) => {
             `, [req.params.id, sedeStock, parseInt(stock_actual) || 0, parseInt(stock_minimo) || 5]);
         }
 
-        registrarAuditoria(id_usuario || null, 'MODIFICAR', 'Producto', `Producto actualizado: id ${req.params.id} - ${nombre}` + (sedeStock ? ` (stock en sede ${sedeStock})` : ' (solo catálogo)'));
+        // RF-02: log enriquecido con cambios de precio y nombre (Brecha-9)
+        const precioAnterior = productoAnterior ? parseFloat(productoAnterior.precio_venta).toFixed(2) : '?';
+        const nombreAnterior = productoAnterior ? productoAnterior.nombre : '?';
+        const cambioNombre = nombreAnterior !== nombre ? ` | Nombre: "${nombreAnterior}" → "${nombre}"` : '';
+        const cambioPrecio = precioAnterior !== parseFloat(precio_venta).toFixed(2) ? ` | Precio: S/${precioAnterior} → S/${parseFloat(precio_venta).toFixed(2)}` : '';
+        const cambioStock = sedeStock ? ` | Stock sede ${sedeStock}: ${parseInt(stock_actual) || 0}` : ' (solo catálogo)';
+        registrarAuditoria(id_usuario || null, 'MODIFICAR', 'Producto', `Producto id ${req.params.id}${cambioNombre}${cambioPrecio}${cambioStock}`);
         res.json({ exito: true });
     } catch (err) {
         console.error('Error actualizando producto:', err);

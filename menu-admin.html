@@ -464,9 +464,12 @@ select.input-moderno{cursor:pointer}
 <script src="js/config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-const rolActual = localStorage.getItem('rolUsuario');
-if (!rolActual) { window.location.href = '/'; }
-else if (rolActual !== 'administrador') { alert('Acceso denegado: Solo administradores.'); window.location.href = '/menu'; }
+// CU-01 / RN-06: el rol se verifica contra el objeto completo del usuario
+// (que viene del token JWT), no contra una clave aislada en localStorage
+// que cualquiera podría falsificar con las DevTools del navegador.
+const _u = getUsuario();
+if (!_u) { window.location.href = '/'; }
+else if ((_u.nombre_rol || '').toLowerCase() !== 'administrador') { alert('Acceso denegado: Solo administradores.'); window.location.href = '/menu'; }
 
 let categorias = [], productos = [], clientes = [], pedidos = [], comprobantes = [];
 let productoEditar = null, clienteEditar = null;
@@ -602,7 +605,7 @@ async function cargarProductos() {
 function renderProductos(lista) {
   const data = lista || productos;
   const tb = document.getElementById('body-productos');
-  if (!data.length) { tb.innerHTML = '<tr><td colspan="8"><div class="estado-vacio"><i class="bx bx-package"></i>Sin resultados</div></td></tr>'; return; }
+  if (!data.length) { tb.innerHTML = '<tr><td colspan="8"><div class="estado-vacio"><i class="bx bx-package"></i>Producto no encontrado en el catálogo.</div></td></tr>'; return; }
   tb.innerHTML = data.map(p => {
     const cat = categorias.find(c => c.id_categoria === p.id_categoria);
     const bajo = Number(p.stock_actual) <= Number(p.stock_minimo);
@@ -1038,7 +1041,11 @@ async function ejecutarAnularPedido(idPedido) {
 function confirmarEliminar(tipo, id, nombre) {
   document.getElementById('grupo-motivo-anulacion').classList.add('oculto');
   document.getElementById('confirmar-titulo').textContent = 'Confirmar eliminacion';
-  document.getElementById('confirmar-mensaje').textContent = '¿Eliminar "' + nombre + '"? (Solo Soft Delete).';
+  // CU-09: el borrado es lógico (is_active = 0), el historial de ventas se conserva.
+  const esProd = tipo === 'producto';
+  document.getElementById('confirmar-mensaje').textContent = esProd
+    ? '¿Desactivar el producto "' + nombre + '"? Dejará de aparecer en nuevos pedidos, pero su historial de ventas y comprobantes se conservará intacto.'
+    : '¿Eliminar el cliente "' + nombre + '"? El registro quedará inactivo en el sistema.';
   document.getElementById('btn-confirmar-accion').onclick = () => ejecutarEliminar(tipo, id);
   document.getElementById('modal-confirmar').classList.remove('oculto');
 }
