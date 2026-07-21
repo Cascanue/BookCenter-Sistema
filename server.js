@@ -10,6 +10,7 @@ const jwt = require('jsonwebtoken');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'bookcenter-secreto-dev';
 const JWT_EXPIRACION = '8h'; // un turno de trabajo
+const FECHA_MIN_SISTEMA = '2026-04-01';
 
 const app = express();
 app.use(cors());
@@ -122,6 +123,16 @@ function sedeDeConsulta(req) {
         return Number.isInteger(s) ? s : null;
     }
     return req.usuario.id_sede || 1;
+}
+
+function fechaHoyISOPeru() {
+    return new Date(Date.now() - 5 * 3600 * 1000).toISOString().slice(0, 10);
+}
+
+function fechaISOValida(valor) {
+    if (typeof valor !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(valor)) return false;
+    const fecha = new Date(`${valor}T00:00:00`);
+    return !Number.isNaN(fecha.getTime()) && fecha.toISOString().slice(0, 10) === valor;
 }
 
 // ==========================================
@@ -1328,6 +1339,24 @@ app.put('/api/categorias/:id/desactivar', (req, res) => {
 // ==========================================
 app.get('/api/admin/reportes/ventas', (req, res) => {
     const { agrupacion = 'dia', desde, hasta, sede } = req.query;
+    const agrupacionesValidas = ['dia', 'semana', 'mes'];
+    const hoy = fechaHoyISOPeru();
+
+    if (!agrupacionesValidas.includes(agrupacion)) {
+        return res.status(400).json({ exito: false, mensaje: 'Agrupacion de reporte no valida.' });
+    }
+    if ((desde && !fechaISOValida(desde)) || (hasta && !fechaISOValida(hasta))) {
+        return res.status(400).json({ exito: false, mensaje: 'Formato de fecha no valido. Usa AAAA-MM-DD.' });
+    }
+    if ((desde && desde < FECHA_MIN_SISTEMA) || (hasta && hasta < FECHA_MIN_SISTEMA)) {
+        return res.status(400).json({ exito: false, mensaje: `El reporte no puede consultar fechas anteriores a ${FECHA_MIN_SISTEMA}.` });
+    }
+    if ((desde && desde > hoy) || (hasta && hasta > hoy)) {
+        return res.status(400).json({ exito: false, mensaje: 'El reporte no puede consultar fechas posteriores al dia actual.' });
+    }
+    if (desde && hasta && desde > hasta) {
+        return res.status(400).json({ exito: false, mensaje: 'La fecha Desde no puede ser posterior a la fecha Hasta.' });
+    }
 
     let periodoExpr;
     if (agrupacion === 'semana') {
@@ -1339,7 +1368,13 @@ app.get('/api/admin/reportes/ventas', (req, res) => {
         periodoExpr = "DATE_FORMAT(p.fecha_pedido, '%Y-%m-%d')";
     }
 
+    const desdeConsulta = desde || FECHA_MIN_SISTEMA;
+    const hastaConsulta = hasta || hoy;
     const conSede = sede !== undefined && sede !== '';
+    const idSede = conSede ? parseInt(sede, 10) : null;
+    if (conSede && !Number.isInteger(idSede)) {
+        return res.status(400).json({ exito: false, mensaje: 'Sede de reporte no valida.' });
+    }
     // Con filtro de sede mostramos su nombre; sin filtro la fila agrega todas
     const selectSede = conSede ? 'MAX(s.nombre) AS nombre_sede' : 'NULL AS nombre_sede';
 
@@ -1353,9 +1388,11 @@ app.get('/api/admin/reportes/ventas', (req, res) => {
         WHERE p.estado = 'Completado'
     `;
     const params = [];
-    if (desde) { query += ' AND DATE(p.fecha_pedido) >= ?'; params.push(desde); }
-    if (hasta) { query += ' AND DATE(p.fecha_pedido) <= ?'; params.push(hasta); }
-    if (conSede) { query += ' AND p.id_sede = ?'; params.push(parseInt(sede)); }
+    query += ' AND DATE(p.fecha_pedido) >= ?';
+    params.push(desdeConsulta);
+    query += ' AND DATE(p.fecha_pedido) <= ?';
+    params.push(hastaConsulta);
+    if (conSede) { query += ' AND p.id_sede = ?'; params.push(idSede); }
     query += ' GROUP BY periodo ORDER BY periodo';
 
     db.query(query, params, (err, results) => {

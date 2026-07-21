@@ -79,8 +79,16 @@ select.input-moderno{cursor:pointer}
 .celda-producto{display:flex;align-items:center;gap:.75rem}
 .btn-filtro-rapido{padding:.45rem .85rem;border:1px solid #cbd5e1;border-radius:7px;background:white;color:var(--azul-oscuro);font-size:.8rem;font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit}
 .btn-filtro-rapido:hover{background:var(--azul-primario);color:white;border-color:var(--azul-primario)}
+.btn-filtro-rapido.activo{background:var(--azul-primario);color:white;border-color:var(--azul-primario);box-shadow:0 3px 10px rgba(37,99,235,.18)}
 .btn-filtro-limpiar{border-color:#fca5a5;color:#dc2626}
 .btn-filtro-limpiar:hover{background:#dc2626;border-color:#dc2626;color:white}
+.reportes-filtros{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,auto));gap:1rem;align-items:end}
+.reportes-atajos{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+.reportes-acciones{display:flex;gap:.65rem;flex-wrap:wrap;align-items:center}
+.btn-excel{background:#16a34a}
+.btn-excel:hover{background:#15803d;box-shadow:0 4px 12px rgba(22,163,74,.28)}
+.btn-principal:disabled,.btn-secundario:disabled{opacity:.55;cursor:not-allowed;transform:none;box-shadow:none}
+.ayuda-campo{display:block;margin-top:.25rem;font-size:.72rem;color:#64748b}
 .badge-gris{background:#e2e8f0;color:#475569}
 .badge-amarillo{background:#fef3c7;color:#92400e}
 /* Contraste del selector global de sedes: el control vive sobre el header azul,
@@ -261,30 +269,47 @@ select.input-moderno{cursor:pointer}
     <div class="vista" id="vista-reportes">
       <div class="vista-header"><h2 class="vista-titulo">Reportes de Ventas</h2></div>
       <div class="seccion-card" style="margin-bottom:1.5rem;">
-        <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end;">
+        <div class="reportes-filtros">
+          <div class="input-grupo" style="margin-bottom:0;">
+            <label>Atajos</label>
+            <div class="reportes-atajos">
+              <button type="button" class="btn-filtro-rapido" data-rango-reporte="dia" onclick="aplicarRangoReporte('dia')">Dia</button>
+              <button type="button" class="btn-filtro-rapido" data-rango-reporte="semana" onclick="aplicarRangoReporte('semana')">Semana</button>
+              <button type="button" class="btn-filtro-rapido" data-rango-reporte="mes" onclick="aplicarRangoReporte('mes')">Mensual</button>
+            </div>
+          </div>
           <div class="input-grupo" style="margin-bottom:0;">
             <label>Agrupacion</label>
-            <select id="rep-agrupacion" class="input-moderno" style="width:auto">
+            <select id="rep-agrupacion" class="input-moderno" style="width:auto" onchange="resetEstadoReporte()">
               <option value="dia">Diaria</option>
               <option value="semana">Semanal</option>
               <option value="mes" selected>Mensual</option>
             </select>
           </div>
           <div class="input-grupo" style="margin-bottom:0;">
+            <label>Fecha exacta</label>
+            <input type="date" id="rep-fecha-exacta" class="input-moderno" style="width:auto" min="2026-04-01" onchange="aplicarFechaExactaReporte()">
+            <span class="ayuda-campo">Aplica el mismo dia en Desde y Hasta.</span>
+          </div>
+          <div class="input-grupo" style="margin-bottom:0;">
             <label>Desde</label>
-            <input type="date" id="rep-desde" class="input-moderno" style="width:auto" min="2026-04-01">
+            <input type="date" id="rep-desde" class="input-moderno" style="width:auto" min="2026-04-01" onchange="onCambioFechaReporte(this)">
           </div>
           <div class="input-grupo" style="margin-bottom:0;">
             <label>Hasta</label>
-            <input type="date" id="rep-hasta" class="input-moderno" style="width:auto" min="2026-04-01">
+            <input type="date" id="rep-hasta" class="input-moderno" style="width:auto" min="2026-04-01" onchange="onCambioFechaReporte(this)">
           </div>
           <div class="input-grupo" style="margin-bottom:0;">
             <label>Sede</label>
-            <select id="rep-sede" class="input-moderno" style="width:auto">
+            <select id="rep-sede" class="input-moderno" style="width:auto" onchange="resetEstadoReporte()">
               <option value="">Todas</option>
             </select>
           </div>
-          <button class="btn-principal" onclick="cargarReportes()"><i class="bx bx-search"></i> Generar</button>
+          <div class="reportes-acciones">
+            <button type="button" class="btn-principal" onclick="cargarReportes()"><i class="bx bx-search"></i> Generar</button>
+            <button type="button" class="btn-principal btn-excel" id="btn-exportar-reporte" onclick="exportarReporteExcel()"><i class="bx bx-spreadsheet"></i> Exportar Excel</button>
+            <button type="button" class="btn-secundario" onclick="limpiarFiltrosReporte()"><i class="bx bx-eraser"></i> Limpiar</button>
+          </div>
         </div>
       </div>
       <div class="seccion-card">
@@ -501,6 +526,8 @@ let sedeSeleccionada = '';
 let sedes = [];
 let usuarios = [];
 let repChart = null;
+let datosReporteActual = [];
+let criteriosReporteActual = null;
 
 function onCambioSede() {
   sedeSeleccionada = document.getElementById('selectorSedeGlobal').value;
@@ -1323,33 +1350,128 @@ function cargarTabCategorias() {
 // =============================================
 // REPORTES DE VENTAS (B10)
 // =============================================
-async function cargarReportes() {
+function fechaISODesdeDate(d) {
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+}
+
+function limpiarAtajoReporteActivo() {
+  document.querySelectorAll('[data-rango-reporte]').forEach(btn => btn.classList.remove('activo'));
+}
+
+function marcarAtajoReporteActivo(tipo) {
+  limpiarAtajoReporteActivo();
+  const btn = document.querySelector(`[data-rango-reporte="${tipo}"]`);
+  if (btn) btn.classList.add('activo');
+}
+
+function resetEstadoReporte() {
+  datosReporteActual = [];
+  criteriosReporteActual = null;
+}
+
+function onCambioFechaReporte(input) {
+  if (!validarFechaSistema(input)) {
+    resetEstadoReporte();
+    return;
+  }
+  document.getElementById('rep-fecha-exacta').value = '';
+  limpiarAtajoReporteActivo();
+  resetEstadoReporte();
+}
+
+function aplicarFechaExactaReporte() {
+  const input = document.getElementById('rep-fecha-exacta');
+  if (!validarFechaSistema(input)) {
+    resetEstadoReporte();
+    return;
+  }
+  const fecha = input.value;
+  document.getElementById('rep-desde').value = fecha;
+  document.getElementById('rep-hasta').value = fecha;
+  limpiarAtajoReporteActivo();
+  resetEstadoReporte();
+}
+
+function aplicarRangoReporte(tipo) {
+  const hoy = fechaHoyISO();
+  let desde = hoy;
+  let hasta = hoy;
+  const hoyDate = new Date(`${hoy}T00:00:00`);
+
+  if (tipo === 'semana') {
+    const diaSemana = hoyDate.getDay() || 7;
+    hoyDate.setDate(hoyDate.getDate() - diaSemana + 1);
+    desde = fechaISODesdeDate(hoyDate);
+  } else if (tipo === 'mes') {
+    desde = hoy.slice(0, 8) + '01';
+  }
+
+  if (desde < FECHA_MIN_SISTEMA) desde = FECHA_MIN_SISTEMA;
+  document.getElementById('rep-desde').value = desde;
+  document.getElementById('rep-hasta').value = hasta;
+  document.getElementById('rep-fecha-exacta').value = '';
+  marcarAtajoReporteActivo(tipo);
+  resetEstadoReporte();
+}
+
+function limpiarFiltrosReporte() {
+  document.getElementById('rep-agrupacion').value = 'mes';
+  document.getElementById('rep-fecha-exacta').value = '';
+  document.getElementById('rep-desde').value = '';
+  document.getElementById('rep-hasta').value = '';
+  document.getElementById('rep-sede').value = '';
+  limpiarAtajoReporteActivo();
+  resetEstadoReporte();
+  document.getElementById('body-reportes').innerHTML = '<tr><td colspan="4" class="estado-vacio">Genera un reporte para ver los datos.</td></tr>';
+  document.getElementById('rep-total-general').textContent = 'S/ 0.00';
+  if (repChart) { repChart.destroy(); repChart = null; }
+}
+
+function obtenerCriteriosReporte() {
   const agrupacion = document.getElementById('rep-agrupacion').value;
   const inputDesde = document.getElementById('rep-desde');
   const inputHasta = document.getElementById('rep-hasta');
-  if (!validarFechaSistema(inputDesde) || !validarFechaSistema(inputHasta)) return;
+  if (!validarFechaSistema(inputDesde) || !validarFechaSistema(inputHasta)) return null;
   const desde = inputDesde.value;
   const hasta = inputHasta.value;
-  if (desde && hasta && desde > hasta) { alert('La fecha "Desde" no puede ser posterior a la fecha "Hasta".'); return; }
+  if (desde && hasta && desde > hasta) {
+    alert('La fecha "Desde" no puede ser posterior a la fecha "Hasta".');
+    return null;
+  }
   const sede = document.getElementById('rep-sede').value;
   const params = new URLSearchParams({ agrupacion });
   if (desde) params.append('desde', desde);
   if (hasta) params.append('hasta', hasta);
   if (sede) params.append('sede', sede);
-  const res = await apiFetch(`/api/admin/reportes/ventas?${params.toString()}`);
+  return { agrupacion, desde, hasta, sede, params };
+}
+
+async function cargarReportes() {
+  const criterios = obtenerCriteriosReporte();
+  if (!criterios) return;
+  const res = await apiFetch(`/api/admin/reportes/ventas?${criterios.params.toString()}`);
   if (!res) return;
-  const data = await res.json();
+  const data = await res.json().catch(()=>[]);
+  if (!res.ok) {
+    alert('No se pudo generar el reporte: ' + (data.mensaje || data.error || 'Error desconocido.'));
+    resetEstadoReporte();
+    return;
+  }
   const tb = document.getElementById('body-reportes');
   if (!data.length) {
     tb.innerHTML = '<tr><td colspan="4" class="estado-vacio">Sin datos para el período seleccionado.</td></tr>';
     document.getElementById('rep-total-general').textContent = 'S/ 0.00';
     // Limpiar también el gráfico anterior para no mostrar datos de otro período
     if (repChart) { repChart.destroy(); repChart = null; }
+    resetEstadoReporte();
     return;
   }
   let totalGeneral = 0;
   tb.innerHTML = data.map(r => { totalGeneral += parseFloat(r.total_vendido||0); return `<tr><td>${r.periodo||'-'}</td><td>${r.nombre_sede||'Todas'}</td><td>${r.num_pedidos}</td><td><b>S/ ${parseFloat(r.total_vendido).toFixed(2)}</b></td></tr>`; }).join('');
   document.getElementById('rep-total-general').textContent = `S/ ${totalGeneral.toFixed(2)}`;
+  datosReporteActual = data;
+  criteriosReporteActual = criterios;
+  document.getElementById('btn-exportar-reporte').disabled = false;
   // Dibujar gráfico
   const labels = data.map(r => r.periodo || '-');
   const valores = data.map(r => parseFloat(r.total_vendido||0));
@@ -1360,16 +1482,112 @@ async function cargarReportes() {
 }
 
 // Inicialización de la vista
+function textoAgrupacionReporte(valor) {
+  return ({ dia: 'Diaria', semana: 'Semanal', mes: 'Mensual' })[valor] || valor;
+}
+
+function nombreSedeReporte(idSede) {
+  if (!idSede) return 'Todas';
+  const sede = sedes.find(s => String(s.id_sede) === String(idSede));
+  return sede ? sede.nombre : `Sede ${idSede}`;
+}
+
+function escaparExcel(valor) {
+  return String(valor ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function nombreArchivoReporte(criterios) {
+  const desde = criterios.desde || 'inicio';
+  const hasta = criterios.hasta || 'actual';
+  const sede = nombreSedeReporte(criterios.sede).replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'todas';
+  return `reporte-ventas-${desde}-${hasta}-${sede}.xls`.toLowerCase();
+}
+
+async function exportarReporteExcel() {
+  let criterios = obtenerCriteriosReporte();
+  if (!criterios) return;
+  const mismosCriterios = criteriosReporteActual && criterios.params.toString() === criteriosReporteActual.params.toString();
+  if (!mismosCriterios || !datosReporteActual.length) {
+    await cargarReportes();
+    criterios = criteriosReporteActual;
+  }
+  if (!criterios || !datosReporteActual.length) {
+    alert('No hay datos para exportar con el rango seleccionado.');
+    return;
+  }
+
+  const totalGeneral = datosReporteActual.reduce((acc, r) => acc + Number(r.total_vendido || 0), 0);
+  const fechaGeneracion = new Date().toLocaleString('es-PE');
+  const desdeExcel = criterios.desde || FECHA_MIN_SISTEMA;
+  const hastaExcel = criterios.hasta || fechaHoyISO();
+  const filas = datosReporteActual.map((r, i) => `
+    <tr>
+      <td class="numero">${i + 1}</td>
+      <td>${escaparExcel(r.periodo || '-')}</td>
+      <td>${escaparExcel(r.nombre_sede || nombreSedeReporte(criterios.sede))}</td>
+      <td class="numero">${Number(r.num_pedidos || 0)}</td>
+      <td class="moneda">${Number(r.total_vendido || 0).toFixed(2)}</td>
+    </tr>`).join('');
+
+  const htmlExcel = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  table{border-collapse:collapse;font-family:Arial,sans-serif;font-size:11pt}
+  th{background:#1e3a8a;color:#ffffff;font-weight:bold;text-align:center;border:1px solid #1e293b;padding:8px}
+  td{border:1px solid #cbd5e1;padding:7px;vertical-align:middle}
+  .titulo{font-size:18pt;font-weight:bold;color:#1e3a8a;border:none;padding:6px 0}
+  .meta{background:#f8fafc;color:#334155;font-weight:bold}
+  .numero{text-align:center}
+  .moneda{text-align:right;mso-number-format:"0.00"}
+  .total{background:#dcfce7;font-weight:bold}
+</style>
+</head>
+<body>
+<table>
+  <colgroup>
+    <col style="width:55px">
+    <col style="width:130px">
+    <col style="width:230px">
+    <col style="width:120px">
+    <col style="width:140px">
+  </colgroup>
+  <tr><td colspan="5" class="titulo">Book Center - Reporte de Ventas</td></tr>
+  <tr><td class="meta">Agrupacion</td><td colspan="4">${escaparExcel(textoAgrupacionReporte(criterios.agrupacion))}</td></tr>
+  <tr><td class="meta">Desde</td><td>${escaparExcel(desdeExcel)}</td><td class="meta">Hasta</td><td colspan="2">${escaparExcel(hastaExcel)}</td></tr>
+  <tr><td class="meta">Sede</td><td colspan="4">${escaparExcel(nombreSedeReporte(criterios.sede))}</td></tr>
+  <tr><td class="meta">Generado</td><td colspan="4">${escaparExcel(fechaGeneracion)}</td></tr>
+  <tr><td colspan="5"></td></tr>
+  <tr><th>N.</th><th>Periodo</th><th>Sede</th><th>N. Pedidos</th><th>Total Vendido (S/)</th></tr>
+  ${filas}
+  <tr class="total"><td colspan="4">Total general</td><td class="moneda">${totalGeneral.toFixed(2)}</td></tr>
+</table>
+</body>
+</html>`;
+
+  const blob = new Blob(['\ufeff', htmlExcel], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = nombreArchivoReporte(criterios);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 async function inicializarDashboard() {
   // Rango de fechas permitido en todos los filtros: [inicio del sistema, hoy]
   const hoy = fechaHoyISO();
-  ['filtro-fecha-pedidos', 'filtro-fecha-comprobantes', 'rep-desde', 'rep-hasta'].forEach(id => {
+  ['filtro-fecha-pedidos', 'filtro-fecha-comprobantes', 'rep-fecha-exacta', 'rep-desde', 'rep-hasta'].forEach(id => {
     const el = document.getElementById(id);
     if (el) { el.min = FECHA_MIN_SISTEMA; el.max = hoy; }
   });
-  // Valores por defecto del reporte: desde el inicio de operaciones hasta hoy
-  document.getElementById('rep-desde').value = FECHA_MIN_SISTEMA;
-  document.getElementById('rep-hasta').value = hoy;
 
   await cargarSedes();
   await cargarCategorias();
