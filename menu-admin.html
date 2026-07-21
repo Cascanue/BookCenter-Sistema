@@ -82,11 +82,14 @@ select.input-moderno{cursor:pointer}
 .btn-filtro-rapido.activo{background:var(--azul-primario);color:white;border-color:var(--azul-primario);box-shadow:0 3px 10px rgba(37,99,235,.18)}
 .btn-filtro-limpiar{border-color:#fca5a5;color:#dc2626}
 .btn-filtro-limpiar:hover{background:#dc2626;border-color:#dc2626;color:white}
-.reportes-filtros{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,auto));gap:1rem;align-items:end}
+.reportes-filtros{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;align-items:end}
 .reportes-atajos{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
-.reportes-acciones{display:flex;gap:.65rem;flex-wrap:wrap;align-items:center}
+.reportes-acciones{display:flex;gap:.55rem;flex-wrap:wrap;align-items:center;align-self:end}
+.btn-reporte-icono{width:38px;height:38px;padding:0;border-radius:8px;display:inline-flex;align-items:center;justify-content:center}
+.btn-reporte-icono i{font-size:1.15rem}
 .btn-excel{background:#16a34a}
 .btn-excel:hover{background:#15803d;box-shadow:0 4px 12px rgba(22,163,74,.28)}
+.input-bloqueado{background:#f1f5f9!important;color:#64748b!important;cursor:not-allowed}
 .btn-principal:disabled,.btn-secundario:disabled{opacity:.55;cursor:not-allowed;transform:none;box-shadow:none}
 .ayuda-campo{display:block;margin-top:.25rem;font-size:.72rem;color:#64748b}
 .badge-gris{background:#e2e8f0;color:#475569}
@@ -164,7 +167,8 @@ select.input-moderno{cursor:pointer}
           <div class="buscador-tabla"><i class="bx bx-search"></i><input type="text" id="buscador-productos" placeholder="Buscar por codigo o nombre..." oninput="filtrarProductos()"></div>
           <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
             <select id="orden-productos" class="input-moderno select-filtro" onchange="filtrarProductos()" title="Ordenar productos">
-              <option value="">Ordenar por...</option>
+              <option value="" disabled selected>Ordenar por...</option>
+              <option value="sin-orden">Sin orden</option>
               <option value="nombre-asc">Nombre (A-Z)</option>
               <option value="nombre-desc">Nombre (Z-A)</option>
               <option value="precio-asc">Precio: menor a mayor</option>
@@ -279,14 +283,6 @@ select.input-moderno{cursor:pointer}
             </div>
           </div>
           <div class="input-grupo" style="margin-bottom:0;">
-            <label>Agrupacion</label>
-            <select id="rep-agrupacion" class="input-moderno" style="width:auto" onchange="resetEstadoReporte()">
-              <option value="dia">Diaria</option>
-              <option value="semana">Semanal</option>
-              <option value="mes" selected>Mensual</option>
-            </select>
-          </div>
-          <div class="input-grupo" style="margin-bottom:0;">
             <label>Fecha exacta</label>
             <input type="date" id="rep-fecha-exacta" class="input-moderno" style="width:auto" min="2026-04-01" onchange="aplicarFechaExactaReporte()">
             <span class="ayuda-campo">Aplica el mismo dia en Desde y Hasta.</span>
@@ -299,16 +295,10 @@ select.input-moderno{cursor:pointer}
             <label>Hasta</label>
             <input type="date" id="rep-hasta" class="input-moderno" style="width:auto" min="2026-04-01" onchange="onCambioFechaReporte(this)">
           </div>
-          <div class="input-grupo" style="margin-bottom:0;">
-            <label>Sede</label>
-            <select id="rep-sede" class="input-moderno" style="width:auto" onchange="resetEstadoReporte()">
-              <option value="">Todas</option>
-            </select>
-          </div>
           <div class="reportes-acciones">
-            <button type="button" class="btn-principal" onclick="cargarReportes()"><i class="bx bx-search"></i> Generar</button>
-            <button type="button" class="btn-principal btn-excel" id="btn-exportar-reporte" onclick="exportarReporteExcel()"><i class="bx bx-spreadsheet"></i> Exportar Excel</button>
-            <button type="button" class="btn-secundario" onclick="limpiarFiltrosReporte()"><i class="bx bx-eraser"></i> Limpiar</button>
+            <button type="button" class="btn-principal btn-reporte-icono" onclick="cargarReportes()" title="Generar reporte" aria-label="Generar reporte"><i class="bx bx-search"></i></button>
+            <button type="button" class="btn-principal btn-excel btn-reporte-icono" id="btn-exportar-reporte" onclick="exportarReporteExcel()" title="Exportar a Excel" aria-label="Exportar a Excel"><i class="bx bx-spreadsheet"></i></button>
+            <button type="button" class="btn-secundario btn-reporte-icono" onclick="limpiarFiltrosReporte()" title="Limpiar filtros" aria-label="Limpiar filtros"><i class="bx bx-eraser"></i></button>
           </div>
         </div>
       </div>
@@ -387,7 +377,7 @@ select.input-moderno{cursor:pointer}
     <div class="modal-header"><span class="modal-titulo" id="titulo-modal-producto">Nuevo Producto</span><button class="btn-cerrar-modal" onclick="cerrarModal('modal-producto')">&times;</button></div>
     <div class="modal-body">
       <form id="form-producto"><input type="hidden" id="producto-id">
-        <div class="fila-doble"><div class="input-grupo" style="flex:0.4"><label>Codigo</label><input type="text" id="producto-codigo" class="input-moderno" placeholder="Autogenerado" readonly></div><div class="input-grupo"><label>Nombre</label><input type="text" id="producto-nombre" class="input-moderno" maxlength="100" required oninput="this.value=this.value.replace(/[^A-Za-zÀ-ÿ0-9\s.,\-()]/g,'')"></div></div>
+        <div class="fila-doble"><div class="input-grupo" style="flex:0.4"><label>Codigo</label><input type="text" id="producto-codigo" class="input-moderno input-bloqueado" placeholder="Autogenerado" readonly tabindex="-1" aria-readonly="true" onfocus="this.blur()"></div><div class="input-grupo"><label>Nombre</label><input type="text" id="producto-nombre" class="input-moderno" maxlength="100" required oninput="this.value=this.value.replace(/[^A-Za-zÀ-ÿ0-9\s.,\-()]/g,'')"></div></div>
         <div class="input-grupo"><label>Descripcion</label><input type="text" id="producto-descripcion" class="input-moderno" maxlength="255" oninput="this.value=this.value.replace(/[^A-Za-zÀ-ÿ0-9\s.,\-()]/g,'')"></div>
         <div class="fila-doble"><div class="input-grupo"><label>Categoria</label><select id="producto-categoria" class="input-moderno" required><option value="">- Seleccionar -</option></select></div><div class="input-grupo"><label>Precio Venta (S/)</label><input type="number" id="producto-precio" class="input-moderno" min="0.01" step="0.01" placeholder="0.00" required></div></div>
         <div class="fila-doble"><div class="input-grupo"><label>Stock Actual</label><input type="number" id="producto-stock" class="input-moderno" min="0" step="1" required></div><div class="input-grupo"><label>Stock Minimo</label><input type="number" id="producto-stock-min" class="input-moderno" min="0" step="1" required></div></div>
@@ -542,6 +532,7 @@ function onCambioSede() {
     else if (id === 'productos') cargarProductos();
     else if (id === 'pedidos') cargarPedidos();
     else if (id === 'comprobantes') cargarComprobantes();
+    else if (id === 'reportes') resetEstadoReporte();
   }
 }
 
@@ -554,9 +545,6 @@ async function cargarSedes() {
     const sel = document.getElementById('selectorSedeGlobal');
     sel.innerHTML = '<option value="">📍 Todas las Sedes</option>' +
       sedes.map(s => `<option value="${s.id_sede}">${s.nombre}</option>`).join('');
-    // Llenar selector de reportes
-    const repSel = document.getElementById('rep-sede');
-    if (repSel) repSel.innerHTML = '<option value="">Todas</option>' + sedes.map(s => `<option value="${s.id_sede}">${s.nombre}</option>`).join('');
   } catch(e) { console.warn('Sedes no disponibles aún:', e.message); }
 }
 
@@ -844,8 +832,18 @@ async function verComprobante(idComprobante) {
 // ACCIONES Y MODALES
 // ===============================================
 
+function bloquearCampoCodigoProducto() {
+  const inputCodigo = document.getElementById('producto-codigo');
+  inputCodigo.readOnly = true;
+  inputCodigo.tabIndex = -1;
+  inputCodigo.setAttribute('aria-readonly', 'true');
+  inputCodigo.classList.add('input-bloqueado');
+  inputCodigo.onfocus = () => inputCodigo.blur();
+}
+
 function abrirModalProducto(id) {
   productoEditar = id ? productos.find(p => p.id_producto === id) : null;
+  bloquearCampoCodigoProducto();
   document.getElementById('titulo-modal-producto').textContent = productoEditar ? 'Editar Producto' : 'Nuevo Producto';
   const sel = document.getElementById('producto-categoria');
   sel.innerHTML = '<option value="">- Seleccionar -</option>' + categorias.map(c => '<option value="'+c.id_categoria+'">'+c.nombre+'</option>').join('');
@@ -1422,11 +1420,9 @@ function aplicarRangoReporte(tipo) {
 }
 
 function limpiarFiltrosReporte() {
-  document.getElementById('rep-agrupacion').value = 'mes';
   document.getElementById('rep-fecha-exacta').value = '';
   document.getElementById('rep-desde').value = '';
   document.getElementById('rep-hasta').value = '';
-  document.getElementById('rep-sede').value = '';
   limpiarAtajoReporteActivo();
   resetEstadoReporte();
   document.getElementById('body-reportes').innerHTML = '<tr><td colspan="4" class="estado-vacio">Genera un reporte para ver los datos.</td></tr>';
@@ -1435,7 +1431,7 @@ function limpiarFiltrosReporte() {
 }
 
 function obtenerCriteriosReporte() {
-  const agrupacion = document.getElementById('rep-agrupacion').value;
+  const agrupacion = 'dia';
   const inputDesde = document.getElementById('rep-desde');
   const inputHasta = document.getElementById('rep-hasta');
   if (!validarFechaSistema(inputDesde) || !validarFechaSistema(inputHasta)) return null;
@@ -1445,7 +1441,7 @@ function obtenerCriteriosReporte() {
     alert('La fecha "Desde" no puede ser posterior a la fecha "Hasta".');
     return null;
   }
-  const sede = document.getElementById('rep-sede').value;
+  const sede = sedeSeleccionada || '';
   const params = new URLSearchParams({ agrupacion });
   if (desde) params.append('desde', desde);
   if (hasta) params.append('hasta', hasta);
