@@ -1154,7 +1154,6 @@
             <img src="https://res.cloudinary.com/dwk77ddoq/image/upload/v1781397979/imagen_2026-06-13_194618193_hkz2d2.png"
                 alt="Logo Book Center" class="logo-header">
             <div class="zona-derecha">
-                <span style="color:white;font-weight:600;font-size:0.88rem;opacity:0.95;">Procesar Pago</span>
             </div>
         </header>
 
@@ -1728,8 +1727,14 @@
         function calcularVuelto() {
             if (!pedidoActual) return;
 
+            const inputMonto = document.getElementById('montoRecibido');
+            // Evitar bugs de ceros múltiples a la izquierda (ej. 00000005)
+            if (inputMonto.value.length > 1 && inputMonto.value.startsWith('0') && !inputMonto.value.startsWith('0.')) {
+                inputMonto.value = inputMonto.value.replace(/^0+/, '');
+            }
+
             const total = parseFloat(pedidoActual.total);
-            const recibido = parseFloat(document.getElementById('montoRecibido').value) || 0;
+            const recibido = parseFloat(inputMonto.value) || 0;
             const cajaVuelto = document.getElementById('cajaVuelto');
             const placeholderVuelto = document.getElementById('placeholderVuelto');
 

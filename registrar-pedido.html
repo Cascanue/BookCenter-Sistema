@@ -812,7 +812,10 @@
                 CATEGORIAS = [{ id_categoria: 0, nombre: 'Todos', icono: 'bx-grid-alt' }, ...datosCat];
 
                 // 2. Cargar Productos Activos
-                const resProd = await apiFetch('/api/productos');
+                // Si el usuario no tiene sede (ej. admin global), por defecto asume sede 1 (Ayacucho/Principal)
+                // para evitar que el backend sume los stocks de todas las sedes y cause problemas al vender.
+                const idSede = (usuarioActual && usuarioActual.id_sede) ? usuarioActual.id_sede : 1;
+                const resProd = await apiFetch(`/api/productos?sede=${idSede}`);
                 if (!resProd) return;
                 PRODUCTOS = await resProd.json();
 
