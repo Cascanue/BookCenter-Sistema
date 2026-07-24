@@ -862,7 +862,7 @@ app.put('/api/admin/pedidos/:id', (req, res) => {
                 return res.status(400).json({ exito: false, mensaje: 'Solo se pueden anular pedidos en estado Pendiente' });
             }
             return db.query(
-                'UPDATE Pedido SET estado = "Anulado", motivo_anulacion = ? WHERE id_pedido = ?',
+                "UPDATE Pedido SET estado = 'Anulado', motivo_anulacion = ? WHERE id_pedido = ?",
                 [motivo.trim(), req.params.id],
                 (err) => {
                     if (err) return res.status(500).json({ exito: false, mensaje: err.message });
@@ -942,12 +942,12 @@ app.put('/api/admin/comprobantes/:id/anular', (req, res) => {
                     const idSedePedido = rows[0].id_sede || 1;
 
                     connection.query(
-                        'UPDATE Comprobante_Pago SET estado_comprobante = "Anulado", motivo_anulacion = ? WHERE id_comprobante = ?',
+                        "UPDATE Comprobante_Pago SET estado_comprobante = 'Anulado', motivo_anulacion = ? WHERE id_comprobante = ?",
                         [motivo.trim(), req.params.id],
                         (err) => {
                             if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false, mensaje: err.message }); });
 
-                            connection.query('UPDATE Pedido SET estado = "Pendiente" WHERE id_pedido = ?', [idPedido], (err) => {
+                            connection.query("UPDATE Pedido SET estado = 'Pendiente' WHERE id_pedido = ?", [idPedido], (err) => {
                                 if (err) return connection.rollback(() => { connection.release(); res.status(500).json({ exito: false, mensaje: err.message }); });
 
                                 connection.query('SELECT id_producto, cantidad FROM Detalle_Pedido WHERE id_pedido = ?', [idPedido], (err, detalles) => {
