@@ -1111,7 +1111,11 @@ app.post('/api/procesar-pago', async (req, res) => {
             [siguiente, idSede, tipoComprobante]
         );
         const [[sedeInfo]] = await connection.query('SELECT codigo_sede FROM Sede WHERE id_sede = ?', [idSede]);
-        const correlativo = `${(sedeInfo && sedeInfo.codigo_sede) || 'SP'}-${String(siguiente).padStart(8, '0')}`;
+        // El contador de Correlativo_Sede es independiente por tipo, así que el
+        // string también debe serlo (si no, Boleta y Factura de la misma sede
+        // generan el mismo número y chocan contra el UNIQUE de numero_correlativo).
+        const letraTipo = tipoComprobante === 'Factura' ? 'F' : 'B';
+        const correlativo = `${(sedeInfo && sedeInfo.codigo_sede) || 'SP'}-${letraTipo}-${String(siguiente).padStart(8, '0')}`;
 
         // 6. Comprobante (con sede) y pago (monto real, vuelto; fecha_pago por DEFAULT)
         const [resultComp] = await connection.query(
